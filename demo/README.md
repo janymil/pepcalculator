@@ -1,7 +1,7 @@
 # Hand-drawn explainer
 
 `public/explainer.html` is a self-contained, hand-drawn ("kreslené") animation that shows what
-PepCalculator does: **~55 seconds, 9 scenes, in English, Slovak and Spanish**.
+PepCalculator does: **~76 seconds, 12 scenes, in English, Slovak and Spanish**.
 
 It lives in `public/` because Vite copies that folder to the site root, so the app serves the
 file at `/explainer.html` and its **Guide** page frames it. `demo/` holds the tooling —
@@ -22,7 +22,7 @@ Three ways, best first:
 
 1. **Built-in export.** Press **Export video (.webm)** — the page records its own canvas
    (`canvas.captureStream()` + `MediaRecorder`) and downloads
-   `pepcalculator-explainer-<lang>.webm`. Recording runs in real time, so it takes ~55 s.
+   `pepcalculator-explainer-<lang>.webm`. Recording runs in real time, so it takes ~76 s.
    Works in Chrome, Edge and Firefox.
 2. **Screen recording.** Press **Play**, then record the window with Xbox Game Bar (`Win+G`),
    OBS, or your phone. Press `F11` first for a clean full-screen capture. This gives you MP4

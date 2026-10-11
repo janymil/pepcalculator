@@ -105,7 +105,7 @@ named after a compound in the Reference list.
 ### The 55-second explainer
 
 `public/explainer.html` is a self-contained, hand-drawn animation (English / Slovak / Spanish,
-9 scenes) that shows what the app does. It lives in `public/` because the app serves it itself —
+12 scenes) that shows what the app does. It lives in `public/` because the app serves it itself —
 the **Guide** page frames it. No build step, no assets — just open it:
 
 ```

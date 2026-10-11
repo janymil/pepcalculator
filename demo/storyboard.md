@@ -4,7 +4,7 @@ For a version with a recorded voice-over (YouTube, Instagram, a clinic waiting-r
 app-store preview). The animation in `explainer.html` is the visual track — the timings below
 are its real scene lengths, so a voice can be laid straight over it.
 
-**Master:** 16:9 · 1280 × 720 · 54.6 s · 9 scenes · no on-screen voice, all copy is written.
+**Master:** 16:9 · 1280 × 720 · 75.6 s · 12 scenes · no on-screen voice, all copy is written.
 
 Every scene is **drawing, then hold**. The drawing completes at `t = 1`, so without a hold the
 last stroke lands on the scene's final frame and is gone before it can be read — which is exactly
@@ -25,7 +25,10 @@ or `HOLD` changes, rather than editing it by hand.
 | 6 | 30.8 s | 4.8 s | 1.8 s | Separate stacks | Two labelled boxes of vials, dashed red divider, ✕ "never mixed" |
 | 7 | 37.4 s | 4.4 s | 1.8 s | Plans & calendar | 5-week grid with dose dots, three ticked outcomes |
 | 8 | 43.6 s | 3.6 s | 1.8 s | Offline & private | Three ticked lines in circles |
-| 9 | 49.0 s | 3.8 s | 1.8 s | Close | Framed card, product name, "not medical advice" |
+| 9 | 49.0 s | 5.2 s | 1.8 s | Two more ways to draw | Two cards: a syringe for HGH/HCG in IU, a dial for a pen in clicks |
+| 10 | 56.0 s | 5.0 s | 1.8 s | A dose that changes | Four rising steps (0.25 → 2 mg) under the step-up copy |
+| 11 | 62.8 s | 5.4 s | 1.8 s | Still in there | Six ticked lines: inverse mode, cost, converter, readability, stripes, backup/sync |
+| 12 | 70.0 s | 3.8 s | 1.8 s | Close | Framed card, product name, "not medical advice" |
 
 ## Narration — English
 
@@ -60,7 +63,25 @@ or `HOLD` changes, rather than editing it by hand.
 > It works with no signal, and nothing ever leaves your device. Backup and syncing happen
 > through a code you control.
 
-> **9 · Close**
+> **9 · Two more ways to draw**
+> Two workflows most calculators get wrong. HGH and HCG are dosed in international units, so the
+> answer comes in millilitres — "units" on a barrel would collide with the IU on the label. And a
+> pen dials clicks: the dial resolution is an input, so the app keeps no brand table it could get
+> wrong.
+
+> **10 · A dose that changes**
+> A step-up plan carries a different dose per window: nought point two five, then nought point
+> five, then the dose you stay on. Because the supply outlook subtracts what each day actually
+> draws, it also says the vial lasts longer while the dose is still low — and the printed sheet
+> gets one row per step.
+
+> **11 · Still in there**
+> The rest is there too: I drew this much, what dose is that. Cost per dose and per plan. A
+> converter for milligrams, millilitres, units and clicks. Bigger type and stripes on the vials,
+> so two bottles are never told apart by colour alone. And your data: a file backup, or a sync
+> code you control.
+
+> **12 · Close**
 > Peptides and anabolic oils. This isn't medical advice — it just does the maths. PepCalculator.
 
 ## Narration — Slovenčina
@@ -96,7 +117,25 @@ or `HOLD` changes, rather than editing it by hand.
 > Funguje bez signálu a nič neopúšťa vaše zariadenie. Záloha a synchronizácia idú cez kód,
 > ktorý máte pod kontrolou.
 
-> **9 · Záver**
+> **9 · Dva ďalšie spôsoby, ako natiahnuť dávku**
+> Dva postupy, ktoré väčšina kalkulačiek pokazí. HGH a HCG sa dávkujú v medzinárodných
+> jednotkách, takže odpoveď je v mililitroch — „jednotky“ na striekačke by sa miešali s IU na
+> etikete. A pero sa dávkuje klikmi: rozlíšenie voliča je vstup, takže si aplikácia nedrží
+> tabuľku značiek, v ktorej by sa mohla pomýliť.
+
+> **10 · Dávka, ktorá sa mení**
+> Plán so stupňovaním nesie inú dávku pre každé obdobie: nula celá dvadsaťpäť, potom nula celá
+> päť, potom dávka, na ktorej zostanete. Keďže výhľad zásob odpočítava to, čo sa naozaj
+> natiahne každý deň, povie aj to, že kým je dávka nízka, fľaštička vydrží dlhšie — a na
+> tlačovom hárku je riadok na každý stupeň.
+
+> **11 · Ešte je tam toho dosť**
+> Zvyšok je tam tiež: natiahol som toľkoto, aká je to dávka. Cena za dávku aj za celý plán.
+> Prepočet miligramov, mililitrov, jednotiek a klikov. Väčšie písmo a pruhy na fľaštičkách, aby
+> sa dve fľaštičky nerozlišovali len farbou. A vaše dáta: záloha do súboru alebo synchronizačný
+> kód, ktorý máte pod kontrolou.
+
+> **12 · Záver**
 > Peptidy aj anabolické oleje. Nie je to lekárska rada — robí len výpočet. PepCalculator.
 
 ## Production notes

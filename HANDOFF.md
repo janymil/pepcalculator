@@ -47,7 +47,7 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
 | Tests | `npm test` | ✅ **467 passing / 41 files** (includes the sync server) |
 | Build | `npm run build` | ✅ ~420 kB JS / 128 kB gzip · ~54 kB CSS |
-| Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames · timeline cap held |
+| Explainer | `node demo\check.mjs` | ✅ 12 scenes · 28 keys × 3 languages · 132 frames · timeline cap held |
 
 ## Run it
 
@@ -428,7 +428,7 @@ Guide page:**
   **`HOLD = 1800` ms** (each scene sits finished) and **`FADE = 320` ms** (the finished frame dips to
   paper, so scenes do not hard-cut; the last scene never fades, since it is the frame the video ends
   on). `sceneAt()` now returns `t` pinned at 1 through the hold, so `render()` needs no special case
-  beyond applying the alpha. **The video is 54.6 s now, not 38.4 s** — every place that quoted the
+  beyond applying the alpha. **The video is 75.6 s now, not 38.4 s** — every place that quoted the
   old length was updated, including the three `guide.subtitle` strings in the app. `demo/check.mjs`
   guards both halves ("scene N is not finished at the end of its drawing" / "does not hold its
   finished frame"), renders a frame inside a fade, and **prints the per-scene timing map that
@@ -586,15 +586,17 @@ pairing), each for the reason given below. **2** (server hardening) and **3**
   debug.
 - **Verify the printed sheet by actually printing it** — the last unverified surface in the app.
   `@media print` can only be confirmed at a printer, not in a headless browser.
-- **The explainer covers the core, not every feature.** It is 9 scenes on the calculation and the
-  daily workflow (the problem → the maths → the draw → Today → separate stacks → plans → offline).
-  **Not shown:** the HGH/HCG (IU) and GLP-1 pen (clicks) workflows, anabolic oils beyond the closing
-  line, inverse mode, cost per dose, titration/step-up plans, the Reference sheet, the converter,
-  the protocol plot, printing, reminders, readability mode and the draw-check card. That is a
-  reasonable first-touch video, but it is **not** a feature tour, and the user asked — so either the
-  Reference/Guide pages carry those, or a second, longer cut needs 3–4 more scenes (the cheapest
-  candidates: two workflow scenes for IU and pens, one for "what else is in it"). Decide before
-  recording any voice-over, because the script has to match the scene list.
+- **The explainer is a feature tour now, not just a first touch.** It was 9 scenes (~55 s) on the
+  calculation and the daily workflow; **three more scenes were added** for exactly the gaps this
+  entry used to list: **9** — the HGH/HCG (IU) and pen (clicks) workflows; **10** — step-up
+  (titration) plans, including that the supply outlook subtracts what each day actually draws and
+  that the printed sheet gets one row per step; **11** — a six-line tick list of inverse mode, cost
+  per dose, the converter, readability mode, the vial stripes and backup/sync. It is now **12
+  scenes / 75.6 s / 28 copy keys × 3 languages** (`node demo\check.mjs` prints the timing map, and
+  `demo/storyboard.md` carries the narration in English and Slovak). Still **not** shown, honestly:
+  the Reference sheet and the protocol plot, reminders/notifications, the GLP-1 care page, and the
+  printed sheet as a picture. Anabolic oils get a line, not a scene. Decide before recording any
+  voice-over, because the script has to match the scene list.
 - **Audio for the explainer: decided — no audio.** Asked and answered: the video stays silent,
   including its exported `.webm`, and that is deliberate rather than an oversight. The written copy
   carries the meaning, so it works muted, in all three languages and as a waiting-room loop.

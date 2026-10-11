@@ -112,7 +112,7 @@
 
     <p class="note">
       Screen-record this page to get an MP4, or press <strong>Export</strong> to record it to a
-      real <code>.webm</code> file (records in real time, ~45 s). Everything here is offline and
+      real <code>.webm</code> file (records in real time, ~76 s). Everything here is offline and
       dependency-free.
     </p>
 
@@ -424,6 +424,26 @@
           s9_head: 'Peptides and anabolic oils',
           s9_note: 'Not medical advice - it only does the maths.',
           s9_end: 'PepCalculator',
+          s10_head: 'Two more ways to draw',
+          s10_left_t: 'HGH / HCG - dosed in IU',
+          s10_left_1: 'Answered in mL, so a barrel never says',
+          s10_left_2: '"units" against the IU on the label.',
+          s10_right_t: 'A pen dials clicks',
+          s10_right_1: 'The dial resolution is an input, so the app',
+          s10_right_2: 'keeps no brand table it could get wrong.',
+          s11_head: 'A dose that changes',
+          s11_note_1: 'A step-up plan carries a dose per window:',
+          s11_note_2: '0.25 mg, then 0.5 mg, then where you stay.',
+          s11_supply: 'While the dose is low the vial lasts longer -',
+          s11_supply_2: 'the supply outlook counts every day.',
+          s11_print: 'The printed sheet gets one row per step.',
+          s12_head: 'Still in there',
+          s12_1: 'I drew this much - what dose is that?',
+          s12_2: 'Cost per dose, and the cost of a whole plan.',
+          s12_3: 'A converter: mg to mcg, mL, units and clicks.',
+          s12_4: 'Readability mode, with bigger type.',
+          s12_5: 'Stripes on vials, not colour alone.',
+          s12_6: 'Backup to a file, or sync with one code.',
         },
         sk: {
           s1_title: 'PepCalculator',
@@ -460,6 +480,26 @@
           s9_head: 'Peptidy aj anabolické oleje',
           s9_note: 'Nie je lekárska rada – robí len výpočet.',
           s9_end: 'PepCalculator',
+          s10_head: 'Dva ďalšie spôsoby, ako natiahnuť dávku',
+          s10_left_t: 'HGH / HCG - dávkované v IU',
+          s10_left_1: 'Odpoveď je v mL, takže na striekačke nikdy',
+          s10_left_2: 'nestojí „jednotky“ proti IU na etikete.',
+          s10_right_t: 'Pero sa dávkuje klikmi',
+          s10_right_1: 'Rozlíšenie voliča je vstup, takže si appka',
+          s10_right_2: 'nedrží tabuľku značiek, v ktorej sa mýli.',
+          s11_head: 'Dávka, ktorá sa mení',
+          s11_note_1: 'Plán so stupňovaním nesie dávku na obdobie:',
+          s11_note_2: '0,25 mg, potom 0,5 mg, potom to, čo zostane.',
+          s11_supply: 'Kým je dávka nízka, fľaštička vydrží dlhšie -',
+          s11_supply_2: 'výhľad zásob počíta s každým dňom.',
+          s11_print: 'Na tlačovom hárku je riadok na každý stupeň.',
+          s12_head: 'Ešte je tam toho dosť',
+          s12_1: 'Natiahol som toľkoto - aká je to dávka?',
+          s12_2: 'Cena za dávku a cena celého plánu.',
+          s12_3: 'Prepočet: mg na mcg, mL, jednotky a kliky.',
+          s12_4: 'Režim čitateľnosti, väčšie písmo.',
+          s12_5: 'Pruhy na fľaštičkách, nielen farba.',
+          s12_6: 'Záloha do súboru alebo synchronizácia kódom.',
         },
         es: {
           s1_title: 'PepCalculator',
@@ -496,6 +536,26 @@
           s9_head: 'Péptidos y aceites anabólicos',
           s9_note: 'No es consejo médico: solo calcula.',
           s9_end: 'PepCalculator',
+          s10_head: 'Dos formas más de extraer',
+          s10_left_t: 'HGH / HCG - en UI',
+          s10_left_1: 'La respuesta va en mL, así que la jeringa',
+          s10_left_2: 'nunca dice «unidades» frente a las UI.',
+          s10_right_t: 'La pluma se dosifica en clics',
+          s10_right_1: 'La resolución del dial es un dato de entrada,',
+          s10_right_2: 'así que no hay tabla de marcas que errar.',
+          s11_head: 'Una dosis que cambia',
+          s11_note_1: 'Un plan escalonado lleva una dosis por tramo:',
+          s11_note_2: '0,25 mg, luego 0,5 mg, luego la que mantengas.',
+          s11_supply: 'Mientras la dosis es baja el vial dura más:',
+          s11_supply_2: 'la previsión cuenta cada día.',
+          s11_print: 'La hoja impresa lleva una fila por tramo.',
+          s12_head: 'Y hay más',
+          s12_1: 'Extraje esto - ¿qué dosis es?',
+          s12_2: 'Coste por dosis y coste de todo el plan.',
+          s12_3: 'Conversor: mg a mcg, mL, unidades y clics.',
+          s12_4: 'Modo de lectura, con texto más grande.',
+          s12_5: 'Franjas en los viales, no solo color.',
+          s12_6: 'Copia a un archivo, o sincroniza con un código.',
         },
       };
 
@@ -793,7 +853,160 @@
         },
       });
 
-      // 9 — close
+      // 10 — the other two workflows
+      SCENES.push({
+        dur: 5200,
+        draw(ctx, t) {
+          drawText(ctx, tr('s10_head'), 90, 116, { size: 38, progress: seg(t, 0, 0.2) });
+
+          const cards = [
+            { x: 110, seed: 210, at: 0.14, syringe: true },
+            { x: 700, seed: 214, at: 0.34, syringe: false },
+          ];
+
+          cards.forEach((card, index) => {
+            const title = index === 0 ? 's10_left_t' : 's10_right_t';
+            const lineA = index === 0 ? 's10_left_1' : 's10_right_1';
+            const lineB = index === 0 ? 's10_left_2' : 's10_right_2';
+
+            strokeRectSketch(ctx, card.x, 190, 470, 350, {
+              progress: seg(t, card.at, card.at + 0.26),
+              seed: card.seed,
+              width: 3,
+            });
+            drawText(ctx, tr(title), card.x + 34, 246, {
+              size: 29,
+              color: '#0d9488',
+              progress: seg(t, card.at + 0.08, card.at + 0.3),
+            });
+
+            // A toy of the workflow: a syringe for the IU column, a dial for the pen.
+            if (card.syringe) {
+              drawSyringe(ctx, card.x + 34, 300, 170, 40, 0.24, {
+                progress: seg(t, card.at + 0.16, card.at + 0.42),
+              });
+            } else {
+              strokeRectSketch(ctx, card.x + 34, 302, 170, 36, {
+                progress: seg(t, card.at + 0.16, card.at + 0.42),
+                seed: card.seed + 1,
+                width: 2.4,
+              });
+              for (let i = 0; i < 5; i++) {
+                strokeSketch(
+                  ctx,
+                  [
+                    [card.x + 62 + i * 26, 302],
+                    [card.x + 62 + i * 26, 324],
+                  ],
+                  {
+                    seed: 300 + i + card.seed,
+                    width: 2,
+                    progress: seg(t, card.at + 0.2 + i * 0.03, card.at + 0.38 + i * 0.03),
+                  },
+                );
+              }
+            }
+
+            drawText(ctx, tr(lineA), card.x + 34, 420, {
+              size: 25,
+              weight: 600,
+              color: '#4b5563',
+              progress: seg(t, card.at + 0.24, card.at + 0.46),
+            });
+            drawText(ctx, tr(lineB), card.x + 34, 458, {
+              size: 25,
+              weight: 600,
+              color: '#4b5563',
+              progress: seg(t, card.at + 0.28, card.at + 0.5),
+            });
+          });
+        },
+      });
+
+      // 11 — a dose that changes (step-up plans)
+      SCENES.push({
+        dur: 5000,
+        draw(ctx, t) {
+          drawText(ctx, tr('s11_head'), 90, 116, { size: 38, progress: seg(t, 0, 0.18) });
+          drawText(ctx, tr('s11_note_1'), 90, 190, {
+            size: 28,
+            weight: 600,
+            color: '#4b5563',
+            progress: seg(t, 0.1, 0.32),
+          });
+          drawText(ctx, tr('s11_note_2'), 90, 228, {
+            size: 28,
+            weight: 600,
+            color: '#4b5563',
+            progress: seg(t, 0.16, 0.38),
+          });
+          drawText(ctx, tr('s11_supply'), 90, 300, {
+            size: 28,
+            weight: 600,
+            color: '#4b5563',
+            progress: seg(t, 0.3, 0.5),
+          });
+          drawText(ctx, tr('s11_supply_2'), 90, 338, {
+            size: 28,
+            weight: 600,
+            color: '#4b5563',
+            progress: seg(t, 0.36, 0.56),
+          });
+          drawText(ctx, tr('s11_print'), 90, 410, {
+            size: 28,
+            color: '#0d9488',
+            progress: seg(t, 0.5, 0.72),
+          });
+
+          // Four steps, each taller than the last: the dose rises, so the vial lasts longer.
+          const base = 650;
+          const doses = ['0.25', '0.5', '1', '2'];
+          doses.forEach((dose, i) => {
+            const x = 355 + i * 150;
+            const height = 70 + i * 54;
+            strokeRectSketch(ctx, x, base - height, 120, height, {
+              progress: seg(t, 0.4 + i * 0.08, 0.6 + i * 0.08),
+              seed: 330 + i,
+              width: 3,
+            });
+            drawText(ctx, dose, x + 60, base - height - 20, {
+              size: 26,
+              align: 'center',
+              color: '#0d9488',
+              progress: seg(t, 0.46 + i * 0.08, 0.64 + i * 0.08),
+            });
+          });
+        },
+      });
+
+      // 12 — still in there (the rest of the feature set)
+      SCENES.push({
+        dur: 5400,
+        draw(ctx, t) {
+          drawText(ctx, tr('s12_head'), 90, 126, { size: 38, progress: seg(t, 0, 0.16) });
+          ['s12_1', 's12_2', 's12_3', 's12_4', 's12_5', 's12_6'].forEach((key, i) => {
+            const y = 230 + i * 74;
+            strokeCircle(ctx, 140, y - 10, 22, {
+              progress: seg(t, 0.1 + i * 0.1, 0.26 + i * 0.1),
+              seed: 350 + i,
+              width: 2.4,
+            });
+            mark(ctx, 'check', 140, y - 10, 12, {
+              seed: 360 + i,
+              color: '#0d9488',
+              width: 3.4,
+              progress: seg(t, 0.18 + i * 0.1, 0.32 + i * 0.1),
+            });
+            drawText(ctx, tr(key), 190, y, {
+              size: 27,
+              weight: 600,
+              progress: seg(t, 0.14 + i * 0.1, 0.34 + i * 0.1),
+            });
+          });
+        },
+      });
+
+      // 13 — close
       SCENES.push({
         dur: 3800,
         draw(ctx, t) {
@@ -1048,7 +1261,7 @@
 
         exportBtn.disabled = true;
         exportBtn.textContent = 'Recording…';
-        // Always record at 1x, so the file matches what the button promises (~55 s).
+        // Always record at 1x, so the file matches what the button promises (~76 s).
         speed = 1;
         speedBtn.textContent = '1×';
         speedBtn.classList.remove('active');
