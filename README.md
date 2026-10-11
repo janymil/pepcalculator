@@ -203,6 +203,7 @@ The optional sync backend sits beside `src/`:
 
 - `server/server.mjs` — zero-dependency sync API (Node `http` + `node:sqlite`)
 - `server/data/sync.sqlite` — created on first run; **this file is everyone's synced data**, so back it up
+- `PROPOSALS.md` — **every proposal this project has made, and its status** (shipped with the file, refused with the reason, or honestly open)
 - `server/README.md` — configuration, hosting options and the security model
 
 The **calculation engine is pure and unit-tested**, and the **UI renders from the mode registry** — so the app is built to grow.

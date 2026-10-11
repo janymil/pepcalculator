@@ -545,6 +545,10 @@ Guide page:**
 
 ## Still open
 
+**Before treating anything below as new, read `PROPOSALS.md`** — it is the single audited list of
+every idea this project has had: what shipped (and the file that carries it), what was refused (and
+the reason), and what is genuinely open. The section below is the narrative version.
+
 The numbered roadmap above is the **current** list: items **1, 5, 6, 7, 8, 9, 10 and 11 shipped in
 the round described under "Open items" (see the entries for sync conflicts, IU, pens + titration,
 the protocol plot, readability mode, the draw check and the converter) — the numbers are kept so
