@@ -126,7 +126,7 @@ export default function App() {
   }, [theme, mode, lang]);
 
   /*
-   * The two pages live in the URL hash (`#calendar`), so the browser back button
+   * The pages live in the URL hash (`#calendar`), so the browser back button
    * works and an installed PWA reopens on the page you left. An unknown or
    * missing hash leaves the remembered page alone.
    */

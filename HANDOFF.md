@@ -7,24 +7,37 @@ continue without re-reading the whole history.
 
 ## What this is
 
-A single-page web app that turns a **desired dose** into the **exact amount to draw on a
-syringe** — for reconstituted **peptides** and ready-to-use **anabolic oils**. Offline-first:
-no accounts, everything works from the browser. An optional tiny Node server adds
-**recovery-code sync** between devices.
+An **installable, offline-first web app** (four pages: Calculator · My vials · Calendar · Settings)
+that turns a **desired dose** into the **exact amount to draw on a syringe** — for reconstituted
+**peptides** and ready-to-use **anabolic oils**. No accounts, everything runs in the browser and
+keeps working with no network. An optional tiny Node server adds **recovery-code sync** between
+devices.
 
 ⚠️ **It is not medical advice** — a disclaimer is required and must stay in the UI.
 
 ---
 
-## ⚠️ Do this first
+## Repo & first run
 
-**This project is NOT under version control.** There is no `.git` directory yet.
+Under version control, with a **private** remote:
+
+- **GitHub (private):** https://github.com/janymil/pepcalculator
+- **Remote:** `origin` → `https://github.com/janymil/pepcalculator.git`
+- **Branch:** `main`, tracking `origin/main`
+- Latest commit when this was written: `f4c51b6` — "Add PWA, multi-page navigation and saved anabolics"
 
 ```bash
-git init && git add -A && git commit -m "Initial commit"
+git clone https://github.com/janymil/pepcalculator.git   # private: needs your GitHub access
+cd pepcalculator
+npm install
 ```
 
-`.gitignore` already covers `node_modules`, `dist`, `server/data`, `.env` (keeps `.env.example`).
+`.gitignore` covers `node_modules`, `dist`, `server/data`, `.env` (keeps `.env.example`) and `*.log`.
+**`.env` is deliberately NOT in the repo** — copy `.env.example` and set `VITE_SYNC_SERVER` if you
+want sync to reach a real server. No user-specific data (vials, settings) is committed either;
+those live in the browser.
+
+After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Source Control panel).
 
 ---
 
@@ -82,7 +95,7 @@ src/
 │  ├─ sync.ts            recovery-code sync: code gen, salted SHA-256, HTTP client
 │  ├─ reminders.ts       pure: next dose across all plans (used by notifications)
 │  ├─ agenda.ts          pure: ALL plans by day & hour (the Calendar page)
-│  ├─ views.ts           pure: the two pages + URL-hash helpers (no router lib)
+│  ├─ views.ts           pure: the four pages + URL-hash helpers (no router lib)
 │  └─ pwa.ts             guarded platform seam: SW registration, notification, install
 ├─ config/
 │  ├─ modes.ts           MODE REGISTRY — workflows + per-mode syringe setup
@@ -269,10 +282,10 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 
 ## Open items / roadmap (priority order)
 
-**Done:** **`git init` + first commit**, **PWA + service worker** (installable, offline shell,
-dose reminders), the **Calendar page / global agenda**, the **four-page split**
-(Calculator · My vials · Calendar · Settings), and **saved anabolics** with kind filters and
-per-vial calendar colours.
+**Done:** **git + GitHub** (private repo `janymil/pepcalculator`, `origin` on `main`), **PWA +
+service worker** (installable, offline shell, dose reminders), the **Calendar page / global
+agenda**, the **four-page split** (Calculator · My vials · Calendar · Settings), and **saved
+anabolics** with kind filters and per-vial calendar colours.
 
 1. **Tombstone purge** — tombstones accumulate forever. Needs a "delete once older than N days"
    sweep, with the trade-off documented.
@@ -322,6 +335,10 @@ per-vial calendar colours.
 
 ```bash
 npm run typecheck && npm test && npm run build   # all three must pass
+git status                                       # then commit + push, so the next session starts clean
 ```
+
+Also keep this file current: if you change the commands, the page list, the test count or the
+roadmap, update the tables above in the same commit — a new session reads this before anything else.
 
 
