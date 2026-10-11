@@ -525,6 +525,15 @@ the cross-references stay stable.
   policy), and its quality **cannot be verified in this environment** (no audio output), so audition
   it on a real device before shipping.
 
+- **A GLP-1 companion is proposed, not built** — see `PROPOSAL-glp1-companion.md`. Short version: the
+  pen routine, the pre-use check and a **body-measurement log** (which does not exist in any form today)
+  are in character and recommended; training and nutrition content should ship as *questions to ask a
+  prescriber*, not as instructions, because "not medical advice, it only does the maths" is the app's
+  entire claim. The proposal names the phases, the files and the tests, and flags two things that are
+  wrong today rather than merely missing: there is **no `retatrutide` row** in `lib/reference.ts`, and
+  its `semaglutide` / `tirzepatide` rows describe **reconstituted vials** (mcg + water) when a
+  prescribed pen is a different route. Nothing in it is implemented.
+
 ## How to extend safely
 
 - **New workflow** (HGH, HCG, insulin, blends): add the id to `ModeId` + a `calculateXxx()` in
