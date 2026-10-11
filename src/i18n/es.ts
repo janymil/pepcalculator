@@ -5,7 +5,7 @@ export const es: Strings = {
   tagline: 'Convierte una dosis en la cantidad exacta que debes extraer.',
   theme: { light: 'Clara', dark: 'Oscura', label: 'Tema', themeColor: '#0d9488' },
   language: { label: 'Idioma' },
-  sections: { inputs: 'Tus datos', syringe: 'Jeringa', results: 'Resultado' },
+  sections: { inputs: 'Tus datos', syringe: 'Jeringa', pen: 'Pluma', results: 'Resultado' },
   modes: {
     peptide: {
       title: 'Péptidos',
@@ -21,6 +21,11 @@ export const es: Strings = {
       title: 'HGH / HCG',
       desc: 'Hormonas etiquetadas y dosificadas en UI, primero disueltas en agua.',
       tag: 'Dosis en UI',
+    },
+    glp1: {
+      title: 'Plumas GLP-1',
+      desc: 'Soluciones listas para usar que se marcan en clics, como la semaglutida.',
+      tag: 'En clics',
     },
   },
   fields: {
@@ -56,10 +61,19 @@ export const es: Strings = {
       label: 'Precio por vial (opcional)',
       hint: 'Lo que costó el vial completo, para poder mostrar el coste por dosis.',
     },
+    clicksPerMl: {
+      label: 'Escala de la pluma',
+      hint: 'Cuántos clics hacen 1 mL — a 100 clics/mL, un clic es 0,01 mL. Compruébalo en tu pluma.',
+    },
+    penVolume: {
+      label: 'Volumen de la pluma (opcional)',
+      hint: 'Cuánto contiene la pluma en total, para que la app muestre cuántas dosis incluye.',
+    },
   },
   results: {
     drawUnitsLabel: 'Extrae hasta',
     drawVolumeLabel: 'Extrae hasta',
+    drawClicksLabel: 'Marca hasta',
     drawUnitsSub: 'en tu jeringa',
     volume: 'Volumen',
     concentration: 'Concentración',
@@ -69,6 +83,7 @@ export const es: Strings = {
     empty: 'Completa tus datos',
     emptyHint: 'Rellena los campos de la izquierda para ver el resultado aquí.',
     unitsWord: 'unidades',
+    clicksWord: 'clics',
     notApplicable: '—',
     waterHint:
       'Con {water} mL de agua, en la jeringa habría unas {units} unidades — más fácil de leer.',
@@ -79,6 +94,8 @@ export const es: Strings = {
   warnings: {
     mixedUnits:
       'El vial está etiquetado en {vialUnit}, pero la dosis está en {doseUnit}. Son tipos de unidad distintos: elige la que aparece impresa en tu vial.',
+    doseTooSmallClicks:
+      'Solo unos {clicks} clics — una pluma no marca fracciones de clic. Revisa la dosis y la escala de la pluma.',
     missingVial: 'Introduce cuánto péptido hay en el vial.',
     missingWater: 'Introduce cuánta agua bacteriostática añadiste.',
     missingConcentration: 'Introduce la concentración en mg/mL.',
@@ -311,6 +328,8 @@ export const es: Strings = {
   kinds: {
     /** HGH, HCG y similares: etiquetados y dosificados en UI. */
     hormone: 'HGH / HCG',
+    /** Soluciones GLP-1 listas para usar, marcadas con una pluma. */
+    glp1: 'GLP-1',
     label: 'Mostrar',
     all: 'Todos',
     peptide: 'Péptidos',

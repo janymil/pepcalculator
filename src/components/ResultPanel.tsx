@@ -51,9 +51,8 @@ export function ResultPanel({
   const { strings } = useI18n();
 
   // Peptides are measured with an insulin syringe, so the headline answer is
-  // "how many units?". Anabolic oils are measured in mL, so the headline is
-  // the volume itself — showing "units" there would be meaningless.
-  const byVolume = measure === 'volume';
+  // "how many units?". Oils and pens are read off a barrel or a dial instead —
+  // the headline variables below pick the right one.
 
   // Inverse mode: "I drew this much — what dose is that?" is derived live from
   // the concentration and the volume the user types.
@@ -69,6 +68,34 @@ export function ResultPanel({
   // The headline number eases to its new value (first paint is never animated).
   const animatedUnits = useCountUp(result.units);
   const animatedVolume = useCountUp(result.volumeMl);
+  const animatedClicks = useCountUp(result.clicks);
+
+  // Three ways to read the same volume: graduations on an insulin syringe, a
+  // plain mL barrel, or a pen dial. Each has its own word for it.
+  const byVolume = measure === 'volume';
+  const byClicks = measure === 'clicks';
+  const headline = byClicks
+    ? fmt.count(animatedClicks)
+    : byVolume
+      ? fmt.volume(animatedVolume)
+      : fmt.units(animatedUnits);
+  const unitLabel = byClicks
+    ? strings.results.clicksWord
+    : byVolume
+      ? strings.units.ml
+      : strings.results.unitsWord;
+  const eyebrow = byClicks
+    ? strings.results.drawClicksLabel
+    : byVolume
+      ? strings.results.drawVolumeLabel
+      : strings.results.drawUnitsLabel;
+  // Under a pen or an oil, the mL is the extra information; under an insulin
+  // syringe it is the units that are the extra information.
+  const sub = byClicks
+    ? `${fmt.volume(result.volumeMl)} ${strings.units.ml}`
+    : byVolume
+      ? strings.results.drawUnitsSub
+      : `${fmt.volume(result.volumeMl)} ${strings.units.ml} · ${strings.results.drawUnitsSub}`;
 
   const stats: StatItem[] = [
     {
@@ -154,28 +181,18 @@ export function ResultPanel({
       {result.ok ? (
         <>
           <div className="hero">
-            <p className="hero__eyebrow">
-              {byVolume ? strings.results.drawVolumeLabel : strings.results.drawUnitsLabel}
-            </p>
+            <p className="hero__eyebrow">{eyebrow}</p>
             <p className="hero__value">
-              <span className="hero__number">
-                {byVolume ? fmt.volume(animatedVolume) : fmt.units(animatedUnits)}
-              </span>
-              <span className="hero__unit">
-                {byVolume ? strings.units.ml : strings.results.unitsWord}
-              </span>
+              <span className="hero__number">{headline}</span>
+              <span className="hero__unit">{unitLabel}</span>
             </p>
-            <p className="hero__sub">
-              {byVolume
-                ? strings.results.drawUnitsSub
-                : `${fmt.volume(result.volumeMl)} ${strings.units.ml} · ${strings.results.drawUnitsSub}`}
-            </p>
+            <p className="hero__sub">{sub}</p>
             {/* Announced once per change, not on every animation frame. */}
             <p className="visually-hidden" role="status">
-              {byVolume ? strings.results.drawVolumeLabel : strings.results.drawUnitsLabel}
+              {eyebrow}
               {': '}
-              {byVolume ? fmt.volume(result.volumeMl) : fmt.units(result.units)}{' '}
-              {byVolume ? strings.units.ml : strings.results.unitsWord}
+              {byClicks ? fmt.count(result.clicks) : byVolume ? fmt.volume(result.volumeMl) : fmt.units(result.units)}{' '}
+              {unitLabel}
             </p>
           </div>
 

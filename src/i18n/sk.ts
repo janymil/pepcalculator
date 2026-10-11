@@ -5,7 +5,7 @@ export const sk: Strings = {
   tagline: 'Premeňte dávku na presné množstvo, ktoré natiahnete.',
   theme: { light: 'Svetlá', dark: 'Tmavá', label: 'Vzhľad', themeColor: '#0d9488' },
   language: { label: 'Jazyk' },
-  sections: { inputs: 'Vaše hodnoty', syringe: 'Striekačka', results: 'Výsledok' },
+  sections: { inputs: 'Vaše hodnoty', syringe: 'Striekačka', pen: 'Pero', results: 'Výsledok' },
   modes: {
     peptide: {
       title: 'Peptidy',
@@ -21,6 +21,11 @@ export const sk: Strings = {
       title: 'HGH / HCG',
       desc: 'Hormóny označené a dávkované v IU, najprv rozpustené vo vode.',
       tag: 'Dávkované v IU',
+    },
+    glp1: {
+      title: 'GLP-1 perá',
+      desc: 'Hotové roztoky, ktoré sa dávkujú kliknutiami, napríklad semaglutid.',
+      tag: 'Dávkované kliknutiami',
     },
   },
   fields: {
@@ -56,10 +61,19 @@ export const sk: Strings = {
       label: 'Cena za fľaštičku (nepovinné)',
       hint: 'Koľko stála celá fľaštička, aby aplikácia vedela ukázať cenu za dávku.',
     },
+    clicksPerMl: {
+      label: 'Stupnica pera',
+      hint: 'Koľko kliknutí je 1 mL — pri 100 kliknutiach/mL je jedno kliknutie 0,01 mL. Overte si to na svojom pere.',
+    },
+    penVolume: {
+      label: 'Objem pera (nepovinné)',
+      hint: 'Koľko pero obsahuje celkovo, aby aplikácia ukázala, koľko dávok v ňom je.',
+    },
   },
   results: {
     drawUnitsLabel: 'Natiahnuť po',
     drawVolumeLabel: 'Natiahnuť po',
+    drawClicksLabel: 'Nastaviť na',
     drawUnitsSub: 'na striekačke',
     volume: 'Objem',
     concentration: 'Koncentrácia',
@@ -69,6 +83,7 @@ export const sk: Strings = {
     empty: 'Doplňte hodnoty',
     emptyHint: 'Vyplňte polia vľavo a výsledok sa zobrazí tu.',
     unitsWord: 'jednotiek',
+    clicksWord: 'kliknutí',
     notApplicable: '—',
     waterHint:
       'Ak by ste použili {water} mL vody, na striekačke by bolo približne {units} jednotiek — ľahšie sa odčíta.',
@@ -79,6 +94,8 @@ export const sk: Strings = {
   warnings: {
     mixedUnits:
       'Fľaštička je označená v {vialUnit}, ale dávka je v {doseUnit}. Sú to rôzne druhy jednotiek — vyberte tú, ktorá je vytlačená na vašej fľaštičke.',
+    doseTooSmallClicks:
+      'Len približne {clicks} kliknutí — pero nedávkuje zlomok kliknutia. Skontrolujte dávku a stupnicu pera.',
     missingVial: 'Zadajte, koľko peptidu je vo fľaštičke.',
     missingWater: 'Zadajte, koľko bakteriostatickej vody ste pridali.',
     missingConcentration: 'Zadajte koncentráciu v mg/mL.',
@@ -309,6 +326,8 @@ export const sk: Strings = {
   kinds: {
     /** HGH, HCG a podobne: označené a dávkované v IU. */
     hormone: 'HGH / HCG',
+    /** Hotové GLP-1 roztoky, dávkované perom. */
+    glp1: 'GLP-1',
     label: 'Zobraziť',
     all: 'Všetko',
     peptide: 'Peptidy',

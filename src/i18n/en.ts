@@ -5,7 +5,7 @@ export const en: Strings = {
   tagline: 'Turn a dose into the exact amount to draw.',
   theme: { light: 'Light', dark: 'Dark', label: 'Theme', themeColor: '#0d9488' },
   language: { label: 'Language' },
-  sections: { inputs: 'Your numbers', syringe: 'Syringe', results: 'Result' },
+  sections: { inputs: 'Your numbers', syringe: 'Syringe', pen: 'Pen', results: 'Result' },
   modes: {
     peptide: {
       title: 'Peptides',
@@ -21,6 +21,11 @@ export const en: Strings = {
       title: 'HGH / HCG',
       desc: 'Hormones labelled and dosed in IU, dissolved with water first.',
       tag: 'Dosed in IU',
+    },
+    glp1: {
+      title: 'GLP-1 pens',
+      desc: 'Ready-to-use solutions you dial in clicks, such as semaglutide.',
+      tag: 'Dialled in clicks',
     },
   },
   fields: {
@@ -56,10 +61,19 @@ export const en: Strings = {
       label: 'Price per vial (optional)',
       hint: 'What the whole vial cost, so the app can show cost per dose.',
     },
+    clicksPerMl: {
+      label: 'Pen dial',
+      hint: 'How many clicks make 1 mL — at 100 clicks/mL one click is 0.01 mL. Check your own pen.',
+    },
+    penVolume: {
+      label: 'Pen volume (optional)',
+      hint: 'How much the pen holds in total, so the app can show how many doses are in it.',
+    },
   },
   results: {
     drawUnitsLabel: 'Draw to',
     drawVolumeLabel: 'Draw up to',
+    drawClicksLabel: 'Dial to',
     drawUnitsSub: 'on your syringe',
     volume: 'Volume',
     concentration: 'Concentration',
@@ -69,6 +83,7 @@ export const en: Strings = {
     empty: 'Fill in your numbers',
     emptyHint: 'Enter the fields on the left to see the result here.',
     unitsWord: 'units',
+    clicksWord: 'clicks',
     notApplicable: '—',
     waterHint:
       'Using {water} mL of water instead would put about {units} units on the syringe — easier to read.',
@@ -79,6 +94,8 @@ export const en: Strings = {
   warnings: {
     mixedUnits:
       'The vial is labelled in {vialUnit} but the dose is in {doseUnit}. Those are different kinds of unit — pick the one printed on your vial.',
+    doseTooSmallClicks:
+      'Only about {clicks} clicks — a pen cannot dial part of a click. Double-check the dose and the pen’s dial.',
     missingVial: 'Enter how much peptide is in the vial.',
     missingWater: 'Enter how much bacteriostatic water you added.',
     missingConcentration: 'Enter the concentration in mg/mL.',
@@ -309,6 +326,8 @@ export const en: Strings = {
   kinds: {
     /** HGH, HCG and similar: labelled and dosed in IU. */
     hormone: 'HGH / HCG',
+    /** Ready-to-use GLP-1 solutions, dialled from a pen. */
+    glp1: 'GLP-1',
     label: 'Show',
     all: 'All',
     peptide: 'Peptides',

@@ -23,9 +23,9 @@ describe('App (server render smoke test)', () => {
   });
 
   it('renders every workflow the registry offers', () => {
-    // The tabs render from `MODES`, so this also guards the registry.
+    // The tabs render from `MODES`, so this also guards the registry itself.
     expect(html.match(/mode__title/g)).toHaveLength(MODES.length);
-    expect(MODES).toHaveLength(3);
+    expect(MODES.map((mode) => mode.id)).toEqual(['peptide', 'anabolic', 'hormone', 'glp1']);
   });
 
   it('renders the save-vial form with a dose schedule', () => {

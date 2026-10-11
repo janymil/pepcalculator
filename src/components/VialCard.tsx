@@ -68,8 +68,10 @@ export function VialCard({
   const kind = vialKind(vial);
   const anabolic = kind === 'anabolic';
   const color = vialColor(vial.id);
-  /** Oils *and* IU-dosed hormones are read in mL; peptides in graduations. */
-  const byVolume = kindMeasure(kind) === 'volume';
+  /** Three ways to read the same volume: graduations, mL, or a pen dial. */
+  const measure = kindMeasure(kind, vial.device);
+  const byVolume = measure === 'volume';
+  const byClicks = measure === 'clicks';
 
   /** The single most important number: insulin units (peptides) or mL (oils). */
   const unitsPerDose = status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
@@ -151,7 +153,11 @@ export function VialCard({
       <div className="vial__draw">
         <span className="vial__draw-label">{strings.schedule.draw}</span>
         <span className="vial__draw-value">
-          {byVolume ? (
+          {byClicks ? (
+            <>
+              {fmt.count(status.clicksPerDose ?? 0)} <small>{strings.results.clicksWord}</small>
+            </>
+          ) : byVolume ? (
             <>
               {fmt.volume(status.volumePerDoseMl)} <small>{strings.units.ml}</small>
             </>

@@ -1,4 +1,4 @@
-import type { AnabolicForm, HormoneForm, PeptideForm, SyringeSettings } from '../types';
+import type { AnabolicForm, Glp1Form, HormoneForm, PenSettings, PeptideForm, SyringeSettings } from '../types';
 
 /** Sensible starting values so the app is usable the moment it opens. */
 export const DEFAULT_PEPTIDE_FORM: PeptideForm = {
@@ -34,6 +34,21 @@ export const DEFAULT_SYRINGE: SyringeSettings = {
 };
 
 /**
+ * A GLP-1 pen: the strength printed on the pen, a starting dose, and how much
+ * the pen holds. Nothing here is product-specific — the numbers are placeholders
+ * the user replaces with their own label.
+ */
+export const DEFAULT_GLP1_FORM: Glp1Form = {
+  concentration: '1',
+  doseAmount: '0.25',
+  doseUnit: 'mg',
+  vialMl: '1.5',
+};
+
+/** 100 clicks/mL means one click is 0.01 mL, the most common dial resolution. */
+export const DEFAULT_PEN: PenSettings = { clicksPerMl: 100 };
+
+/**
  * Where the recovery-code sync server lives. Overridable in the UI — see
  * `server/README.md` for how to run it.
  *
@@ -54,6 +69,8 @@ export const STORAGE_KEYS = {
   mode: 'pepcalc.v1.mode',
   vials: 'pepcalc.v1.vials',
   hormone: 'pepcalc.v1.hormone',
+  glp1: 'pepcalc.v1.glp1',
+  pen: 'pepcalc.v1.pen',
   syncCode: 'pepcalc.v1.syncCode',
   syncServer: 'pepcalc.v1.syncServer',
   syncLast: 'pepcalc.v1.syncLast',

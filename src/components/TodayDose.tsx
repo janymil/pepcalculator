@@ -6,7 +6,7 @@ import { elapsedDoses } from '../lib/schedule';
 import { nextSite } from '../lib/sites';
 import { nextDoseToday, type TodayDose } from '../lib/today';
 import { vialColor } from '../lib/vialColors';
-import { kindMeasure, type SavedVial } from '../lib/vials';
+import { type SavedVial } from '../lib/vials';
 
 interface TodayDoseProps {
   /** Live vials only (tombstones already filtered out). */
@@ -35,8 +35,9 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
 
   const canMark = !next.vial.schedule;
 
-  /** Oils *and* IU-dosed hormones are read in mL; peptides in graduations. */
-  const byVolume = kindMeasure(next.kind) === 'volume';
+  /** Three ways to read the same volume: graduations, mL, or a pen dial. */
+  const byVolume = next.measure === 'volume';
+  const byClicks = next.measure === 'clicks';
 
   // Where to inject. Because "how many doses have happened?" is derived from the
   // plan, so is the site — the rotation needs no logging of its own.
@@ -67,10 +68,18 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
         <p className="today-card__draw">
           <span className="today-card__draw-label">{copy.next}</span>
           <span className="today-card__draw-value">
-            {byVolume ? fmt.volume(next.drawValue) : fmt.units(next.drawValue)}
+            {byClicks
+              ? fmt.count(next.drawValue)
+              : byVolume
+                ? fmt.volume(next.drawValue)
+                : fmt.units(next.drawValue)}
           </span>
           <span className="today-card__draw-unit">
-            {byVolume ? strings.units.ml : strings.results.unitsWord}
+            {byClicks
+              ? strings.results.clicksWord
+              : byVolume
+                ? strings.units.ml
+                : strings.results.unitsWord}
           </span>
         </p>
 

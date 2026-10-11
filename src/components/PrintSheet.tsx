@@ -121,13 +121,16 @@ function PlanRow({ vial, todayIso }: { vial: SavedVial; todayIso: string }) {
 
   const schedule = vial.schedule as VialSchedule;
   const status = vialStatus(vial, todayIso);
-  // Hormones are read in mL too — "units" would collide with the IU on the label.
-  const byVolume = kindMeasure(vialKind(vial)) === 'volume';
-  const draw = byVolume
-    ? `${fmt.volume(status.volumePerDoseMl)} ${strings.units.ml}`
-    : `${fmt.units(status.volumePerDoseMl * unitsPerMlOf(vial.syringeType))} ${
-        strings.results.unitsWord
-      }`;
+  // A pen dials; peptides read in graduations; everything else in mL.
+  const measure = kindMeasure(vialKind(vial), vial.device);
+  const draw =
+    measure === 'clicks'
+      ? `${fmt.count(status.clicksPerDose ?? 0)} ${strings.results.clicksWord}`
+      : measure === 'volume'
+        ? `${fmt.volume(status.volumePerDoseMl)} ${strings.units.ml}`
+        : `${fmt.units(status.volumePerDoseMl * unitsPerMlOf(vial.syringeType))} ${
+            strings.results.unitsWord
+          }`;
 
   const end = planEndDate(schedule);
   const plannedDoses = totalPlannedDoses(schedule);

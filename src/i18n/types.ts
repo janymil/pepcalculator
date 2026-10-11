@@ -28,7 +28,7 @@ export interface Strings {
   tagline: string;
   theme: { light: string; dark: string; label: string; themeColor: string };
   language: { label: string };
-  sections: { inputs: string; syringe: string; results: string };
+  sections: { inputs: string; syringe: string; pen: string; results: string };
   modes: Record<ModeId, ModeCopy>;
   fields: {
     vialAmount: FieldCopy;
@@ -39,10 +39,16 @@ export interface Strings {
     syringeType: FieldCopy;
     syringeCapacity: FieldCopy;
     vialPrice: FieldCopy;
+    /** Pen dial resolution: how many clicks make 1 mL. */
+    clicksPerMl: FieldCopy;
+    /** Total volume the pen holds, for the optional doses-per-pen figure. */
+    penVolume: FieldCopy;
   };
   results: {
     drawUnitsLabel: string;
     drawVolumeLabel: string;
+    /** Headline label for a pen: "Dial to". */
+    drawClicksLabel: string;
     drawUnitsSub: string;
     volume: string;
     concentration: string;
@@ -53,6 +59,8 @@ export interface Strings {
     empty: string;
     emptyHint: string;
     unitsWord: string;
+    /** The pen word, e.g. "clicks". */
+    clicksWord: string;
     notApplicable: string;
     /**
      * The concrete fix offered beside the "hard to measure" warning.
@@ -301,6 +309,8 @@ export interface Strings {
     anabolic: string;
     /** HGH/HCG are reconstituted, but filtered apart from plain peptides. */
     hormone: string;
+    /** Ready-to-use GLP-1 solutions, dialled from a pen. */
+    glp1: string;
   };
   people: {
     /** Accessible name for the person switcher. */

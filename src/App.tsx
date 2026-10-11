@@ -18,7 +18,9 @@ import { Toast } from './components/Toast';
 import { ViewTabs } from './components/ViewTabs';
 import {
   DEFAULT_ANABOLIC_FORM,
+  DEFAULT_GLP1_FORM,
   DEFAULT_HORMONE_FORM,
+  DEFAULT_PEN,
   DEFAULT_PEPTIDE_FORM,
   DEFAULT_SYRINGE,
   DEFAULT_SYNC_SERVER,
@@ -65,7 +67,7 @@ import {
 function vialsSnapshot(vials: SavedVial[]): string {
   return JSON.stringify(vials);
 }
-import type { AnabolicForm, HormoneForm, PeptideForm, SyringeSettings, ThemeName } from './types';
+import type { AnabolicForm, Glp1Form, HormoneForm, PenSettings, PeptideForm, SyringeSettings, ThemeName } from './types';
 
 export default function App() {
   const [mode, setMode] = useLocalStorage<ModeId>(STORAGE_KEYS.mode, DEFAULT_MODE);
@@ -88,6 +90,9 @@ export default function App() {
     STORAGE_KEYS.hormone,
     DEFAULT_HORMONE_FORM,
   );
+  // GLP-1 pens: described by the strength on the pen, dialled in clicks.
+  const [glp1, setGlp1] = useLocalStorage<Glp1Form>(STORAGE_KEYS.glp1, DEFAULT_GLP1_FORM);
+  const [pen, setPen] = useLocalStorage<PenSettings>(STORAGE_KEYS.pen, DEFAULT_PEN);
   const [savedVials, setSavedVials] = useLocalStorage<SavedVial[]>(STORAGE_KEYS.vials, []);
   const [syncCode, setSyncCode] = useLocalStorage<string>(STORAGE_KEYS.syncCode, '');
   const [syncServer, setSyncServer] = useLocalStorage<string>(
@@ -168,6 +173,8 @@ export default function App() {
   // Peptides and hormones both reconstitute, so they share one set of inputs
   // and one maths path — only the units and the reading of the draw differ.
   const reconstituted = mode === 'hormone' ? hormone : peptide;
+  /** GLP-1 and oils are both described by a strength printed on the label. */
+  const labelled = mode === 'glp1' ? glp1 : anabolic;
   /** The base unit the engine works in for this workflow: mg, or IU. */
   const baseUnitLabel = reconstituted.vialUnit === 'IU' ? strings.units.IU : strings.units.mg;
 
@@ -276,14 +283,17 @@ export default function App() {
 
   // Recomputed on every keystroke. The engine is pure and cheap, so no debounce.
   const result = useMemo(() => {
-    if (mode === 'anabolic') {
+    if (mode === 'anabolic' || mode === 'glp1') {
       return calculateAnabolic({
-        concentrationMgPerMl: parseNumber(anabolic.concentration),
-        doseAmount: parseNumber(anabolic.doseAmount),
-        doseUnit: anabolic.doseUnit,
-        vialMl: anabolic.vialMl.trim() === '' ? null : parseNumber(anabolic.vialMl),
+        concentrationMgPerMl: parseNumber(labelled.concentration),
+        doseAmount: parseNumber(labelled.doseAmount),
+        doseUnit: labelled.doseUnit,
+        vialMl: labelled.vialMl.trim() === '' ? null : parseNumber(labelled.vialMl),
         syringeType: syringe.type,
         syringeCapacityMl: capacityMl,
+        // A pen is dialled in clicks; an oil barrel is read in mL.
+        measure: mode === 'glp1' ? 'clicks' : 'volume',
+        clicksPerMl: mode === 'glp1' ? pen.clicksPerMl : undefined,
       });
     }
 
@@ -299,7 +309,7 @@ export default function App() {
       syringeCapacityMl: capacityMl,
     };
     return mode === 'hormone' ? calculateHormone(input) : calculatePeptide(input);
-  }, [mode, peptide, hormone, anabolic, syringe, capacityMl, reconstituted]);
+  }, [mode, peptide, hormone, glp1, anabolic, labelled, syringe, capacityMl, reconstituted, pen]);
 
   /*
    * The "hard to measure" warning is only useful with a fix attached, so when
@@ -325,6 +335,8 @@ export default function App() {
     setPeptide(DEFAULT_PEPTIDE_FORM);
     setAnabolic(DEFAULT_ANABOLIC_FORM);
     setHormone(DEFAULT_HORMONE_FORM);
+    setGlp1(DEFAULT_GLP1_FORM);
+    setPen(DEFAULT_PEN);
     setSyringe(DEFAULT_SYRINGE);
   };
 
@@ -333,11 +345,11 @@ export default function App() {
   // A vial can be saved once its numbers are complete — and what counts as
   // complete differs by workflow (reconstituted: vial + water; oils: mg/mL).
   const canSaveCurrentVial =
-    mode === 'anabolic'
+    mode === 'anabolic' || mode === 'glp1'
       ? canSaveVial({
-          kind: 'anabolic',
-          concentrationMgPerMl: parseNumber(anabolic.concentration),
-          doseAmount: parseNumber(anabolic.doseAmount),
+          kind: mode,
+          concentrationMgPerMl: parseNumber(labelled.concentration),
+          doseAmount: parseNumber(labelled.doseAmount),
         })
       : canSaveVial({
           kind: mode,
@@ -370,18 +382,21 @@ export default function App() {
     };
 
     const vial: SavedVial =
-      mode === 'anabolic'
+      mode === 'anabolic' || mode === 'glp1'
         ? {
             ...base,
-            kind: 'anabolic',
-            // Oils are not reconstituted, so the peptide side stays empty.
+            kind: mode,
+            // A label-driven vial is not reconstituted, so the water side stays empty.
             vialAmount: 0,
             vialUnit: 'mg',
             waterMl: 0,
-            concentrationMgPerMl: parseNumber(anabolic.concentration),
-            vialMl: anabolic.vialMl.trim() === '' ? undefined : parseNumber(anabolic.vialMl),
-            doseAmount: parseNumber(anabolic.doseAmount),
-            doseUnit: anabolic.doseUnit,
+            concentrationMgPerMl: parseNumber(labelled.concentration),
+            vialMl: labelled.vialMl.trim() === '' ? undefined : parseNumber(labelled.vialMl),
+            doseAmount: parseNumber(labelled.doseAmount),
+            doseUnit: labelled.doseUnit,
+            // Remember that this one is dialled, so the card can say so later.
+            device: mode === 'glp1' ? 'pen' : undefined,
+            clicksPerMl: mode === 'glp1' ? pen.clicksPerMl : undefined,
           }
         : {
             ...base,
@@ -409,14 +424,21 @@ export default function App() {
     setSyringe({ type: vial.syringeType, capacityMl: vial.syringeCapacityMl });
 
     const kind = vialKind(vial);
-    if (kind === 'anabolic') {
-      setMode('anabolic');
-      setAnabolic({
+    if (kind === 'anabolic' || kind === 'glp1') {
+      const form = {
         concentration: String(vial.concentrationMgPerMl ?? ''),
         doseAmount: String(vial.doseAmount),
         doseUnit: vial.doseUnit,
         vialMl: vial.vialMl === undefined ? '' : String(vial.vialMl),
-      });
+      };
+      setMode(kind);
+      if (kind === 'glp1') {
+        setGlp1(form);
+        // Restore the pen's dial too, or every saved pen would read as U-100.
+        if (vial.device === 'pen' && vial.clicksPerMl) setPen({ clicksPerMl: vial.clicksPerMl });
+      } else {
+        setAnabolic(form);
+      }
     } else {
       const form = {
         vialAmount: String(vial.vialAmount),
@@ -670,6 +692,10 @@ export default function App() {
                   onAnabolicChange={(patch) => setAnabolic((prev) => ({ ...prev, ...patch }))}
                   hormone={hormone}
                   onHormoneChange={(patch) => setHormone((prev) => ({ ...prev, ...patch }))}
+                  glp1={glp1}
+                  onGlp1Change={(patch) => setGlp1((prev) => ({ ...prev, ...patch }))}
+                  pen={pen}
+                  onPenChange={(patch) => setPen((prev) => ({ ...prev, ...patch }))}
                   syringe={syringe}
                   onSyringeChange={(patch) => setSyringe((prev) => ({ ...prev, ...patch }))}
                   onReset={handleReset}
@@ -681,7 +707,11 @@ export default function App() {
                   result={result}
                   capacityMl={capacityMl}
                   measure={measure}
-                  doseUnit={mode === 'anabolic' ? anabolic.doseUnit : reconstituted.doseUnit}
+                  doseUnit={
+                    mode === 'anabolic' || mode === 'glp1'
+                      ? labelled.doseUnit
+                      : reconstituted.doseUnit
+                  }
                   baseUnitLabel={baseUnitLabel}
                   scaleLabel={
                     mode === 'hormone'

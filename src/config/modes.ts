@@ -51,15 +51,22 @@ export const MODES: readonly ModeMeta[] = [
     defaultCapacityMl: 3,
   },
   {
-    // HGH/HCG: reconstituted like a peptide, but the label and the dose are in
-    // IU. The answer is given in mL (see `calculateHormone`) with the syringe
-    // graduations beside it, so "units" can never be confused with IU.
     id: 'hormone',
     icon: 'sparkles',
     measure: 'volume',
     showSyringeScale: true,
     capacities: [0.3, 0.5, 1, 2, 3],
     defaultCapacityMl: 1,
+  },
+  {
+    // GLP-1 is ready to use and dialled from a pen, so the answer is in clicks.
+    // The capacity still matters: it is how much the pen holds.
+    id: 'glp1',
+    icon: 'pill',
+    measure: 'clicks',
+    showSyringeScale: false,
+    capacities: [1, 1.5, 2, 3],
+    defaultCapacityMl: 1.5,
   },
 ];
 

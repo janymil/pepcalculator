@@ -33,8 +33,12 @@ export const MIN_MEASURABLE_ML = 0.02;
  *  - `peptide`  — powder reconstituted with water, drawn with an insulin syringe.
  *  - `anabolic` — ready-to-use oil whose strength is printed on the label.
  *  - `hormone`  — reconstituted like a peptide, but labelled and dosed in **IU**.
+ *  - `glp1`     — a ready-to-use GLP-1 solution, usually dialled from a pen.
  */
-export type VialKind = 'peptide' | 'anabolic' | 'hormone';
+export type VialKind = 'peptide' | 'anabolic' | 'hormone' | 'glp1';
+
+/** How the draw is read off the device. Pens dial in clicks; syringes do not. */
+export type VialDevice = 'syringe' | 'pen';
 
 /** UI filter: everything, or a single kind. */
 export type KindFilter = 'all' | VialKind;
@@ -60,10 +64,20 @@ export interface SavedVial {
    * those as peptides.
    */
   kind?: VialKind;
-  /** Anabolics only: the strength on the label, in mg per mL. */
+  /**
+   * Anabolics only: the strength on the label, in mg per mL.
+   * GLP-1 pens use it too — it is the concentration printed on the pen.
+   */
   concentrationMgPerMl?: number;
   /** Anabolics only: vial size in mL, when known. */
   vialMl?: number;
+  /**
+   * How the draw is read off the device. Absent on older records, and then
+   * treated as a syringe.
+   */
+  device?: VialDevice;
+  /** Pen only: how many dial clicks make one millilitre. */
+  clicksPerMl?: number;
   /** The dose this vial is being used for. */
   doseAmount: number;
   doseUnit: DoseUnit;
@@ -103,6 +117,11 @@ export interface VialStatus {
   doseBase: number;
   /** mL drawn per dose. */
   volumePerDoseMl: number;
+  /**
+   * Dial clicks for one dose — only meaningful for a pen (`device: 'pen'`).
+   * `null` when the vial is not dialled.
+   */
+  clicksPerDose: number | null;
   /** How many doses the vial holds in total (may be fractional). */
   totalDoses: number;
   dosesTaken: number;
@@ -122,15 +141,24 @@ export interface VialStatus {
 export function vialKind(vial: SavedVial): VialKind {
   if (vial.kind === 'anabolic') return 'anabolic';
   if (vial.kind === 'hormone') return 'hormone';
+  if (vial.kind === 'glp1') return 'glp1';
   return 'peptide';
 }
 
+/** True for vials that were dissolved from powder, rather than drawn as-is. */
+export function isReconstituted(kind: VialKind): boolean {
+  return kind === 'peptide' || kind === 'hormone';
+}
+
 /**
- * How the drawn amount is read off the device for this kind of vial: peptides in
- * insulin-syringe graduations, oils *and IU-dosed hormones* in mL — for a
- * hormone, "units" would be ambiguous with the IU printed on the label.
+ * How the drawn amount is read off the device for this vial:
+ *  - a pen always dials **clicks**;
+ *  - peptides are read in insulin-syringe graduations;
+ *  - everything else (oils, an IU-dosed hormone) is read in **mL** — for a
+ *    hormone, "units" would be ambiguous with the IU printed on the label.
  */
-export function kindMeasure(kind: VialKind): MeasureSystem {
+export function kindMeasure(kind: VialKind, device: VialDevice = 'syringe'): MeasureSystem {
+  if (device === 'pen') return 'clicks';
   return kind === 'peptide' ? 'insulin' : 'volume';
 }
 
@@ -162,6 +190,13 @@ export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Dat
   const doseBase = isPositive(vial.doseAmount) ? toBase(vial.doseAmount, vial.doseUnit) : 0;
   const volumePerDoseMl =
     concentrationPerMl > 0 && doseBase > 0 ? doseBase / concentrationPerMl : 0;
+
+  // A pen dials whole clicks, so the same volume is also expressed that way.
+  const clicksPerMl = isPositive(vial.clicksPerMl ?? 0) ? (vial.clicksPerMl as number) : 0;
+  const clicksPerDose =
+    vial.device === 'pen' && clicksPerMl > 0 && volumePerDoseMl > 0
+      ? volumePerDoseMl * clicksPerMl
+      : null;
 
   // Peptides know their mL from the water added; oils only if a size was entered.
   const volumeTotalMl = anabolic
@@ -196,6 +231,7 @@ export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Dat
     concentrationPerMl,
     doseBase,
     volumePerDoseMl,
+    clicksPerDose,
     totalDoses,
     dosesTaken,
     dosesLeft,
@@ -218,8 +254,9 @@ export function canSaveVial(
   },
 ): boolean {
   if (!isPositive(vial.doseAmount)) return false;
-  if (vial.kind === 'anabolic') return isPositive(vial.concentrationMgPerMl ?? 0);
-  // Peptides and hormones are both reconstituted, so both need a vial and water.
+  // A label-driven vial just needs its concentration; everything else is
+  // reconstituted, so it needs a vial and water.
+  if (!isReconstituted(vial.kind ?? 'peptide')) return isPositive(vial.concentrationMgPerMl ?? 0);
   return isPositive(vial.vialAmount ?? 0) && isPositive(vial.waterMl ?? 0);
 }
 
@@ -260,6 +297,11 @@ export function normalizeSavedVial(value: unknown): SavedVial {
     concentrationMgPerMl:
       typeof vial.concentrationMgPerMl === 'number' ? vial.concentrationMgPerMl : undefined,
     vialMl: typeof vial.vialMl === 'number' ? vial.vialMl : undefined,
+    device: vial.device === 'pen' ? 'pen' : undefined,
+    clicksPerMl:
+      vial.device === 'pen' && typeof vial.clicksPerMl === 'number' && vial.clicksPerMl > 0
+        ? vial.clicksPerMl
+        : undefined,
     price: typeof vial.price === 'number' && vial.price > 0 ? vial.price : undefined,
     currency: typeof vial.currency === 'string' && vial.currency ? vial.currency : undefined,
     ownerId: typeof vial.ownerId === 'string' && vial.ownerId.trim() !== '' ? vial.ownerId : undefined,

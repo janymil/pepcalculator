@@ -16,8 +16,9 @@
  *  - `peptide`  — lyophilized powder you reconstitute with water.
  *  - `anabolic` — ready-to-use oil, strength printed on the label.
  *  - `hormone`  — HGH, HCG and similar, usually labelled and dosed in **IU**.
+ *  - `glp1`     — a ready-to-use GLP-1 solution dialled from a pen, in clicks.
  */
-export type ModeId = 'peptide' | 'anabolic' | 'hormone';
+export type ModeId = 'peptide' | 'anabolic' | 'hormone' | 'glp1';
 
 /**
  * Unit an amount is expressed in.
@@ -63,6 +64,7 @@ export type WarningCode =
   | 'doseAboveVial'
   | 'exceedsSyringe'
   | 'doseTooSmall'
+  | 'doseTooSmallClicks'
   | 'doseTooSmallVolume';
 
 export interface CalcWarning {
@@ -96,6 +98,13 @@ export interface CalcResult {
   totalVialBase: number | null;
   /** How many full doses fit in one vial, when known. */
   dosesPerVial: number | null;
+  /**
+   * The same volume expressed in dial **clicks** for a pen setup. Zero unless a
+   * `clicksPerMl` was supplied.
+   */
+  clicks: number;
+  /** Clicks per mL for the pen in use (0 when this is not a pen workflow). */
+  clicksPerMl: number;
   /**
    * Inverse mode only: the dose (in `doseUnit`) obtained from a volume the user
    * actually drew. `null` when the concentration or the volume is unusable.
@@ -142,11 +151,21 @@ export function isPositive(value: number): boolean {
 }
 
 /**
- * How the drawn amount is read off the syringe:
+ * How the drawn amount is read off the device:
  *  - `insulin` → an insulin syringe, counted in *units* (reconstituted peptides).
- *  - `volume`  → a plain mL syringe, counted in *millilitres* (anabolic oils).
+ *  - `volume`  → a plain mL syringe or barrel, counted in *millilitres*.
+ *  - `clicks`  → a pen dial, counted in *clicks* (GLP-1 and similar).
  */
-export type MeasureSystem = 'insulin' | 'volume';
+export type MeasureSystem = 'insulin' | 'volume' | 'clicks';
+
+/**
+ * How many dial clicks make one millilitre.
+ *
+ * This is a **property of the pen in front of the user**, not of any product, so
+ * it is always an input with a plain default rather than a table of brands the
+ * app could get wrong. 100 clicks/mL means one click is 0.01 mL.
+ */
+export const DEFAULT_CLICKS_PER_ML = 100;
 
 interface AssembleArgs {
   concentrationPerMl: number;
@@ -157,6 +176,8 @@ interface AssembleArgs {
   warnings: CalcWarning[];
   /** Decides which "too small to measure" message fits this workflow. */
   measure: MeasureSystem;
+  /** Pen dial resolution, for a `clicks` workflow. */
+  clicksPerMl?: number;
   /**
    * The vial and the dose were given in units from different families (say the
    * vial in IU and the dose in mg). Nothing can be drawn, so the result is
@@ -187,6 +208,8 @@ function assemble(args: AssembleArgs): CalcResult {
 
   const volumeMl = ready ? doseBase / concentrationPerMl : 0;
   const units = ready ? volumeMl * unitsPerMl : 0;
+  const clicksPerMl = args.clicksPerMl ?? 0;
+  const clicks = ready && isPositive(clicksPerMl) ? volumeMl * clicksPerMl : 0;
   const dosesPerVial =
     totalVialBase !== null && isPositive(doseBase) ? totalVialBase / doseBase : null;
 
@@ -213,13 +236,21 @@ function assemble(args: AssembleArgs): CalcResult {
       });
     }
     // A dose this small is hard to measure accurately. Insulin syringes are
-    // read in units (2 units on U-100 = 0.02 mL); oil syringes are read in mL.
-    const minMeasurableMl = measure === 'insulin' ? 2 / unitsPerMl : 0.02;
+    // read in units (2 units on U-100 = 0.02 mL); a pen dials whole clicks; oil
+    // syringes are read in mL.
+    const minMeasurableMl =
+      measure === 'insulin'
+        ? 2 / unitsPerMl
+        : measure === 'clicks' && isPositive(clicksPerMl)
+          ? 1 / clicksPerMl
+          : 0.02;
     if (volumeMl > 0 && volumeMl < minMeasurableMl) {
       warnings.push(
-        measure === 'insulin'
-          ? { code: 'doseTooSmall', severity: 'warning', params: { units } }
-          : { code: 'doseTooSmallVolume', severity: 'warning', params: { volume: volumeMl } },
+        measure === 'clicks'
+          ? { code: 'doseTooSmallClicks', severity: 'warning', params: { clicks } }
+          : measure === 'insulin'
+            ? { code: 'doseTooSmall', severity: 'warning', params: { units } }
+            : { code: 'doseTooSmallVolume', severity: 'warning', params: { volume: volumeMl } },
       );
     }
   }
@@ -233,6 +264,8 @@ function assemble(args: AssembleArgs): CalcResult {
     volumeMl,
     units,
     unitsPerMl,
+    clicks,
+    clicksPerMl,
     totalVialBase,
     dosesPerVial,
     doseFromVolume,
@@ -336,6 +369,13 @@ export interface AnabolicInput {
   vialMl: number | null;
   syringeType: SyringeTypeId;
   syringeCapacityMl: number;
+  /**
+   * How the draw is read. Defaults to `volume` (a plain mL barrel); a GLP-1 pen
+   * passes `clicks`, which also needs `clicksPerMl`.
+   */
+  measure?: MeasureSystem;
+  /** Pen dial resolution, for a `clicks` workflow. */
+  clicksPerMl?: number;
   /** Inverse mode: a volume the user drew, in mL. */
   inverseVolumeMl?: number;
   /** Inverse mode: unit to express the derived dose in. */
@@ -444,7 +484,8 @@ export function calculateAnabolic(input: AnabolicInput): CalcResult {
     unitsPerMl: unitsPerMlOf(input.syringeType),
     syringeCapacityMl: input.syringeCapacityMl,
     warnings,
-    measure: 'volume',
+    measure: input.measure ?? 'volume',
+    clicksPerMl: input.clicksPerMl,
     unitMismatch,
     inverseVolumeMl: input.inverseVolumeMl,
     inverseDoseUnit: input.inverseDoseUnit,

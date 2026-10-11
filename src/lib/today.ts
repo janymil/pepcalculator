@@ -8,10 +8,17 @@
  * calendar and reminders, so the three views can never disagree.
  */
 
-import { unitsPerMlOf } from './calc';
+import { unitsPerMlOf, type MeasureSystem } from './calc';
 import { addDays } from './dates';
 import { totalPlannedDoses, elapsedDoses, timesOnDay } from './schedule';
-import { kindMeasure, vialKind, vialStatus, type KindFilter, type SavedVial, type VialKind } from './vials';
+import {
+  kindMeasure,
+  vialKind,
+  vialStatus,
+  type KindFilter,
+  type SavedVial,
+  type VialKind,
+} from './vials';
 
 /** One scheduled dose for a specific date. */
 export interface TodayDose {
@@ -20,6 +27,8 @@ export interface TodayDose {
   name: string;
   /** Which workflow the vial belongs to; this decides how the draw is read. */
   kind: VialKind;
+  /** Exactly how the draw is read off the device (units, mL or pen clicks). */
+  measure: MeasureSystem;
   /** `yyyy-mm-dd` the dose falls on. */
   date: string;
   /** `HH:mm` of the dose. */
@@ -70,17 +79,21 @@ function toDose(
 ): TodayDose {
   const status = vialStatus(vial, nowIso);
   const kind = vialKind(vial);
-  // A hormone is read in mL as well: its syringe graduations would otherwise be
-  // confused with the IU printed on the vial.
-  const byVolume = kindMeasure(kind) === 'volume';
-  const drawValue = byVolume
-    ? status.volumePerDoseMl
-    : status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
+  const measure = kindMeasure(kind, vial.device);
+  // A pen dials; a peptide is read in graduations; everything else in mL — for a
+  // hormone, "units" would be confused with the IU printed on the vial.
+  const drawValue =
+    measure === 'volume'
+      ? status.volumePerDoseMl
+      : measure === 'clicks'
+        ? (status.clicksPerDose ?? status.volumePerDoseMl * (vial.clicksPerMl ?? 0))
+        : status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
 
   return {
     vialId: vial.id,
     name: vial.name,
     kind,
+    measure,
     date,
     time,
     volumeMl: status.volumePerDoseMl,

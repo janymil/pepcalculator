@@ -457,3 +457,46 @@ describe('calculateHormone (HGH / HCG dosed in IU)', () => {
   });
 });
 
+describe('calculateAnabolic as a pen (dialled in clicks)', () => {
+  const pen = {
+    concentrationMgPerMl: 1,
+    doseAmount: 0.25,
+    doseUnit: 'mg' as const,
+    vialMl: 1.5,
+    syringeType: 'U100' as const,
+    syringeCapacityMl: 1.5,
+    measure: 'clicks' as const,
+    clicksPerMl: 100,
+  };
+
+  it('turns a dose into a volume, and that volume into dial clicks', () => {
+    const result = calculateAnabolic(pen);
+
+    expect(result.ok).toBe(true);
+    expect(result.volumeMl).toBeCloseTo(0.25, 9);
+    // 0.25 mg at 1 mg/mL is 0.25 mL, which is 25 clicks on a 100-click dial.
+    expect(result.clicks).toBeCloseTo(25, 9);
+    expect(result.clicksPerMl).toBe(100);
+  });
+
+  it('reports clicks at whatever the pen’s own resolution is', () => {
+    // A 72-click pen needs 18 clicks for the same 0.25 mL.
+    expect(calculateAnabolic({ ...pen, clicksPerMl: 72 }).clicks).toBeCloseTo(18, 9);
+  });
+
+  it('warns when the dose is less than one click', () => {
+    // 0.005 mg = 0.005 mL = 0.5 clicks — not diallable.
+    const result = calculateAnabolic({ ...pen, doseAmount: 0.005 });
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings.map((warning) => warning.code)).toContain('doseTooSmallClicks');
+  });
+
+  it('reports no clicks at all when it is not a pen setup', () => {
+    const result = calculateAnabolic({ ...pen, measure: 'volume', clicksPerMl: undefined });
+
+    expect(result.clicks).toBe(0);
+    expect(result.clicksPerMl).toBe(0);
+  });
+});
+

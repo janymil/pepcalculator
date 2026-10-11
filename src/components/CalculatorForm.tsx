@@ -8,8 +8,8 @@ import {
   type ModeId,
   type SyringeTypeId,
 } from '../lib/calc';
-import { isInvalidNumberInput } from '../lib/format';
-import type { AnabolicForm, PeptideForm, SyringeSettings } from '../types';
+import { isInvalidNumberInput, parseNumber } from '../lib/format';
+import type { AnabolicForm, Glp1Form, PenSettings, PeptideForm, SyringeSettings } from '../types';
 import { NumberField } from './NumberField';
 import { SegmentedControl, type SegmentedOption } from './SegmentedControl';
 
@@ -21,6 +21,10 @@ interface CalculatorFormProps {
   onAnabolicChange: (patch: Partial<AnabolicForm>) => void;
   hormone: PeptideForm;
   onHormoneChange: (patch: Partial<PeptideForm>) => void;
+  glp1: Glp1Form;
+  onGlp1Change: (patch: Partial<Glp1Form>) => void;
+  pen: PenSettings;
+  onPenChange: (patch: Partial<PenSettings>) => void;
   syringe: SyringeSettings;
   onSyringeChange: (patch: Partial<SyringeSettings>) => void;
   onReset: () => void;
@@ -64,6 +68,10 @@ export function CalculatorForm({
   onAnabolicChange,
   hormone,
   onHormoneChange,
+  glp1,
+  onGlp1Change,
+  pen,
+  onPenChange,
   syringe,
   onSyringeChange,
   onReset,
@@ -72,10 +80,15 @@ export function CalculatorForm({
   const invalidNumber = strings.validation.invalidNumber;
 
   // Peptides and hormones share the reconstitution fields; only the units and
-  // the placeholders differ. Oils use a completely different (label-driven) set.
-  const reconstituting = mode !== 'anabolic';
+  // the placeholders differ. GLP-1 and oils are both described by a strength
+  // printed on the label, and differ only in how the draw is read.
+  const reconstituting = mode === 'peptide' || mode === 'hormone';
   const reconstituted = mode === 'hormone' ? hormone : peptide;
   const onReconstitutedChange = mode === 'hormone' ? onHormoneChange : onPeptideChange;
+
+  const isPen = mode === 'glp1';
+  const labelled = isPen ? glp1 : anabolic;
+  const onLabelledChange = isPen ? onGlp1Change : onAnabolicChange;
 
   const unitOptions: SegmentedOption<DoseUnit>[] = (
     mode === 'hormone' ? DOSE_UNITS : (['mg', 'mcg'] as const)
@@ -162,42 +175,42 @@ export function CalculatorForm({
               id="concentration"
               label={strings.fields.concentration.label}
               hint={strings.fields.concentration.hint}
-              value={anabolic.concentration}
-              onChange={(concentration) => onAnabolicChange({ concentration })}
-              placeholder="250"
-              invalid={isInvalidNumberInput(anabolic.concentration)}
+              value={labelled.concentration}
+              onChange={(concentration) => onLabelledChange({ concentration })}
+              placeholder={isPen ? '1' : '250'}
+              invalid={isInvalidNumberInput(labelled.concentration)}
               error={invalidNumber}
               suffix={`mg / ${strings.units.ml}`}
             />
 
             <NumberField
-              id="anabolic-dose"
+              id="labelled-dose"
               label={strings.fields.dose.label}
               hint={strings.fields.dose.hint}
-              value={anabolic.doseAmount}
-              onChange={(doseAmount) => onAnabolicChange({ doseAmount })}
-              placeholder="250"
-              invalid={isInvalidNumberInput(anabolic.doseAmount)}
+              value={labelled.doseAmount}
+              onChange={(doseAmount) => onLabelledChange({ doseAmount })}
+              placeholder={isPen ? '0.25' : '250'}
+              invalid={isInvalidNumberInput(labelled.doseAmount)}
               error={invalidNumber}
               trailing={
                 <SegmentedControl
                   ariaLabel={strings.fields.dose.label}
                   size="sm"
                   options={unitOptions}
-                  value={anabolic.doseUnit}
-                  onChange={(doseUnit) => onAnabolicChange({ doseUnit })}
+                  value={labelled.doseUnit}
+                  onChange={(doseUnit) => onLabelledChange({ doseUnit })}
                 />
               }
             />
 
             <NumberField
               id="vial-size"
-              label={strings.fields.vialSize.label}
-              hint={strings.fields.vialSize.hint}
-              value={anabolic.vialMl}
-              onChange={(vialMl) => onAnabolicChange({ vialMl })}
-              placeholder="10"
-              invalid={isInvalidNumberInput(anabolic.vialMl)}
+              label={isPen ? strings.fields.penVolume.label : strings.fields.vialSize.label}
+              hint={isPen ? strings.fields.penVolume.hint : strings.fields.vialSize.hint}
+              value={labelled.vialMl}
+              onChange={(vialMl) => onLabelledChange({ vialMl })}
+              placeholder={isPen ? '1.5' : '10'}
+              invalid={isInvalidNumberInput(labelled.vialMl)}
               error={invalidNumber}
               suffix={strings.units.ml}
             />
@@ -206,7 +219,23 @@ export function CalculatorForm({
       </section>
 
       <section className="card">
-        <h2 className="card__title">{strings.sections.syringe}</h2>
+        <h2 className="card__title">
+          {isPen ? strings.sections.pen : strings.sections.syringe}
+        </h2>
+
+        {isPen ? (
+          <NumberField
+            id="pen-dial"
+            label={strings.fields.clicksPerMl.label}
+            hint={strings.fields.clicksPerMl.hint}
+            value={String(pen.clicksPerMl)}
+            onChange={(value) => onPenChange({ clicksPerMl: parseNumber(value) })}
+            placeholder="100"
+            invalid={isInvalidNumberInput(String(pen.clicksPerMl))}
+            error={invalidNumber}
+            suffix={strings.results.clicksWord}
+          />
+        ) : null}
 
         {usesInsulinSyringe ? (
           <FieldGroup

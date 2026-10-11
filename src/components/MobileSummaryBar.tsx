@@ -18,7 +18,13 @@ interface MobileSummaryBarProps {
 export function MobileSummaryBar({ result, measure }: MobileSummaryBarProps) {
   const { strings } = useI18n();
   const byVolume = measure === 'volume';
-  const animated = useCountUp(byVolume ? result.volumeMl : result.units);
+  const byClicks = measure === 'clicks';
+  const animated = useCountUp(byClicks ? result.clicks : byVolume ? result.volumeMl : result.units);
+  const unitLabel = byClicks
+    ? strings.results.clicksWord
+    : byVolume
+      ? strings.units.ml
+      : strings.results.unitsWord;
 
   return (
     <div className="summary-bar" aria-hidden="true">
@@ -28,12 +34,8 @@ export function MobileSummaryBar({ result, measure }: MobileSummaryBarProps) {
       {result.ok ? (
         <span className="summary-bar__body">
           <span className="summary-bar__label">{strings.summary.draw}</span>
-          <span className="summary-bar__value">
-            {byVolume ? fmt.volume(animated) : fmt.units(animated)}
-          </span>
-          <span className="summary-bar__unit">
-            {byVolume ? strings.units.ml : strings.results.unitsWord}
-          </span>
+          <span className="summary-bar__value">{fmt.count(animated)}</span>
+          <span className="summary-bar__unit">{unitLabel}</span>
         </span>
       ) : (
         <span className="summary-bar__hint">{strings.summary.nothing}</span>
