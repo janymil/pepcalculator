@@ -1,8 +1,9 @@
 import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { unitsPerMlOf } from '../lib/calc';
+import { costPerDose, planCost } from '../lib/cost';
 import { addDays } from '../lib/dates';
-import { fmt, formatDate } from '../lib/format';
+import { fmt, formatDate, formatMoney } from '../lib/format';
 import {
   elapsedDoses,
   nextDose,
@@ -81,6 +82,10 @@ export function VialCard({
   const volumeLeftMl = Math.max(0, status.volumeTotalMl - dosesDone * status.volumePerDoseMl);
   const planEnd = schedule ? planEndDate(schedule) : null;
   const vialsForPlan = plannedTotal === null ? 1 : vialsNeeded(plannedTotal, status.totalDoses);
+
+  // Optional cost figures — only shown when the user entered a vial price.
+  const costPerDoseValue = costPerDose(vial.price, status.totalDoses);
+  const planCostValue = planCost(vial.price, plannedTotal, status.totalDoses);
 
   const dayLabel = (slot: DoseSlot): string => {
     if (slot.date === todayIso) return strings.schedule.today;
@@ -170,6 +175,18 @@ export function VialCard({
             {fmt.volume(status.volumePerDoseMl)} {strings.units.ml}
           </dd>
         </div>
+        {costPerDoseValue !== null ? (
+          <div className="vial__stat">
+            <dt>{strings.vials.costPerDose}</dt>
+            <dd>{formatMoney(costPerDoseValue, locale, vial.currency)}</dd>
+          </div>
+        ) : null}
+        {planCostValue !== null ? (
+          <div className="vial__stat">
+            <dt>{strings.vials.planCost}</dt>
+            <dd>{formatMoney(planCostValue, locale, vial.currency)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <p className="vial__meta">

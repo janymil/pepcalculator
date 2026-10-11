@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { parseNumber } from '../lib/format';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
 import type { VialKind } from '../lib/vials';
 import { ScheduleForm } from './ScheduleForm';
@@ -18,7 +19,12 @@ interface SaveVialFormProps {
   kind: VialKind;
   /** Today's date (`yyyy-mm-dd`) used as the default start date. */
   todayIso: string;
-  onSave: (name: string, startedOn: string, schedule: VialSchedule) => void;
+  onSave: (
+    name: string,
+    startedOn: string,
+    schedule: VialSchedule,
+    cost?: { price?: number; currency?: string },
+  ) => void;
 }
 
 /**
@@ -30,14 +36,21 @@ export function SaveVialForm({ kind, todayIso, onSave }: SaveVialFormProps) {
   const { strings } = useI18n();
   const [name, setName] = useState('');
   const [date, setDate] = useState(todayIso);
+  const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState('');
   const [schedule, setSchedule] = useState<VialSchedule>(INITIAL_SCHEDULE);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     // The plan always starts on the chosen date.
     const startedOn = date || todayIso;
-    onSave(name.trim(), startedOn, { ...schedule, startsOn: startedOn });
+    const cost =
+      price.trim() === ''
+        ? undefined
+        : { price: parseNumber(price), currency: currency.trim() || undefined };
+    onSave(name.trim(), startedOn, { ...schedule, startsOn: startedOn }, cost);
     setName('');
+    setPrice('');
   };
 
   return (
@@ -64,6 +77,29 @@ export function SaveVialForm({ kind, todayIso, onSave }: SaveVialFormProps) {
             value={date}
             onChange={(event) => setDate(event.target.value)}
           />
+        </label>
+
+        <label className="vials__field">
+          <span className="field__label">{strings.fields.vialPrice.label}</span>
+          <div className="vials__price">
+            <input
+              className="field__input"
+              type="text"
+              inputMode="decimal"
+              value={price}
+              placeholder="40"
+              onChange={(event) => setPrice(event.target.value)}
+            />
+            <input
+              className="field__input field__input--currency"
+              type="text"
+              maxLength={3}
+              value={currency}
+              placeholder="EUR"
+              aria-label={strings.fields.vialPrice.label}
+              onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+            />
+          </div>
         </label>
 
         <button type="submit" className="btn btn--accent">

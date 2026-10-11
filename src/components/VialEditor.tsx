@@ -36,6 +36,8 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
   const [doseAmount, setDoseAmount] = useState(String(vial.doseAmount));
   const [doseUnit, setDoseUnit] = useState<DoseUnit>(vial.doseUnit);
   const [syringeType, setSyringeType] = useState<SyringeTypeId>(vial.syringeType);
+  const [price, setPrice] = useState(vial.price !== undefined ? String(vial.price) : '');
+  const [currency, setCurrency] = useState(vial.currency ?? '');
   const [schedule, setSchedule] = useState<VialSchedule>(vial.schedule ?? fallbackSchedule);
 
   const unitOptions: SegmentedOption<DoseUnit>[] = [
@@ -77,6 +79,8 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
       doseAmount: parseNumber(doseAmount),
       doseUnit,
       syringeType,
+      price: price.trim() === '' ? undefined : parseNumber(price),
+      currency: currency.trim() === '' ? undefined : currency.trim().toUpperCase(),
       // The plan always starts on the (possibly corrected) start date.
       schedule: { ...schedule, startsOn: reconstitutedOn },
     });
@@ -169,6 +173,28 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
           />
         }
       />
+
+      <div className="vial-editor__cost">
+        <NumberField
+          id={`edit-price-${vial.id}`}
+          label={strings.fields.vialPrice.label}
+          hint={strings.fields.vialPrice.hint}
+          value={price}
+          onChange={setPrice}
+          placeholder="40"
+          trailing={
+            <input
+              className="field__input field__input--currency"
+              type="text"
+              maxLength={3}
+              value={currency}
+              placeholder="EUR"
+              aria-label={strings.fields.vialPrice.label}
+              onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+            />
+          }
+        />
+      </div>
 
       {anabolic ? null : (
         <div className="field">
