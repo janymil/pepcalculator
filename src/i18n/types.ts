@@ -390,6 +390,10 @@ export interface Strings {
   settings: {
     title: string;
     subtitle: string;
+    /** Heading of the display/accessibility card. */
+    display: string;
+    readable: string;
+    readableHint: string;
   };
   reference: {
     title: string;

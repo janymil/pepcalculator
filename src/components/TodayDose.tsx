@@ -6,7 +6,7 @@ import { fmt, formatDate } from '../lib/format';
 import { elapsedDoses } from '../lib/schedule';
 import { nextSite } from '../lib/sites';
 import { nextDoseToday, type TodayDose } from '../lib/today';
-import { vialColor } from '../lib/vialColors';
+import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { type SavedVial } from '../lib/vials';
 import { DrawCheck } from './DrawCheck';
 
@@ -58,7 +58,7 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
         <div className="today-card__name">
           <span
             className="vial__dot"
-            style={{ backgroundColor: vialColor(next.vialId) }}
+            style={{ backgroundColor: vialColor(next.vialId), ...vialDotStyle(next.vialId) }}
             aria-hidden="true"
           />
           {next.name || strings.vials.untitled}

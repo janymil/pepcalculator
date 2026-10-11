@@ -19,7 +19,7 @@ import {
   type SavedVial,
   type VialSort,
 } from '../lib/vials';
-import { vialColor } from '../lib/vialColors';
+import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { KindFilterControl } from './KindFilterControl';
 import { Icon } from './Icon';
 import { SupplyPanel } from './SupplyPanel';
@@ -106,7 +106,7 @@ function VialCardLegacy({
     <li className="vial">
       <div className="vial__head">
         <h3 className="vial__name">
-          <span className="vial__dot" style={{ backgroundColor: color }} aria-hidden="true" />
+          <span className="vial__dot" style={{ backgroundColor: color, ...vialDotStyle(vial.id) }} aria-hidden="true" />
           {vial.name || strings.vials.untitled}
         </h3>
         <span className={`vial__kind vial__kind--${kind}`}>{strings.kinds[kind]}</span>

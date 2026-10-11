@@ -17,6 +17,8 @@ const html = renderToString(
       onSyncNow={() => {}}
       onForget={() => {}}
       syncConflicts={0}
+      readable={false}
+      onToggleReadable={() => {}}
       remindersEnabled={false}
       permission="default"
       nextReminder={null}

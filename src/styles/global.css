@@ -1998,6 +1998,7 @@ body {
 
 .vial__dot {
   display: inline-block;
+  position: relative;
   width: 10px;
   height: 10px;
   margin-right: 7px;
@@ -3333,6 +3334,60 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ==========================================================================
+   Readability mode (opt-in, driven by `data-readable` on <html>)
+
+   Two things change, both for the same reason — the app is used in a hurry,
+   sometimes by people who do not see colour the way the palette assumes:
+
+   1. the whole type scale steps up, and borders get stronger;
+   2. every vial dot gains a stripe pattern at one of four angles, so two vials
+      stay distinguishable without comparing hues.
+   ========================================================================== */
+:root[data-readable='true'] {
+  --fs-micro: 0.8125rem;
+  --fs-xs: 0.875rem;
+  --fs-sm: 0.9375rem;
+  --fs-md: 1rem;
+  --fs-base: 1.0625rem;
+  --fs-lg: 1.1875rem;
+  --fs-xl: 1.4375rem;
+  --fs-2xl: 1.875rem;
+  --border: var(--border-strong);
+}
+
+:root[data-readable='true'] .vial__dot {
+  width: 13px;
+  height: 13px;
+}
+
+/* The non-colour marker: a stripe angle derived from the vial id. */
+:root[data-readable='true'] .vial__dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: repeating-linear-gradient(
+    var(--vial-angle, 45deg),
+    rgb(255 255 255 / 92%) 0 1.5px,
+    transparent 1.5px 4px
+  );
+}
+
+/* ---------- settings toggles ---------- */
+.settings__toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings__toggle-label {
+  user-select: none;
 }
 
 /* ---------- pre-draw check card ---------- */

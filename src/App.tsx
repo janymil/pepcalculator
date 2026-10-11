@@ -73,6 +73,11 @@ export default function App() {
   const [mode, setMode] = useLocalStorage<ModeId>(STORAGE_KEYS.mode, DEFAULT_MODE);
   const [lang, setLang] = useLocalStorage<Lang>(STORAGE_KEYS.lang, detectLang());
   const [theme, setTheme] = useLocalStorage<ThemeName>(STORAGE_KEYS.theme, 'light');
+  /**
+   * Readability mode: larger type, stronger borders and a non-colour marker on
+   * every vial dot. Opt-in, because it costs screen space.
+   */
+  const [readable, setReadable] = useLocalStorage<boolean>(STORAGE_KEYS.readable, false);
   const [peptide, setPeptide] = useLocalStorage<PeptideForm>(
     STORAGE_KEYS.peptide,
     DEFAULT_PEPTIDE_FORM,
@@ -206,13 +211,15 @@ export default function App() {
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.dataset.mode = mode;
+    // Drives the type scale and the vial-dot pattern in `global.css`.
+    root.dataset.readable = readable ? 'true' : 'false';
     root.lang = lang;
     root.style.colorScheme = theme;
 
     // Keep the browser/PWA chrome (status bar) in step with the active theme.
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', strings.theme.themeColor);
-  }, [theme, mode, lang, strings]);
+  }, [theme, mode, lang, strings, readable]);
 
   /*
    * The pages live in the URL hash (`#calendar`), so the browser back button
@@ -655,6 +662,8 @@ export default function App() {
               onSyncNow={() => void runSync()}
               onForget={handleForgetSync}
               syncConflicts={syncConflicts}
+              readable={readable}
+              onToggleReadable={setReadable}
               remindersEnabled={remindersEnabled}
               permission={reminders.permission}
               nextReminder={reminders.next}

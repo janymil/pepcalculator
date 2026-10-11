@@ -392,6 +392,10 @@ export const en: Strings = {
   settings: {
     title: 'Settings',
     subtitle: 'Sync between devices and dose reminders. Everything else stays on this device.',
+    display: 'Display',
+    readable: 'Larger text and extra markers',
+    readableHint:
+      'Steps the whole type scale up and adds a stripe pattern to every vial dot, so two vials never have to be told apart by colour alone.',
   },
   reference: {
     title: 'Reference',

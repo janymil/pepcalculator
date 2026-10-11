@@ -22,6 +22,9 @@ interface SettingsPageProps {
   onForget: () => void;
   /** Vials that were edited on two devices since the last sync. */
   syncConflicts: number;
+  /** --- display --- */
+  readable: boolean;
+  onToggleReadable: (enabled: boolean) => void;
   // --- dose reminders ---
   remindersEnabled: boolean;
   permission: NotificationPermissionState;
@@ -56,6 +59,8 @@ export function SettingsPage({
   onSyncNow,
   onForget,
   syncConflicts,
+  readable,
+  onToggleReadable,
   remindersEnabled,
   permission,
   nextReminder,
@@ -102,6 +107,19 @@ export function SettingsPage({
           {interpolate(strings.sync.conflicts, { count: syncConflicts })}
         </p>
       ) : null}
+
+      <section className="card">
+        <h2 className="card__title">{strings.settings.display}</h2>
+        <label className="settings__toggle">
+          <input
+            type="checkbox"
+            checked={readable}
+            onChange={(event) => onToggleReadable(event.target.checked)}
+          />
+          <span className="settings__toggle-label">{strings.settings.readable}</span>
+        </label>
+        <p className="field__hint">{strings.settings.readableHint}</p>
+      </section>
 
       <RemindersPanel
         enabled={remindersEnabled}

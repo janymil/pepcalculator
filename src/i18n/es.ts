@@ -396,6 +396,10 @@ export const es: Strings = {
     title: 'Ajustes',
     subtitle:
       'Sincronización entre dispositivos y recordatorios de dosis. Todo lo demás se queda en este dispositivo.',
+    display: 'Pantalla',
+    readable: 'Texto más grande y marcas extra',
+    readableHint:
+      'Aumenta toda la escala tipográfica y añade rayas a cada punto de vial, para que nunca haya que distinguir dos viales solo por el color.',
   },
   reference: {
     title: 'Referencia',

@@ -14,7 +14,7 @@ import { addDays, addMonths, toIsoDate } from '../lib/dates';
 import { fmt, formatDate, monthLabel, weekdayShort } from '../lib/format';
 import { normalizeTimes, planEndDate } from '../lib/schedule';
 import { filterVialsByKind, type KindFilter, type SavedVial } from '../lib/vials';
-import { vialColor } from '../lib/vialColors';
+import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { Icon } from './Icon';
 import { KindFilterControl } from './KindFilterControl';
 
@@ -132,7 +132,7 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
               <li className="agenda__legend-item" key={vial.id}>
                 <span
                   className="agenda__dot"
-                  style={{ backgroundColor: vialColor(vial.id) }}
+                  style={{ backgroundColor: vialColor(vial.id), ...vialDotStyle(vial.id) }}
                   aria-hidden="true"
                 />
                 {vial.name || strings.vials.untitled}
@@ -216,7 +216,7 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
                             <span
                               className="agenda__pill"
                               key={`${entry.vialId}-${entry.time}`}
-                              style={{ backgroundColor: vialColor(entry.vialId) }}
+                              style={{ backgroundColor: vialColor(entry.vialId), ...vialDotStyle(entry.vialId) }}
                               title={`${entry.time} · ${entry.name || strings.vials.untitled}`}
                             >
                               {pillLabel(entry.name, strings.vials.untitled)}
@@ -264,7 +264,7 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
                         <span className="agenda__time">{entry.time}</span>
                         <span
                           className="agenda__dot"
-                          style={{ backgroundColor: vialColor(entry.vialId) }}
+                          style={{ backgroundColor: vialColor(entry.vialId), ...vialDotStyle(entry.vialId) }}
                           aria-hidden="true"
                         />
                         <span className="agenda__name">{entry.name || strings.vials.untitled}</span>
@@ -307,7 +307,7 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
                           >
                             <span
                               className="agenda__dot"
-                              style={{ backgroundColor: vialColor(entry.vialId) }}
+                              style={{ backgroundColor: vialColor(entry.vialId), ...vialDotStyle(entry.vialId) }}
                               aria-hidden="true"
                             />
                             {entry.time} · {entry.name || strings.vials.untitled}
@@ -330,7 +330,7 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
                       <span className="agenda__planname">
                         <span
                           className="agenda__dot"
-                          style={{ backgroundColor: vialColor(vial.id) }}
+                          style={{ backgroundColor: vialColor(vial.id), ...vialDotStyle(vial.id) }}
                           aria-hidden="true"
                         />
                         {vial.name || strings.vials.untitled}

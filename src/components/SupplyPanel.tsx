@@ -2,7 +2,7 @@ import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { formatDate } from '../lib/format';
 import type { SupplySummary } from '../lib/supply';
-import { vialColor } from '../lib/vialColors';
+import { vialColor, vialDotStyle } from '../lib/vialColors';
 
 interface SupplyPanelProps {
   /** The projection for the currently selected person's stack. */
@@ -64,7 +64,7 @@ export function SupplyPanel({ summary }: SupplyPanelProps) {
             <li key={row.vial.id}>
               <span
                 className="vial__dot"
-                style={{ backgroundColor: vialColor(row.vial.id) }}
+                style={{ backgroundColor: vialColor(row.vial.id), ...vialDotStyle(row.vial.id) }}
                 aria-hidden="true"
               />
               <span className="supply__name">{row.vial.name || strings.vials.untitled}</span>
@@ -82,7 +82,7 @@ export function SupplyPanel({ summary }: SupplyPanelProps) {
             <li key={row.vial.id}>
               <span
                 className="vial__dot"
-                style={{ backgroundColor: vialColor(row.vial.id) }}
+                style={{ backgroundColor: vialColor(row.vial.id), ...vialDotStyle(row.vial.id) }}
                 aria-hidden="true"
               />
               <span className="supply__name">{row.vial.name || strings.vials.untitled}</span>

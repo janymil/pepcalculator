@@ -39,3 +39,24 @@ export function vialColorIndex(id: string): number {
 export function vialColor(id: string): string {
   return VIAL_COLORS[vialColorIndex(id)];
 }
+
+/**
+ * The four stripe angles used as a **non-colour** marker, so vials stay
+ * distinguishable without telling similar hues apart. Four is the point: more
+ * would just be noise at the 10px size these are drawn at.
+ */
+export const VIAL_ANGLES = [0, 45, 90, 135] as const;
+
+/** Which stripe angle marks this vial. */
+export function vialPatternAngle(id: string): number {
+  return VIAL_ANGLES[vialColorIndex(id) % VIAL_ANGLES.length];
+}
+
+/**
+ * Inline style for a vial dot: the colour, plus the stripe angle. The stripes
+ * themselves only become visible in readability mode (see `global.css`), but the
+ * value is always present so the two can never drift apart.
+ */
+export function vialDotStyle(id: string): Record<string, string> {
+  return { '--vial-angle': `${vialPatternAngle(id)}deg` };
+}

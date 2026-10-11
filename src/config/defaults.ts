@@ -66,6 +66,7 @@ export const STORAGE_KEYS = {
   syringe: 'pepcalc.v1.syringe',
   lang: 'pepcalc.v1.lang',
   theme: 'pepcalc.v1.theme',
+  readable: 'pepcalc.v1.readable',
   mode: 'pepcalc.v1.mode',
   vials: 'pepcalc.v1.vials',
   hormone: 'pepcalc.v1.hormone',

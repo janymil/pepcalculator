@@ -394,6 +394,10 @@ export const sk: Strings = {
     title: 'Nastavenia',
     subtitle:
       'Synchronizácia medzi zariadeniami a pripomienky dávok. Všetko ostatné zostáva v tomto zariadení.',
+    display: 'Zobrazenie',
+    readable: 'Väčšie písmo a ďalšie označenia',
+    readableHint:
+      'Zväčší celú škálu písma a pridá na každú bodku fľaštičky prúžky, aby sa dve fľaštičky nikdy nemuseli rozlišovať len podľa farby.',
   },
   reference: {
     title: 'Prehľad',
