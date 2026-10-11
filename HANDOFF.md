@@ -516,12 +516,14 @@ the cross-references stay stable.
   Reference/Guide pages carry those, or a second, longer cut needs 3–4 more scenes (the cheapest
   candidates: two workflow scenes for IU and pens, one for "what else is in it"). Decide before
   recording any voice-over, because the script has to match the scene list.
-- **Audio for the explainer is undecided.** See "Audio: what is possible" in `demo/storyboard.md`
-  for the three routes (synthesised music, browser TTS, a real recording) and what each costs.
-  Nothing is implemented — the video is silent, including its exported `.webm`, and that is
-  deliberate rather than an oversight. The music route is the only one that stays asset-free, and
-  it is the only one whose quality **cannot be verified in this environment** (no audio output), so
-  whoever picks it up should listen on a real device before shipping.
+- **Audio for the explainer: decided — no audio.** Asked and answered: the video stays silent,
+  including its exported `.webm`, and that is deliberate rather than an oversight. The written copy
+  carries the meaning, so it works muted, in all three languages and as a waiting-room loop.
+  `demo/storyboard.md` → "Audio: what is possible" keeps the three routes (synthesised music,
+  browser TTS, a real recording) with their costs, for whoever wants one later — **none is
+  half-built**. If music is ever picked up: it stays asset-free, it needs a click to start (autoplay
+  policy), and its quality **cannot be verified in this environment** (no audio output), so audition
+  it on a real device before shipping.
 
 ## How to extend safely
 

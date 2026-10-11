@@ -130,5 +130,7 @@ in increasing cost:
 | **Voice-over, browser TTS** (`speechSynthesis`) | The narration in this file, already written in 3 languages | **No** — `speechSynthesis` cannot be routed into WebAudio, so it would be live-only | Zero assets, but the voice, accent and quality are whatever the device offers; it also cannot be scrubbed with the timeline |
 | **Voice-over, a real recording** | A human reading the script below, plus one audio file per language (~1–3 MB, committed) | **Yes** — decoded into an `AudioBuffer`, started with the timeline, and mixed into the recorder | The only route that sounds professional, and the only one right for YouTube/social. The script is already timed to the scene table above |
 
-Until one of those is chosen, the file stays deliberately silent, and the written copy in the
-video stands on its own — which is also why it works as a looping clinic-waiting-room clip.
+**Decided: no audio — keep it that way unless asked.** The video stays deliberately silent, and the
+written copy stands on its own, which is also why it works as a looping clinic-waiting-room clip and
+why there is nothing to license, download or commit. The three routes above are kept for whoever
+wants one later; **none of them is half-built, so there is no pending work here.**
