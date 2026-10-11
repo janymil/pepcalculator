@@ -61,3 +61,7 @@ in a secure context, and the code should never travel in clear text.
   unrecoverable. That is exactly why the app also offers a JSON **backup**.
 - A stolen `sync.sqlite` exposes every payload, because the hash is a lookup key
   rather than a slow password hash. Encrypt the disk / keep the file private.
+- Deletions are **soft**: the app sends a tombstone so the removal reaches your
+  other devices, then sweeps tombstones older than 90 days (`TOMBSTONE_TTL_DAYS`
+  in `src/lib/vials.ts`). The server stores whatever payload it is handed and
+  never prunes rows itself.

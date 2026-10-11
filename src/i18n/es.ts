@@ -188,6 +188,8 @@ export const es: Strings = {
     lastSynced: 'Última sincronización: {when}',
     okUpToDate: 'Todo al día',
     okPulled: 'Viales combinados desde tus otros dispositivos',
+    retention:
+      'Al eliminar un vial queda una marca oculta durante {days} días para que la eliminación llegue a tus otros dispositivos; después se borra automáticamente.',
     errorInvalidCode: 'Ese código no parece correcto.',
     errorNetwork: 'No se pudo contactar con el servidor.',
     errorServer: 'El servidor devolvió un error.',

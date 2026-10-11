@@ -188,6 +188,8 @@ export const en: Strings = {
     lastSynced: 'Last synced {when}',
     okUpToDate: 'Up to date',
     okPulled: 'Merged vials from your other devices',
+    retention:
+      'Deleting a vial leaves a hidden marker for {days} days so the removal can reach your other devices, then it is cleaned up automatically.',
     errorInvalidCode: 'That code does not look right.',
     errorNetwork: 'Could not reach the sync server.',
     errorServer: 'The sync server returned an error.',

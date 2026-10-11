@@ -1428,6 +1428,13 @@ body {
   color: var(--danger);
 }
 
+.sync__note {
+  margin: 0;
+  max-width: 74ch;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
 /* ---------- dose reminders ---------- */
 .reminders {
   display: flex;

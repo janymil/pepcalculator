@@ -7,6 +7,7 @@ import {
   isValidSyncCode,
   type SyncFailure,
 } from '../lib/sync';
+import { TOMBSTONE_TTL_DAYS } from '../lib/vials';
 
 interface SyncPanelProps {
   /** Empty string means "not syncing on this device". */
@@ -164,6 +165,10 @@ export function SyncPanel({
           <p className="sync__warning">{strings.sync.warning}</p>
         </>
       )}
+
+      <p className="sync__note">
+        {interpolate(strings.sync.retention, { days: TOMBSTONE_TTL_DAYS })}
+      </p>
     </section>
   );
 }

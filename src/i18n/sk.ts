@@ -188,6 +188,8 @@ export const sk: Strings = {
     lastSynced: 'Naposledy synchronizované {when}',
     okUpToDate: 'Aktuálne',
     okPulled: 'Zlúčené fľaštičky z iných zariadení',
+    retention:
+      'Vymazaná fľaštička po sebe zanechá skrytú značku {days} dní, aby sa odstránenie dostalo do ostatných zariadení, a potom sa automaticky vyčistí.',
     errorInvalidCode: 'Tento kód nevyzerá správne.',
     errorNetwork: 'Nepodarilo sa pripojiť k serveru.',
     errorServer: 'Server vrátil chybu.',

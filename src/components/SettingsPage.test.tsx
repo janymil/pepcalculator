@@ -33,4 +33,9 @@ describe('SettingsPage (server render smoke test)', () => {
     expect(html).toContain('sync-title');
     expect(html).toContain('reminders-title');
   });
+
+  it('explains how long deleted vials are remembered before the sweep', () => {
+    // `{days}` must be interpolated with the tombstone retention window.
+    expect(html).toContain('hidden marker for 90 days');
+  });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays, daysBetween, toIsoDate } from './dates';
 import {
   BUD_DAYS,
+  TOMBSTONE_TTL_DAYS,
   canSaveVial,
   createVialId,
   filterVialsByKind,
@@ -9,6 +10,7 @@ import {
   looksLikeSavedVial,
   mergeVials,
   normalizeSavedVial,
+  purgeTombstones,
   tombstoneVial,
   vialKind,
   vialStatus,
@@ -258,6 +260,46 @@ describe('anabolic vials', () => {
   it('normalizes the kind when reading old or hand-edited data', () => {
     expect(normalizeSavedVial({ ...makeAnabolic(), kind: undefined }).kind).toBe('peptide');
     expect(normalizeSavedVial(makeAnabolic()).kind).toBe('anabolic');
+  });
+});
+
+describe('purgeTombstones', () => {
+  const today = '2026-06-01';
+
+  it('keeps every live vial', () => {
+    const list = purgeTombstones([makeVial(), makeAnabolic({ id: 'a1' })], today);
+    expect(list.map((vial) => vial.id)).toEqual(['v1', 'a1']);
+  });
+
+  it('keeps a fresh tombstone so the deletion can still reach other devices', () => {
+    const fresh = makeVial({ deletedAt: '2026-05-31T09:30:00.000Z' });
+    expect(purgeTombstones([fresh], today).map((vial) => vial.id)).toEqual(['v1']);
+  });
+
+  it('drops a tombstone once it is older than the default window', () => {
+    // 2026-03-03 -> 2026-06-01 is exactly 90 days, i.e. past the window.
+    const old = makeVial({ deletedAt: '2026-03-03T00:00:00.000Z' });
+    expect(purgeTombstones([old], today)).toEqual([]);
+  });
+
+  it('keeps a tombstone on the last day of the window', () => {
+    const lastDay = makeVial({ deletedAt: '2026-03-04T00:00:00.000Z' }); // 89 days
+    expect(purgeTombstones([lastDay], today)).toHaveLength(1);
+  });
+
+  it('honours a custom window', () => {
+    const grave = makeVial({ deletedAt: '2026-05-31T00:00:00.000Z' }); // 1 day old
+    expect(purgeTombstones([grave], today, 1)).toEqual([]);
+    expect(purgeTombstones([grave], today, 2)).toHaveLength(1);
+  });
+
+  it('keeps an un-dateable tombstone rather than losing the deletion', () => {
+    const broken = makeVial({ deletedAt: 'whenever' });
+    expect(purgeTombstones([broken], today)).toHaveLength(1);
+  });
+
+  it('defaults to a 90-day retention window', () => {
+    expect(TOMBSTONE_TTL_DAYS).toBe(90);
   });
 });
 

@@ -34,6 +34,7 @@ import {
   createVialId,
   liveVials,
   mergeVials,
+  purgeTombstones,
   tombstoneVial,
   vialKind,
   type SavedVial,
@@ -147,6 +148,21 @@ export default function App() {
   };
 
   /*
+   * Sweep away deletion tombstones that are too old to be useful. A tombstone
+   * has to outlive the longest gap between your devices syncing (see
+   * `purgeTombstones`), but keeping them forever would grow every payload — so
+   * run the sweep on open. Synced copies get the same treatment after a merge.
+   */
+  useEffect(() => {
+    setSavedVials((previous) => {
+      const swept = purgeTombstones(previous);
+      return swept.length === previous.length ? previous : swept;
+    });
+    // Runs once, against whatever storage had. The setter is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /*
    * When the app opens with a sync code, pull once so this device catches up.
    * Later syncs are manual — that keeps the network completely out of the way
    * while you are actually using the calculator.
@@ -161,7 +177,10 @@ export default function App() {
       if (cancelled) return;
       setSyncing(false);
       if (outcome.ok) {
-        setSavedVials(outcome.vials);
+        // Sweep old tombstones, then keep `lastPushedRef` on the *unpurged*
+        // merge: the background push sees the difference and re-uploads the
+        // pruned list, so the server converges too.
+        setSavedVials(purgeTombstones(outcome.vials));
         setSyncLast(outcome.updatedAt);
         lastPushedRef.current = vialsSnapshot(outcome.vials);
       } else {
@@ -328,7 +347,7 @@ export default function App() {
     // and stamp them as the newest copies so they win the merge.
     const now = new Date().toISOString();
     const revived = restored.map((vial) => ({ ...vial, deletedAt: undefined, updatedAt: now }));
-    setSavedVials((previous) => mergeVials(previous, revived));
+    setSavedVials((previous) => purgeTombstones(mergeVials(previous, revived)));
   };
 
   const runSync = async () => {
@@ -338,7 +357,8 @@ export default function App() {
     const outcome = await syncWithServer(syncServer, syncCode, savedVials);
     setSyncing(false);
     if (outcome.ok) {
-      setSavedVials(outcome.vials);
+      // Same as the on-open sync: prune, then let the background push re-upload.
+      setSavedVials(purgeTombstones(outcome.vials));
       setSyncLast(outcome.updatedAt);
       lastPushedRef.current = vialsSnapshot(outcome.vials);
     } else {

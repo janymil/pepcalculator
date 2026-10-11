@@ -157,6 +157,11 @@ export interface Strings {
     lastSynced: string;
     okUpToDate: string;
     okPulled: string;
+    /**
+     * Explains how long a deleted vial is remembered before the tombstone is
+     * swept away. Placeholder: `{days}`.
+     */
+    retention: string;
     errorInvalidCode: string;
     errorNetwork: string;
     errorServer: string;

@@ -32,7 +32,7 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Saved vials** — save a reconstitution (name, amounts, date) and the app remembers the ratio forever, so it can always show **"draw X units"** — no more guessing whether that vial was mixed with 1 mL or 2 mL. Includes the **28-day expiry** and one-click reload into the calculator.
 - **Dose calendar & plan** — when you save a vial, tell the app **how many times a day**, at **which times**, on **which days** and **for how long** (4/8/12 weeks, 3/4 months, ongoing). It then works everything out by itself: a month **calendar**, the **next dose**, **doses done / left**, and **how many vials the whole plan needs**. Nothing to log after an injection.
 - **Backup & restore** — download every vial as a JSON file and merge it back on any device. Because everything lives in the browser, this protects you from cleared cookies (or Safari's 7-day eviction) and doubles as data portability.
-- **Sync between devices (recovery code)** — no email, no password. The app generates one long random code; type it on your phone and the same vials come across. Runs against the tiny included Node server (`npm run server`). Edits push **automatically** about 1.5 s after you make them, and **deletions travel too** thanks to soft-delete tombstones.
+- **Sync between devices (recovery code)** — no email, no password. The app generates one long random code; type it on your phone and the same vials come across. Runs against the tiny included Node server (`npm run server`). Edits push **automatically** about 1.5 s after you make them, and **deletions travel too** thanks to soft-delete tombstones — which are then swept away automatically after 90 days (`TOMBSTONE_TTL_DAYS`), so the stored payload never grows forever.
 - **Installable & offline (PWA)** — add it to your home screen and it runs full-screen with no network. A hand-rolled service worker caches the app shell, so the calculator keeps working with no signal.
 - **Dose reminders** — turn reminders on and the app notifies you at the exact times of your saved plans (derived from the schedule — nothing to log). Reminders fire while the app is open or running in the background; a fully closed app would need a push server, which this offline-first app deliberately does not have.
 - **Calendar page (all peptides at once)** — a second page collects **every** saved plan in one view: a month grid showing **which days** carry a dose (each day lists its peptides as small **colour-coded pills**, with the hours), the **hours** for the selected day with the amount to draw, a "coming up" strip, and a summary of each plan (repeat pattern, times and end date). Each peptide keeps its own colour everywhere, and **only today** gets a coloured background. Lives in the URL (`#calendar`) so the browser back button works.
@@ -77,7 +77,7 @@ src/
 ├─ lib/
 │  ├─ calc.ts            # pure calculation engine (no React, no DOM)
 │  ├─ calc.test.ts       # unit tests for the engine
-│  ├─ vials.ts           # saved-vial logic: kind, doses left, volume left, expiry
+│  ├─ vials.ts           # saved-vial logic: kind, doses, expiry, merge, tombstone purge
 │  ├─ vialColors.ts      # stable colour per vial id (calendar pills, cards)
 │  ├─ schedule.ts        # dose plan: times, repeat, duration, calendar, next dose
 │  ├─ backup.ts          # export / import saved vials as JSON

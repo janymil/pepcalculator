@@ -242,6 +242,38 @@ export function liveVials(vials: SavedVial[]): SavedVial[] {
 }
 
 /**
+ * How long a deletion tombstone is kept before it can be swept away.
+ *
+ * A tombstone is the **only** record that a vial was deleted, and merges are
+ * additive ("union by id, newest wins"). So a device that has been offline for
+ * longer than this window may still hold the live vial and would push it back,
+ * resurrecting the deletion. Ninety days is far longer than any realistic gap
+ * between two devices syncing, while keeping the payload from growing forever.
+ * Shorten it only if you accept that trade-off.
+ */
+export const TOMBSTONE_TTL_DAYS = 90;
+
+/**
+ * Drops tombstones older than `ttlDays` (90 by default) — the only place a
+ * saved vial is ever really removed; everything else soft-deletes. Live vials
+ * and fresh tombstones pass through untouched, and a tombstone whose
+ * `deletedAt` cannot be dated is kept, because losing a deletion is worse than
+ * keeping it a while longer.
+ */
+export function purgeTombstones(
+  vials: SavedVial[],
+  todayIso: string = toIsoDate(new Date()),
+  ttlDays: number = TOMBSTONE_TTL_DAYS,
+): SavedVial[] {
+  return vials.filter((vial) => {
+    if (!vial.deletedAt) return true;
+    // `deletedAt` is a full ISO timestamp; only its date part matters here.
+    if (!/^\d{4}-\d{2}-\d{2}/.test(vial.deletedAt)) return true;
+    return daysBetween(vial.deletedAt.slice(0, 10), todayIso) < ttlDays;
+  });
+}
+
+/**
  * Soft-deletes a vial: keeps the record but marks it deleted, so the removal
  * reaches your other devices on the next sync. Stamping `updatedAt` makes the
  * tombstone win over the still-live copies elsewhere.

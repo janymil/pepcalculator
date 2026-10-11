@@ -33,8 +33,8 @@ git init && git add -A && git commit -m "Initial commit"
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **178 passing / 17 files** |
-| Build | `npm run build` | ✅ 58 modules, ~305 kB JS / 93 kB gzip |
+| Tests | `npm test` | ✅ **186 passing / 17 files** |
+| Build | `npm run build` | ✅ 58 modules, ~306 kB JS / 94 kB gzip |
 
 ## Run it
 
@@ -73,7 +73,8 @@ Ports are pinned in `vite.config.ts` (dev **8137**, preview **8138**, `strictPor
 src/
 ├─ lib/                  ← ALL business logic, pure + unit-tested (no React, no DOM)
 │  ├─ calc.ts            dose engine: peptides (vial+water) & anabolics (mg/mL)
-│  ├─ vials.ts           saved-vial model: kind (peptide/anabolic), status, expiry, merge
+│  ├─ vials.ts           saved-vial model: kind (peptide/anabolic), status, expiry, merge,
+│  │                     tombstone purge
 │  ├─ vialColors.ts      stable colour per vial id (calendar pills, legend, cards)
 │  ├─ schedule.ts        dose plan: times/day, weekday pattern, duration, calendar maths
 │  ├─ dates.ts           tiny yyyy-mm-dd helpers (+ addMonths, startOfWeek)
@@ -198,6 +199,11 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 4. **Sync merges and never loses data.** Union by id, newest `updatedAt` wins. Deletions
    travel as **tombstones** (`deletedAt` + a fresh `updatedAt`), so they take part in the same
    comparison. `liveVials()` hides them from the UI; they stay in state and in sync payloads.
+   Tombstones have a **90-day TTL** (`TOMBSTONE_TTL_DAYS`): `purgeTombstones()` sweeps older
+   ones on open and after every merge, then the background push re-uploads the pruned list so
+   the server converges. Never shorten the window below the longest realistic gap between two
+   of your devices syncing — an offline device would push the live vial back and resurrect the
+   deletion.
 5. **The sync server never sees the code** — only `SHA-256(salt + code)`, 64 hex chars.
    The code IS the credential: no email, no password, **no recovery** → hence the JSON backup.
 6. **Local-first, always.** The calculator must work with no network and no account. Sync is
@@ -256,6 +262,10 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 - **Oils have no expiry.** `vialStatus().expiresOn` / `daysUntilExpiry` are `null` for
   anabolics, so any badge/meta code must handle `null` (see `VialCard`). Don't reintroduce a
   blanket `+ BUD_DAYS`.
+- **Tombstones expire after 90 days.** `purgeTombstones()` (`TOMBSTONE_TTL_DAYS`) runs on open
+  and after every merge, and it is the **only** place a saved vial is really removed. Shortening
+  the window can resurrect a deletion from a device that stayed offline longer than the window —
+  that is the documented trade-off, not a bug.
 - **Day cells carry pills, not a background.** In `AgendaPage` only `is-today` paints a
   background; the other dose days use the `has-doses` class plus coloured pills. The badge for
   anabolic vials is `vial__kind--anabolic`.
@@ -271,22 +281,21 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 
 **Done:** **`git init` + first commit**, **PWA + service worker** (installable, offline shell,
 dose reminders), the **Calendar page / global agenda**, the **four-page split**
-(Calculator · My vials · Calendar · Settings), and **saved anabolics** with kind filters and
-per-vial calendar colours.
+(Calculator · My vials · Calendar · Settings), **saved anabolics** with kind filters and
+per-vial calendar colours, and the **tombstone purge** (90-day retention, swept on open and
+after every merge, with the trade-off documented).
 
-1. **Tombstone purge** — tombstones accumulate forever. Needs a "delete once older than N days"
-   sweep, with the trade-off documented.
-2. **Conflict awareness** — merges are silent last-write-wins; consider surfacing
+1. **Conflict awareness** — merges are silent last-write-wins; consider surfacing
    "changed on another device".
-3. **Server hardening** — rate limiting, `ALLOWED_ORIGIN` locked to a real origin, request logs.
-4. **Deploy** — Dockerfile for the server + host config; static app to any HTTPS host.
-5. **True background reminders** — the current timer only fires while the app is alive. A push
+2. **Server hardening** — rate limiting, `ALLOWED_ORIGIN` locked to a real origin, request logs.
+3. **Deploy** — Dockerfile for the server + host config; static app to any HTTPS host.
+4. **True background reminders** — the current timer only fires while the app is alive. A push
    server (or Notification Triggers, where supported) would be needed for a closed app.
-6. **Print / export** — a physical vial label showing the expiry date, and a protocol PDF. The
+5. **Print / export** — a physical vial label showing the expiry date, and a protocol PDF. The
    Calendar page is the natural place to hang an "export the protocol" button.
-7. **Persist the kind filters** — the All/Peptides/Anabolics choice is component state today; a
+6. **Persist the kind filters** — the All/Peptides/Anabolics choice is component state today; a
    storage key would remember it between visits.
-8. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
+7. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
    Recovery-code sync was chosen **deliberately** instead of email/password.
 
 ## How to extend safely
