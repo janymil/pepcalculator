@@ -143,7 +143,7 @@ npm run icons      # regenerate the PWA icons in public/icons/ (only if you chan
 
 ### Deploying
 
-1. **Server:** host `server/server.mjs` on anything running Node 22+ (Render, Railway, Fly, a VPS). Set `PORT`, `DB_PATH` **on a persistent volume**, and `ALLOWED_ORIGIN` to your app's URL.
+1. **Server:** host `server/server.mjs` on anything running Node 22+ (Render, Railway, Fly, a VPS) — or use the included **`Dockerfile` / `docker-compose.yml`**, which is `node:22-alpine` plus two files with no dependency install. Set `PORT`, `DB_PATH` **on a persistent volume**, and `ALLOWED_ORIGIN` to your app's URL (a comma-separated list works). `server/README.md` documents the rest: `RATE_LIMIT`, `RATE_WINDOW_MS`, `TRUST_PROXY`, `LOG_REQUESTS`.
 2. **App:** host `dist/` on any HTTPS host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). HTTPS is required for sync, because `crypto.subtle` only exists in a secure context.
 3. **Point the app at the server:** copy `.env.example` to `.env`, set `VITE_SYNC_SERVER=https://your-sync-host`, then `npm run build`. The URL is baked into the bundle so new devices pick it up with no typing.
 

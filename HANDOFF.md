@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **420 passing / 38 files** |
-| Build | `npm run build` | ✅ ~413 kB JS / 126 kB gzip · ~52 kB CSS |
+| Tests | `npm test` | ✅ **467 passing / 41 files** (includes the sync server) |
+| Build | `npm run build` | ✅ ~420 kB JS / 128 kB gzip · ~54 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames · timeline cap held |
 
 ## Run it
@@ -97,6 +97,7 @@ src/
 │  ├─ reminders.ts       pure: next dose across all plans (used by notifications)
 │  ├─ agenda.ts          pure: ALL plans by day & hour (the Calendar page)
 │  ├─ today.ts           pure: today's doses + the next dose (the Today card)
+│  ├─ session.ts         pure: doses that share a date AND a time — a sitting, not a line
 │  ├─ supply.ts          pure: run-out dates, expiry waste, how many vials to reorder
 │  ├─ sites.ts           pure: the injection-site rotation, derived from the dose number
 │  ├─ measure.ts         pure: the body-measurement log (points, change since the first entry)
@@ -549,9 +550,32 @@ the round described under "Open items" (see the entries for sync conflicts, IU, 
 the protocol plot, readability mode, the draw check and the converter) — the numbers are kept so
 the cross-references stay stable. **7** (multi-compound sessions) shipped later, as `lib/session.ts`
 plus the "also at this time" block on the Today card and the `also` list on the check card. Still
-unbuilt from the numbered list: **2** (server hardening), **3** (deploy), **4** (true background
-reminders) and **12** (QR pairing), each for the reason given below.
+unbuilt from the numbered list: **4** (true background reminders) and **12** (QR
+pairing), each for the reason given below. **2** (server hardening) and **3**
+(deploy) shipped afterwards — see their entries under "Still open".
 
+- **Server hardening (roadmap 2) — shipped.** `server/guard.mjs` holds every
+  decision as a pure function (origin list, sliding-window rate limiter with a
+  sweep, `clientKey` behind `TRUST_PROXY`, log redaction); `server/server.mjs` is
+  now a `createSyncServer(config)` factory plus a `readConfig(env)`, and only
+  starts a listener when run as a program — which is what makes the HTTP tests
+  possible. `ALLOWED_ORIGIN` accepts a list and a foreign origin gets a **403**
+  instead of a CORS-less response; `/api/sync` is rate limited per address (429 +
+  `Retry-After`, `X-RateLimit-Remaining`); every response is `no-store`; every
+  request is one log line with the sync key shortened to 8 characters. Verified
+  both ways: `server/guard.test.mjs` (unit) and `server/server.test.mjs` (real
+  HTTP on an ephemeral port with an in-memory database), plus a manual run against
+  `PORT=8899` that produced `403`, `429` and the log lines. **Test-harness trap
+  worth remembering:** `server.close()` waits for open connections, and `fetch`
+  keeps its sockets alive, so teardown must call `closeAllConnections()` first —
+  otherwise every server test times out at Node's 5 s keep-alive instead of
+  failing honestly.
+- **Deploy (roadmap 3) — shipped as files, unbuilt here.** `Dockerfile`
+  (`node:22-alpine` + two files, no install step because the server is
+  zero-dependency), `.dockerignore`, and `docker-compose.yml` that binds to
+  loopback and expects a TLS reverse proxy. **Not verified by building**: there is
+  no Docker on this machine, so the image is written and reviewed, not run. The
+  server-run half *is* verified (see above).
 - **QR pairing** — deliberately **not shipped** in this round. It needs a full QR encoder
   (versions, error correction, masking, Reed–Solomon) and there is **no decoder available in this
   environment to verify the output against**, so a produced symbol could not be checked by

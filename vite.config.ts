@@ -24,7 +24,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}'],
+    // The app's pure logic, plus the sync server's guards and HTTP behaviour.
+    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.mjs'],
   },
 });
 

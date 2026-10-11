@@ -1,0 +1,14 @@
+# Everything the sync image must not carry. The service copies only two files, but
+# this keeps a stray `docker build .` from packaging a database or a `.env`.
+node_modules
+dist
+.git
+.gitignore
+server/data
+.env
+*.log
+HANDOFF.md
+PROPOSAL-glp1-companion.md
+demo
+public
+src

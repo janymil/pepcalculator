@@ -1,0 +1,28 @@
+# The sync server, as one service with its database on a named volume.
+#
+#   docker compose up -d
+#
+# `ALLOWED_ORIGIN` must be the exact origin the app is served from (scheme and
+# host, no trailing slash) — that list is the whole point of the CORS guard. Put
+# it behind a reverse proxy that terminates TLS: the browser only exposes
+# `crypto.subtle` in a secure context, and a sync code must never travel in clear.
+services:
+  sync:
+    build: .
+    image: pepcalculator-sync
+    restart: unless-stopped
+    ports:
+      # Bound to loopback: the reverse proxy publishes it, not the whole internet.
+      - '127.0.0.1:8787:8787'
+    environment:
+      ALLOWED_ORIGIN: https://your-app.example
+      RATE_LIMIT: '240'
+      RATE_WINDOW_MS: '60000'
+      # Only behind a proxy you control, which overwrites X-Forwarded-For.
+      TRUST_PROXY: '1'
+      LOG_REQUESTS: '1'
+    volumes:
+      - sync-data:/data
+
+volumes:
+  sync-data:
