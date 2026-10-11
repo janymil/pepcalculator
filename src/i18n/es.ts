@@ -190,6 +190,7 @@ export const es: Strings = {
     costPerMonth: 'Coste al mes',
     ratioMismatch:
       'Otro vial con este nombre está mezclado de otra forma — comprueba de cuál estás extrayendo.',
+    phases: 'Pasos de dosis',
     details: 'Ver detalles',
     search: 'Buscar viales',
     sortLabel: 'Ordenar',
@@ -234,6 +235,13 @@ export const es: Strings = {
     viewDay: 'Día',
     noDose: 'No hay dosis programada este día',
     earlier: 'Antes',
+    titration: 'Subir la dosis por pasos',
+    titrationHint:
+      'Cada paso mantiene su dosis un número de semanas y luego empieza el siguiente. El último paso dura hasta el final del plan.',
+    phaseWeeks: 'Semanas',
+    phaseDose: 'Dosis',
+    phaseAdd: 'Añadir paso',
+    phaseRemove: 'Quitar este paso',
   },
   edit: {
     title: 'Editar vial',

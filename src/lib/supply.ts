@@ -12,15 +12,15 @@
 
 import { addDays, daysBetween } from './dates';
 import { isLowStock } from './cost';
+import { toBase } from './calc';
 import {
   countDoseDays,
-  elapsedDoses,
+  phaseDoseOn,
   planEndDate,
   timesOnDay,
   timesPerDay,
-  type VialSchedule,
 } from './schedule';
-import { liveVials, vialStatus, type SavedVial } from './vials';
+import { liveVials, vialStatus, type SavedVial, type VialStatus } from './vials';
 
 /** A vial with this many doses or fewer reads as "running low". */
 export const LOW_DOSES = 3;
@@ -33,8 +33,12 @@ const RUNOUT_HORIZON_DAYS = 4000;
 
 export interface VialSupply {
   vial: SavedVial;
-  /** Doses still in the vial. */
+  /** Injections left at the *current* step's dose. */
   dosesLeft: number;
+  /** The dose one injection draws, in base units (phase-aware). */
+  doseBase: number;
+  /** Base units still in the vial (mg or IU). */
+  remainingBase: number;
   volumeLeftMl: number;
   /** Percentage of the vial still there, 0..100. */
   percentLeft: number;
@@ -70,21 +74,66 @@ export interface SupplySummary {
 }
 
 /**
- * The date the last dose leaves the vial, walking the schedule forward from
- * today. `dosesLeft <= 0` means the vial is already empty, which we report as
- * *today*. Returns null when the plan ends before the vial is used up, because
- * then there is nothing to run out of.
+ * The dose drawn for one injection on `iso`: the titration step's dose when the
+ * plan is stepping up, otherwise the vial's own dose. Always in base units.
+ */
+function doseOnDay(vial: SavedVial, iso: string, status: VialStatus): number {
+  const phased = vial.schedule ? phaseDoseOn(vial.schedule, iso) : null;
+  return phased === null ? status.doseBase : toBase(phased, vial.doseUnit);
+}
+
+/** Everything dissolved in the vial, in base units (mg or IU). */
+function totalBaseOf(status: VialStatus): number {
+  return status.concentrationPerMl * status.volumeTotalMl;
+}
+
+/**
+ * How much has already been drawn: every scheduled dose up to yesterday, plus
+ * the times of today that have already passed.
+ */
+function usedDose(vial: SavedVial, status: VialStatus, todayIso: string, nowTime: string): number {
+  const schedule = vial.schedule;
+  // Without a plan we can only trust the running count.
+  if (!schedule) return status.dosesTaken * status.doseBase;
+
+  let used = 0;
+  let cursor = schedule.startsOn;
+  for (let day = 0; day < RUNOUT_HORIZON_DAYS && cursor < todayIso; day += 1) {
+    used += timesOnDay(schedule, cursor).length * doseOnDay(vial, cursor, status);
+    cursor = addDays(cursor, 1);
+  }
+  for (const time of timesOnDay(schedule, todayIso)) {
+    if (time < nowTime) used += doseOnDay(vial, todayIso, status);
+  }
+  return used;
+}
+
+/** Base units still in the vial right now. */
+function remainingBase(vial: SavedVial, status: VialStatus, todayIso: string, nowTime: string): number {
+  const drawn = vial.schedule
+    ? usedDose(vial, status, todayIso, nowTime)
+    : status.dosesTaken * status.doseBase;
+  return totalBaseOf(status) - drawn;
+}
+
+/**
+ * The date the last dose leaves the vial, walking the schedule forward and
+ * subtracting what each day *actually* draws. That is what makes a step-up plan
+ * behave correctly: the same vial lasts longer while the dose is still low.
  */
 function runOutDate(
-  schedule: VialSchedule,
+  vial: SavedVial,
+  status: VialStatus,
   todayIso: string,
   nowTime: string,
-  dosesLeft: number,
 ): string | null {
-  if (dosesLeft <= 0) return todayIso;
+  const schedule = vial.schedule;
+  if (!schedule) return null;
+
+  let remaining = remainingBase(vial, status, todayIso, nowTime);
+  if (remaining <= 0) return todayIso;
 
   const end = planEndDate(schedule);
-  let remaining = dosesLeft;
   let cursor = todayIso;
 
   for (let day = 0; day < RUNOUT_HORIZON_DAYS; day += 1) {
@@ -94,49 +143,63 @@ function runOutDate(
     const times = timesOnDay(schedule, cursor).filter(
       (time) => cursor !== todayIso || time >= nowTime,
     );
-    if (times.length >= remaining) return cursor;
+    const drawn = times.length * doseOnDay(vial, cursor, status);
+    if (drawn >= remaining) return cursor;
 
-    remaining -= times.length;
+    remaining -= drawn;
     cursor = addDays(cursor, 1);
   }
 
   return null;
 }
 
-/** Extra full vials this plan needs after `runOutOn`, to reach its last day. */
-function extraVialsFor(vial: SavedVial, runOutOn: string | null, todayIso: string): number {
+/**
+ * Extra full vials the rest of the plan needs after `runOutOn`. Counted in
+ * volume rather than doses, so a later, larger titration step is not
+ * under-estimated.
+ */
+function extraVialsFor(
+  vial: SavedVial,
+  status: VialStatus,
+  runOutOn: string | null,
+): number {
   const schedule = vial.schedule;
   if (!schedule || runOutOn === null) return 0;
 
   const end = planEndDate(schedule);
   if (end === null || runOutOn >= end) return 0;
 
-  const perDay = timesPerDay(schedule);
-  const dosesPerVial = vialStatus(vial, todayIso).totalDoses;
-  if (perDay <= 0 || dosesPerVial <= 0) return 0;
+  const vialVolumeMl = status.volumeTotalMl;
+  if (vialVolumeMl <= 0 || status.concentrationPerMl <= 0) return 0;
 
-  const extraDoses = countDoseDays(schedule, addDays(runOutOn, 1), end) * perDay;
-  return Math.max(0, Math.ceil(extraDoses / dosesPerVial));
+  let volumeMl = 0;
+  let cursor = addDays(runOutOn, 1);
+  for (let day = 0; day < RUNOUT_HORIZON_DAYS && cursor <= end; day += 1) {
+    const times = timesOnDay(schedule, cursor).length;
+    volumeMl += (times * doseOnDay(vial, cursor, status)) / status.concentrationPerMl;
+    cursor = addDays(cursor, 1);
+  }
+  return Math.max(0, Math.ceil(volumeMl / vialVolumeMl));
 }
 
 /** Everything the UI needs to talk about one vial's supply. */
 export function vialSupply(vial: SavedVial, todayIso: string, nowTime: string): VialSupply {
   const status = vialStatus(vial, todayIso);
   const schedule = vial.schedule;
-  const perDay = schedule ? timesPerDay(schedule) : 0;
 
-  // A scheduled vial's progress is *derived* from the plan (see VialCard); the
-  // stored `dosesTaken` only counts for vials the user marks by hand. Using the
-  // stored field here would silently read zero for every planned vial.
-  const dosesDone = schedule ? elapsedDoses(schedule, todayIso, nowTime) : status.dosesTaken;
-  const dosesLeft = schedule
-    ? Math.max(0, status.totalDoses - dosesDone)
-    : status.dosesLeft;
-  const volumeLeftMl = Math.max(0, status.volumeTotalMl - dosesDone * status.volumePerDoseMl);
-  const percentLeft = status.volumeTotalMl > 0 ? (volumeLeftMl / status.volumeTotalMl) * 100 : 0;
+  const left = Math.max(0, remainingBase(vial, status, todayIso, nowTime));
+  // `dosesLeft` is counted in *injections at the current step*, which is the
+  // number the user actually cares about — for a step-up plan the same vial
+  // holds more of them while the dose is still low.
+  const dosesLeft = status.doseBase > 0 ? left / status.doseBase : 0;
+  const volumeLeftMl = status.concentrationPerMl > 0 ? left / status.concentrationPerMl : 0;
+  const percentLeft =
+    status.volumeTotalMl > 0 ? (volumeLeftMl / status.volumeTotalMl) * 100 : 0;
 
   const runOutOn =
-    schedule && perDay > 0 ? runOutDate(schedule, todayIso, nowTime, dosesLeft) : null;
+    schedule && timesPerDay(schedule) > 0
+      ? runOutDate(vial, status, todayIso, nowTime)
+      : null;
 
   const daysOfSupply = runOutOn === null ? null : Math.max(0, daysBetween(todayIso, runOutOn));
 
@@ -145,12 +208,15 @@ export function vialSupply(vial: SavedVial, todayIso: string, nowTime: string): 
 
   const dosesAtRisk =
     expiresWithDosesLeft && status.expiresOn !== null && schedule
-      ? countDoseDays(schedule, addDays(status.expiresOn, 1), runOutOn) * perDay
+      ? countDoseDays(schedule, addDays(status.expiresOn, 1), runOutOn) *
+        timesPerDay(schedule)
       : 0;
 
   return {
     vial,
     dosesLeft,
+    doseBase: status.doseBase,
+    remainingBase: left,
     volumeLeftMl,
     percentLeft,
     runOutOn,
@@ -189,7 +255,7 @@ export function buildSupply(
         row.daysUntilExpiry <= EXPIRING_SOON_DAYS,
     ),
     vialsToReorder: rows.reduce(
-      (total, row) => total + extraVialsFor(row.vial, row.runOutOn, todayIso),
+      (total, row) => total + extraVialsFor(row.vial, vialStatus(row.vial, todayIso), row.runOutOn),
       0,
     ),
   };

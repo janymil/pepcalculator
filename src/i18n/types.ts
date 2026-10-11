@@ -155,6 +155,8 @@ export interface Strings {
     costPerMonth: string;
     /** Two vials share a name but were mixed differently — a drawing hazard. */
     ratioMismatch: string;
+    /** Heading of the step-up table on a card and on the printed sheet. */
+    phases: string;
     /** Accessible label for the button that expands a vial card's detail. */
     details: string;
     /** Placeholder for the vial search box. */
@@ -204,6 +206,16 @@ export interface Strings {
     viewDay: string;
     noDose: string;
     earlier: string;
+    /** Toggle for a step-up (titration) protocol. */
+    titration: string;
+    /** Explains how the steps work. */
+    titrationHint: string;
+    /** Column label for how long a step lasts. */
+    phaseWeeks: string;
+    /** Column label for the dose during a step. */
+    phaseDose: string;
+    phaseAdd: string;
+    phaseRemove: string;
   };
   edit: {
     title: string;

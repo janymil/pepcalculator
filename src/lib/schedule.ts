@@ -29,6 +29,12 @@ export interface VialSchedule {
    * weekly. Absent on records saved before intervals existed.
    */
   intervalDays?: number;
+  /**
+   * A step-up (titration) protocol: the dose changes as the plan goes on, which
+   * is how GLP-1s are actually started. Absent — or a single entry — means the
+   * vial's own `doseAmount` applies throughout. See `phaseDoseOn`.
+   */
+  phases?: DosePhase[];
   /** First day of the plan, `yyyy-mm-dd`. */
   startsOn: string;
   /** Duration amount; ignored when `durationUnit` is `'ongoing'`. */
@@ -40,6 +46,127 @@ export interface DoseSlot {
   date: string;
   time: string;
 }
+
+/**
+ * One step of a step-up protocol.
+ *
+ * The dose is held for `days`, then the next step begins. A final step with
+ * `days <= 0` runs until the plan ends, which is how "stay on this dose" is
+ * expressed without inventing an end date.
+ */
+export interface DosePhase {
+  /** How long this step lasts. `0` (or less) means "until the plan ends". */
+  days: number;
+  /** Dose per injection during the step, in the vial's own dose unit. */
+  doseAmount: number;
+}
+
+/** Longest titration we will accept, so a bad payload cannot build a huge plan. */
+export const MAX_PHASES = 12;
+
+/** Steps that describe a real titration: at least two, all usable. */
+export function validPhases(schedule: VialSchedule): DosePhase[] {
+  const phases = (schedule.phases ?? []).slice(0, MAX_PHASES);
+  const usable = phases.filter(
+    (phase) => Number.isFinite(phase.days) && isFiniteDose(phase.doseAmount),
+  );
+  return usable.length >= 2 ? usable : [];
+}
+
+function isFiniteDose(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
+/** True when this plan steps its dose up (or down) over time. */
+export function isTitration(schedule: VialSchedule): boolean {
+  return validPhases(schedule).length >= 2;
+}
+
+/**
+ * Which step is in force on `iso` (0-based), or null when the plan is not a
+ * titration. Dates before the plan starts, and dates after the last step, are
+ * clamped rather than treated as errors.
+ */
+export function phaseIndexOn(schedule: VialSchedule, iso: string): number | null {
+  const phases = validPhases(schedule);
+  if (phases.length === 0) return null;
+
+  const offset = daysBetween(schedule.startsOn, iso);
+  if (offset <= 0) return 0;
+
+  let cursor = 0;
+  for (let index = 0; index < phases.length; index += 1) {
+    const span = Math.round(phases[index].days);
+    // An open-ended step swallows everything from here on.
+    if (span <= 0) return index;
+    cursor += span;
+    if (offset < cursor) return index;
+  }
+  return phases.length - 1;
+}
+
+/** The step in force on `iso`, or null when the plan is not a titration. */
+export function phaseOn(schedule: VialSchedule, iso: string): DosePhase | null {
+  const index = phaseIndexOn(schedule, iso);
+  return index === null ? null : validPhases(schedule)[index];
+}
+
+/**
+ * The dose to use on `iso`, when the plan steps up. Returns null for a plan that
+ * does not, so callers fall back to the vial's own dose.
+ */
+export function phaseDoseOn(schedule: VialSchedule, iso: string): number | null {
+  return phaseOn(schedule, iso)?.doseAmount ?? null;
+}
+
+/** Total length of a titration in days, or null when the plan is not one. */
+export function titrationDays(schedule: VialSchedule): number | null {
+  const phases = validPhases(schedule);
+  if (phases.length === 0) return null;
+  return phases.reduce((total, phase) => total + Math.max(0, Math.round(phase.days)), 0);
+}
+
+/** One step of a titration, as the dates it actually covers. */
+export interface PhaseWindow {
+  start: string;
+  /** null when the step runs on past the plan's end (an open-ended final step). */
+  end: string | null;
+  phase: DosePhase;
+}
+
+/**
+ * Every step with its dates, which is what the vial card and the printed sheet
+ * show. The last step always runs to the end of the plan, matching
+ * `phaseIndexOn`.
+ */
+export function phaseWindows(schedule: VialSchedule): PhaseWindow[] {
+  const phases = validPhases(schedule);
+  if (phases.length === 0) return [];
+
+  const planEnd = planEndDate(schedule);
+  const windows: PhaseWindow[] = [];
+  let cursor = schedule.startsOn;
+
+  for (let index = 0; index < phases.length; index += 1) {
+    const last = index === phases.length - 1;
+    const span = Math.round(phases[index].days);
+
+    // The final step, or one that declares no length, swallows the rest.
+    if (last || span <= 0) {
+      windows.push({ start: cursor, end: planEnd, phase: phases[index] });
+      break;
+    }
+
+    let windowEnd = addDays(cursor, span - 1);
+    if (planEnd !== null && windowEnd > planEnd) windowEnd = planEnd;
+    windows.push({ start: cursor, end: windowEnd, phase: phases[index] });
+    if (planEnd !== null && windowEnd >= planEnd) break;
+    cursor = addDays(windowEnd, 1);
+  }
+
+  return windows;
+}
+
 
 /** How far ahead we search for the next dose before giving up. */
 export const SEARCH_HORIZON_DAYS = 400;

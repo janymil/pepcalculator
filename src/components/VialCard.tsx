@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
-import { unitsPerMlOf } from '../lib/calc';
+import { toBase, unitsPerMlOf } from '../lib/calc';
 import { costPerDose, costPerMonth, planCost } from '../lib/cost';
 import { addDays } from '../lib/dates';
 import { fmt, formatDate, formatMoney } from '../lib/format';
 import {
   dosesPerWeek,
   elapsedDoses,
+  isTitration,
   nextDose,
+  phaseDoseOn,
+  phaseIndexOn,
+  phaseWindows,
   planEndDate,
   totalPlannedDoses,
   vialsNeeded,
@@ -73,8 +77,18 @@ export function VialCard({
   const byVolume = measure === 'volume';
   const byClicks = measure === 'clicks';
 
-  /** The single most important number: insulin units (peptides) or mL (oils). */
-  const unitsPerDose = status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
+  // A step-up plan changes the dose as it goes, so everything shown here is
+  // *today's* step rather than the vial's first dose.
+  const phasedDose = schedule ? (phaseDoseOn(schedule, todayIso) ?? vial.doseAmount) : vial.doseAmount;
+  const doseVolumeMl =
+    status.concentrationPerMl > 0
+      ? toBase(phasedDose, vial.doseUnit) / status.concentrationPerMl
+      : status.volumePerDoseMl;
+  const doseUnits = doseVolumeMl * unitsPerMlOf(vial.syringeType);
+  const doseClicks = doseVolumeMl * (vial.clicksPerMl ?? 0);
+  const steps = schedule && isTitration(schedule) ? phaseWindows(schedule) : [];
+  /** Which step today falls in, so the table can point at it. */
+  const currentStep = schedule && steps.length > 0 ? phaseIndexOn(schedule, todayIso) : null;
 
   // Oils have no 28-day BUD, so `daysUntilExpiry` is null for them.
   const expiryDays = status.daysUntilExpiry;
@@ -155,21 +169,21 @@ export function VialCard({
         <span className="vial__draw-value">
           {byClicks ? (
             <>
-              {fmt.count(status.clicksPerDose ?? 0)} <small>{strings.results.clicksWord}</small>
+              {fmt.count(doseClicks)} <small>{strings.results.clicksWord}</small>
             </>
           ) : byVolume ? (
             <>
-              {fmt.volume(status.volumePerDoseMl)} <small>{strings.units.ml}</small>
+              {fmt.volume(doseVolumeMl)} <small>{strings.units.ml}</small>
             </>
           ) : (
             <>
-              {fmt.units(unitsPerDose)} <small>{strings.results.unitsWord}</small>
+              {fmt.units(doseUnits)} <small>{strings.results.unitsWord}</small>
             </>
           )}
         </span>
         {byVolume ? null : (
           <span className="vial__draw-sub">
-            {fmt.volume(status.volumePerDoseMl)} {strings.units.ml}
+            {fmt.volume(doseVolumeMl)} {strings.units.ml}
           </span>
         )}
       </div>
@@ -278,6 +292,28 @@ export function VialCard({
           {strings.reference.range.label}: {strings.reference.range[outOfRange]} ·{' '}
           {strings.reference.typical} {formatRange(compound)}
         </p>
+      ) : null}
+
+      {steps.length > 0 ? (
+        <div className="steps">
+          <p className="steps__title">{strings.vials.phases}</p>
+          <ol className="steps__list">
+            {steps.map((step, index) => (
+              <li
+                className={`steps__row${index === currentStep ? ' is-current' : ''}`}
+                key={step.start}
+              >
+                <span className="steps__dose">
+                  {fmt.mass(step.phase.doseAmount)} {vial.doseUnit}
+                </span>
+                <span className="steps__dates">
+                  {formatDate(step.start, locale)}
+                  {step.end ? ` – ${formatDate(step.end, locale)}` : ` · ${strings.schedule.planOngoing}`}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
       ) : null}
 
       {supply && supply.runOutOn ? (

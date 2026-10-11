@@ -8,9 +8,9 @@
  * calendar and reminders, so the three views can never disagree.
  */
 
-import { unitsPerMlOf, type MeasureSystem } from './calc';
+import { toBase, unitsPerMlOf, type MeasureSystem } from './calc';
 import { addDays } from './dates';
-import { totalPlannedDoses, elapsedDoses, timesOnDay } from './schedule';
+import { totalPlannedDoses, elapsedDoses, phaseDoseOn, timesOnDay } from './schedule';
 import {
   kindMeasure,
   vialKind,
@@ -80,14 +80,21 @@ function toDose(
   const status = vialStatus(vial, nowIso);
   const kind = vialKind(vial);
   const measure = kindMeasure(kind, vial.device);
+
+  // The dose for *this* date: a step-up plan changes it as it goes, so the
+  // schedule is asked rather than the vial's single stored dose.
+  const phased = vial.schedule ? phaseDoseOn(vial.schedule, date) : null;
+  const doseBase = toBase(phased ?? vial.doseAmount, vial.doseUnit);
+  const volumeMl = status.concentrationPerMl > 0 ? doseBase / status.concentrationPerMl : 0;
+
   // A pen dials; a peptide is read in graduations; everything else in mL — for a
   // hormone, "units" would be confused with the IU printed on the vial.
   const drawValue =
     measure === 'volume'
-      ? status.volumePerDoseMl
+      ? volumeMl
       : measure === 'clicks'
-        ? (status.clicksPerDose ?? status.volumePerDoseMl * (vial.clicksPerMl ?? 0))
-        : status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
+        ? volumeMl * (vial.clicksPerMl ?? 0)
+        : volumeMl * unitsPerMlOf(vial.syringeType);
 
   return {
     vialId: vial.id,
@@ -96,7 +103,7 @@ function toDose(
     measure,
     date,
     time,
-    volumeMl: status.volumePerDoseMl,
+    volumeMl,
     drawValue,
     taken: slotIsTaken(vial, date, time, nowIso, nowTime),
     vial,

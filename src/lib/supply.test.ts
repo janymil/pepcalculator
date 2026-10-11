@@ -158,4 +158,42 @@ describe('buildSupply', () => {
 
     expect(summary.vials.map((row) => row.vial.id)).toEqual(['live']);
   });
+
+  it('shortens the supply once a step-up plan raises the dose', () => {
+    // 10 mg in 2 mL = 5 mg/mL, so 0.25 mg is 0.05 mL and 0.5 mg is 0.1 mL.
+    // 28 days at 0.05 mL uses 1.4 mL, leaving 0.6 mL — six days at 0.1 mL.
+    const stepped = makeVial({
+      vialAmount: 10,
+      waterMl: 2,
+      doseAmount: 0.25,
+      doseUnit: 'mg',
+      schedule: {
+        times: ['09:00'],
+        repeat: 'daily',
+        weekdays: [],
+        startsOn: '2026-01-05',
+        durationValue: 0,
+        durationUnit: 'ongoing',
+        phases: [
+          { days: 28, doseAmount: 0.25 },
+          { days: 0, doseAmount: 0.5 },
+        ],
+      },
+    });
+
+    expect(vialSupply(stepped, '2026-01-05', '08:00').runOutOn).toBe('2026-02-07');
+  });
+
+  it('reaches further on a flat plan that never steps up', () => {
+    const flat = makeVial({
+      vialAmount: 10,
+      waterMl: 2,
+      doseAmount: 0.25,
+      doseUnit: 'mg',
+      schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing'),
+    });
+
+    // Forty doses of 0.05 mL is the whole 2 mL, so the last one is on 13 Feb.
+    expect(vialSupply(flat, '2026-01-05', '08:00').runOutOn).toBe('2026-02-13');
+  });
 });

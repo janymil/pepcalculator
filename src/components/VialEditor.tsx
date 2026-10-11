@@ -210,7 +210,14 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
         </div>
       )}
 
-      <ScheduleForm value={schedule} onChange={setSchedule} />
+      <ScheduleForm
+        value={schedule}
+        onChange={setSchedule}
+        // Seeding the step-up editor with the vial's own dose means the user
+        // edits real numbers rather than filling in blanks.
+        baseDose={parseNumber(doseAmount)}
+        doseUnit={doseUnit}
+      />
 
       <div className="vial-editor__actions">
         <button type="submit" className="btn btn--accent" disabled={!canSaveVial(draft)}>

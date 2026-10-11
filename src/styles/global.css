@@ -3178,3 +3178,101 @@ body {
   }
 }
 
+
+/* ---------- step-up (titration) schedules ---------- */
+.schedule__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.schedule__toggle-label {
+  user-select: none;
+}
+
+.schedule__phases {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.schedule__phase {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.schedule__phase-weeks {
+  max-width: 72px;
+}
+
+.schedule__phase-dose {
+  max-width: 96px;
+}
+
+.schedule__phase-unit {
+  min-width: 46px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.schedule__phase-remove {
+  margin-left: auto;
+}
+
+/* The step table on a saved vial: which dose applies when. */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.steps__title {
+  margin: 0;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.steps__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 3px solid transparent;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+/* The step the user is actually in right now. */
+.steps__row.is-current {
+  border-left-color: var(--accent-strong);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.steps__dose,
+.steps__dates {
+  font-variant-numeric: tabular-nums;
+}
+

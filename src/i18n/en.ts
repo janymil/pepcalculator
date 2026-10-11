@@ -190,6 +190,7 @@ export const en: Strings = {
     costPerMonth: 'Cost per month',
     ratioMismatch:
       'Another vial with this name is mixed differently — check which one you are drawing from.',
+    phases: 'Dose steps',
     details: 'Show details',
     search: 'Search vials',
     sortLabel: 'Sort',
@@ -234,6 +235,13 @@ export const en: Strings = {
     viewDay: 'Day',
     noDose: 'No dose scheduled this day',
     earlier: 'Earlier',
+    titration: 'Step the dose up',
+    titrationHint:
+      'Each step holds its dose for a set number of weeks, then the next begins. The last step runs to the end of the plan.',
+    phaseWeeks: 'Weeks',
+    phaseDose: 'Dose',
+    phaseAdd: 'Add a step',
+    phaseRemove: 'Remove this step',
   },
   edit: {
     title: 'Edit vial',

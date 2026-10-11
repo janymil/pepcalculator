@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { addDays } from './dates';
 import {
   DURATION_PRESETS,
   INTERVAL_PRESETS,
@@ -11,11 +12,16 @@ import {
   intervalPresetId,
   isDoseDay,
   isPlanFinished,
+  isTitration,
   nextDose,
   normalizeTimes,
+  phaseDoseOn,
+  phaseIndexOn,
+  phaseWindows,
   planEndDate,
   timesOnDay,
   timesPerDay,
+  titrationDays,
   totalPlannedDoses,
   vialsNeeded,
   type VialSchedule,
@@ -373,5 +379,77 @@ describe('interval schedules (EOD, E3D, weekly)', () => {
     expect(isDoseDay(twice, '2024-01-01')).toBe(true);
     expect(timesOnDay(twice, '2024-01-01')).toEqual(['08:00', '20:00']);
     expect(timesOnDay(twice, '2024-01-02')).toEqual([]);
+  });
+});
+
+describe('titration (step-up) plans', () => {
+  /** 0.25 mg for four weeks, then 0.5 mg until the plan ends. */
+  const stepUp = makeSchedule({
+    durationValue: 12,
+    durationUnit: 'weeks',
+    phases: [
+      { days: 28, doseAmount: 0.25 },
+      { days: 0, doseAmount: 0.5 },
+    ],
+  });
+
+  it('only counts as a titration when there are two usable steps', () => {
+    expect(isTitration(stepUp)).toBe(true);
+    expect(isTitration(makeSchedule())).toBe(false);
+    // One step is just the vial's own dose, so it is not a titration.
+    expect(isTitration(makeSchedule({ phases: [{ days: 28, doseAmount: 0.25 }] }))).toBe(false);
+    // A step with no dose cannot be used, so the whole thing is ignored.
+    expect(isTitration(makeSchedule({ phases: [{ days: 28, doseAmount: 0 }, { days: 0, doseAmount: 0.5 }] }))).toBe(false);
+  });
+
+  it('holds each dose for its step, then moves on', () => {
+    // Day 0 and day 27 are still the first step…
+    expect(phaseDoseOn(stepUp, MONDAY)).toBe(0.25);
+    expect(phaseDoseOn(stepUp, addDays(MONDAY, 27))).toBe(0.25);
+    // …day 28 starts the second.
+    expect(phaseDoseOn(stepUp, addDays(MONDAY, 28))).toBe(0.5);
+    expect(phaseDoseOn(stepUp, addDays(MONDAY, 200))).toBe(0.5);
+  });
+
+  it('clamps dates before the plan to the first step', () => {
+    expect(phaseIndexOn(stepUp, addDays(MONDAY, -5))).toBe(0);
+  });
+
+  it('reports which step is in force', () => {
+    expect(phaseIndexOn(stepUp, MONDAY)).toBe(0);
+    expect(phaseIndexOn(stepUp, addDays(MONDAY, 28))).toBe(1);
+  });
+
+  it('gives each step the dates it actually covers', () => {
+    const windows = phaseWindows(stepUp);
+
+    expect(windows[0].start).toBe(MONDAY);
+    expect(windows[0].end).toBe(addDays(MONDAY, 27));
+    expect(windows[0].phase.doseAmount).toBe(0.25);
+    // The final step runs to the end of the 12-week plan.
+    expect(windows[1].start).toBe(addDays(MONDAY, 28));
+    expect(windows[1].end).toBe(addDays(MONDAY, 12 * 7 - 1));
+    expect(titrationDays(stepUp)).toBe(28);
+  });
+
+  it('trims the last step to an ongoing plan', () => {
+    const ongoing = makeSchedule({
+      durationUnit: 'ongoing',
+      phases: [
+        { days: 7, doseAmount: 1 },
+        { days: 0, doseAmount: 2 },
+      ],
+    });
+
+    const windows = phaseWindows(ongoing);
+
+    expect(windows).toHaveLength(2);
+    expect(windows[1].end).toBeNull();
+  });
+
+  it('has no steps at all for an ordinary plan', () => {
+    expect(phaseDoseOn(makeSchedule(), MONDAY)).toBeNull();
+    expect(phaseWindows(makeSchedule())).toEqual([]);
+    expect(titrationDays(makeSchedule())).toBeNull();
   });
 });

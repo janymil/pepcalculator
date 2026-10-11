@@ -190,6 +190,7 @@ export const sk: Strings = {
     costPerMonth: 'Cena za mesiac',
     ratioMismatch:
       'Iná fľaštička s týmto názvom je nariedená inak — overte si, z ktorej natiahnete.',
+    phases: 'Kroky dávkovania',
     details: 'Zobraziť podrobnosti',
     search: 'Hľadať fľaštičky',
     sortLabel: 'Zoradiť',
@@ -234,6 +235,13 @@ export const sk: Strings = {
     viewDay: 'Deň',
     noDose: 'V tento deň nie je naplánovaná dávka',
     earlier: 'Skôr',
+    titration: 'Postupné zvyšovanie dávky',
+    titrationHint:
+      'Každý krok drží dávku určený počet týždňov, potom začína ďalší. Posledný krok platí do konca plánu.',
+    phaseWeeks: 'Týždne',
+    phaseDose: 'Dávka',
+    phaseAdd: 'Pridať krok',
+    phaseRemove: 'Odstrániť tento krok',
   },
   edit: {
     title: 'Upraviť fľaštičku',

@@ -3,10 +3,12 @@ import type { Strings } from '../i18n/types';
 import { useI18n } from '../i18n/I18nContext';
 import { unitsPerMlOf } from '../lib/calc';
 import { fmt, formatDate, weekdayShort } from '../lib/format';
+import { toBase } from '../lib/calc';
 import {
   intervalOf,
   intervalPresetId,
   normalizeTimes,
+  phaseWindows,
   planEndDate,
   totalPlannedDoses,
   vialsNeeded,
@@ -68,6 +70,34 @@ export function PrintSheet({ vials, ownerName, todayIso }: PrintSheetProps) {
     return sum + vialsNeeded(plannedDoses, vialStatus(vial, todayIso).totalDoses);
   }, 0);
 
+  /*
+   * A step-up plan gets **one row per step**, each with its own dose and dates.
+   * Printing a single "draw to X" line for a titration would be actively
+   * misleading — this sheet ends up taped to a fridge.
+   */
+  const rows = planned.flatMap((vial) => {
+    const schedule = vial.schedule as VialSchedule;
+    const windows = phaseWindows(schedule);
+    if (windows.length === 0) {
+      return [
+        {
+          key: vial.id,
+          vial,
+          dose: vial.doseAmount,
+          start: schedule.startsOn,
+          end: planEndDate(schedule),
+        },
+      ];
+    }
+    return windows.map((window, index) => ({
+      key: `${vial.id}-${index}`,
+      vial,
+      dose: window.phase.doseAmount,
+      start: window.start,
+      end: window.end,
+    }));
+  });
+
   return (
     <section className="print-sheet" aria-hidden="true">
       <header className="print-sheet__head">
@@ -90,8 +120,15 @@ export function PrintSheet({ vials, ownerName, todayIso }: PrintSheetProps) {
           </tr>
         </thead>
         <tbody>
-          {planned.map((vial) => (
-            <PlanRow key={vial.id} vial={vial} todayIso={todayIso} />
+          {rows.map((row) => (
+            <PlanRow
+              key={row.key}
+              vial={row.vial}
+              dose={row.dose}
+              start={row.start}
+              end={row.end}
+              todayIso={todayIso}
+            />
           ))}
         </tbody>
         <tfoot>
@@ -114,35 +151,46 @@ export function PrintSheet({ vials, ownerName, todayIso }: PrintSheetProps) {
   );
 }
 
-/** One row of the protocol table. */
-function PlanRow({ vial, todayIso }: { vial: SavedVial; todayIso: string }) {
+/** One row of the protocol table: one step of one plan. */
+function PlanRow({
+  vial,
+  dose,
+  start,
+  end,
+  todayIso,
+}: {
+  vial: SavedVial;
+  /** The dose in force for this row, in the vial's own dose unit. */
+  dose: number;
+  start: string;
+  end: string | null;
+  todayIso: string;
+}) {
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
 
-  const schedule = vial.schedule as VialSchedule;
   const status = vialStatus(vial, todayIso);
   // A pen dials; peptides read in graduations; everything else in mL.
   const measure = kindMeasure(vialKind(vial), vial.device);
+  const volumeMl =
+    status.concentrationPerMl > 0 ? toBase(dose, vial.doseUnit) / status.concentrationPerMl : 0;
   const draw =
     measure === 'clicks'
-      ? `${fmt.count(status.clicksPerDose ?? 0)} ${strings.results.clicksWord}`
+      ? `${fmt.count(volumeMl * (vial.clicksPerMl ?? 0))} ${strings.results.clicksWord}`
       : measure === 'volume'
-        ? `${fmt.volume(status.volumePerDoseMl)} ${strings.units.ml}`
-        : `${fmt.units(status.volumePerDoseMl * unitsPerMlOf(vial.syringeType))} ${
-            strings.results.unitsWord
-          }`;
+        ? `${fmt.volume(volumeMl)} ${strings.units.ml}`
+        : `${fmt.units(volumeMl * unitsPerMlOf(vial.syringeType))} ${strings.results.unitsWord}`;
 
-  const end = planEndDate(schedule);
-  const plannedDoses = totalPlannedDoses(schedule);
+  const plannedDoses = totalPlannedDoses(vial.schedule as VialSchedule);
 
   return (
     <tr>
       <td>{vial.name || strings.vials.untitled}</td>
       <td>{draw}</td>
-      <td>{normalizeTimes(schedule.times).join(', ')}</td>
-      <td>{repeatLabel(schedule, strings, locale)}</td>
+      <td>{normalizeTimes((vial.schedule as VialSchedule).times).join(', ')}</td>
+      <td>{repeatLabel(vial.schedule as VialSchedule, strings, locale)}</td>
       <td>
-        {formatDate(schedule.startsOn, locale)}
+        {formatDate(start, locale)}
         {end ? ` – ${formatDate(end, locale)}` : ` · ${strings.schedule.planOngoing}`}
       </td>
       <td>
