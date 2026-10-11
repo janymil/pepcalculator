@@ -80,12 +80,34 @@ const probe = `
     }
   });
 
-  const total = SCENES.reduce((sum, scene) => sum + scene.dur, 0);
-  try {
-    render(Math.floor(total / 2));
-  } catch (err) {
-    failures.push('render() threw: ' + err.message);
-  }
+  const total = SCENES.reduce((sum, scene) => sum + scene.dur + HOLD, 0);
+  // Mid-timeline, and a point inside a scene's fade, so the transition path is drawn too.
+  [Math.floor(total / 2), SCENES[0].dur + HOLD - Math.floor(FADE / 2), total - 1].forEach(
+    (at) => {
+      try {
+        render(Math.max(0, at));
+      } catch (err) {
+        failures.push('render(' + at + ') threw: ' + err.message);
+      }
+    },
+  );
+
+  /*
+   * The hold is the whole point of a scene's length: the drawing completes at t = 1,
+   * so without a hold the last stroke lands on the final frame of the scene. Guard
+   * both halves of that promise.
+   */
+  SCENES.forEach((scene, index) => {
+    const start = SCENES.slice(0, index).reduce((sum, s) => sum + s.dur + HOLD, 0);
+    const atDrawingEnd = sceneAt(start + scene.dur - 1);
+    const atHoldEnd = sceneAt(start + scene.dur + HOLD - 1);
+    if (atDrawingEnd.t < 0.99) {
+      failures.push('scene ' + (index + 1) + ' is not finished at the end of its drawing');
+    }
+    if (atHoldEnd.t !== 1 || atHoldEnd.index !== index) {
+      failures.push('scene ' + (index + 1) + ' does not hold its finished frame');
+    }
+  });
 
   const used = new Set();
   for (const hit of __SOURCE__.matchAll(/\\btr\\('([a-z0-9_]+)'\\)/g)) used.add(hit[1]);
@@ -139,6 +161,22 @@ const probe = `
   console.log('scenes:      ' + SCENES.length + ' (' + (total / 1000).toFixed(1) + 's)');
   console.log('copy keys:   ' + used.size + ' used x ' + langs.length + ' languages');
   console.log('frames:      ' + SCENES.length * 11 + ' drawn');
+  // The timing map demo/storyboard.md documents — print it, so the two cannot drift.
+  let cursor = 0;
+  SCENES.forEach((scene, index) => {
+    console.log(
+      '  scene ' +
+        (index + 1) +
+        ':  ' +
+        (cursor / 1000).toFixed(1).padStart(5) +
+        's  draw ' +
+        (scene.dur / 1000).toFixed(1) +
+        's + hold ' +
+        (HOLD / 1000).toFixed(1) +
+        's',
+    );
+    cursor += scene.dur + HOLD;
+  });
   console.log(
     'timeline:    1 s at 60 fps -> ' +
       Math.round(afterOneSecond) +

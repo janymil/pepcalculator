@@ -90,7 +90,7 @@ Several features are easy to miss because they only appear once they have someth
 | Sync (recovery code, conflict notice) | **Settings** → *Sync* |
 | Dose reminders | **Settings** → *Reminders* |
 | **Larger text + non-colour vial markers** | **Settings** → *Display* |
-| **The 38-second explainer video** | **Guide** (its own page) — or `public/explainer.html` standalone |
+| **The 55-second explainer video** | **Guide** (its own page) — or `public/explainer.html` standalone |
 
 If a feature seems to be missing, it is usually waiting for data: the supply outlook needs a vial
 with a plan, the Today card needs a dose due this week, and the protocol plot needs a saved vial
@@ -100,7 +100,7 @@ named after a compound in the Reference list.
 
 ## Getting started
 
-### The 38-second explainer
+### The 55-second explainer
 
 `public/explainer.html` is a self-contained, hand-drawn animation (English / Slovak / Spanish,
 9 scenes) that shows what the app does. It lives in `public/` because the app serves it itself —
@@ -111,7 +111,7 @@ start public\explainer.html
 ```
 
 It can record itself to a video file (**Export video (.webm)**), plays at 1× or 0.5×, and takes deep
-links for stills and covers (`?lang=sk`, `?at=15200`). Full details in
+links for stills and covers (`?lang=sk`, `?at=4300`). Full details in
 [demo/README.md](./demo/README.md); the narration script is in
 [demo/storyboard.md](./demo/storyboard.md).
 

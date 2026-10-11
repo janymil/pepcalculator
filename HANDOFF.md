@@ -366,6 +366,20 @@ Guide page:**
   - **Watch for this pattern:** anything that appears only conditionally (Today card, supply panel,
     conflict notice) or that lives at the bottom of a page **will not be found**. Prefer the page
     header, and say what the button does in its label.
+- **The scenes held nothing, so the drawing was never seen finished** (the more important half of the
+  report whose first half is the *raced through its scenes* entry below). Every scene draws itself as a pure function of `t` and
+  completes at **exactly `t = 1`** — scene 3's teal underline literally ran from `t = 0.86` to
+  `t = 1`. With no hold, the cut to the next scene happened on the same frame the last stroke
+  landed, so the finished composition (and every late element) was invisible, and hard cuts made the
+  whole thing feel rushed. Fixed with two constants in `SCENES`' timeline, not by touching any scene:
+  **`HOLD = 1800` ms** (each scene sits finished) and **`FADE = 320` ms** (the finished frame dips to
+  paper, so scenes do not hard-cut; the last scene never fades, since it is the frame the video ends
+  on). `sceneAt()` now returns `t` pinned at 1 through the hold, so `render()` needs no special case
+  beyond applying the alpha. **The video is 54.6 s now, not 38.4 s** — every place that quoted the
+  old length was updated, including the three `guide.subtitle` strings in the app. `demo/check.mjs`
+  guards both halves ("scene N is not finished at the end of its drawing" / "does not hold its
+  finished frame"), renders a frame inside a fade, and **prints the per-scene timing map that
+  `demo/storyboard.md` documents**, so the doc cannot drift from the code.
 - **The explainer is now reachable from inside the app** — a **Guide** page (`components/GuidePage.tsx`)
   frames `public/explainer.html` (moved there from `demo/` so Vite serves it and the service worker
   can pre-cache it). It follows the same discovery rule the pass above learned: the video used to
@@ -493,6 +507,21 @@ the cross-references stay stable.
   debug.
 - **Verify the printed sheet by actually printing it** — the last unverified surface in the app.
   `@media print` can only be confirmed at a printer, not in a headless browser.
+- **The explainer covers the core, not every feature.** It is 9 scenes on the calculation and the
+  daily workflow (the problem → the maths → the draw → Today → separate stacks → plans → offline).
+  **Not shown:** the HGH/HCG (IU) and GLP-1 pen (clicks) workflows, anabolic oils beyond the closing
+  line, inverse mode, cost per dose, titration/step-up plans, the Reference sheet, the converter,
+  the protocol plot, printing, reminders, readability mode and the draw-check card. That is a
+  reasonable first-touch video, but it is **not** a feature tour, and the user asked — so either the
+  Reference/Guide pages carry those, or a second, longer cut needs 3–4 more scenes (the cheapest
+  candidates: two workflow scenes for IU and pens, one for "what else is in it"). Decide before
+  recording any voice-over, because the script has to match the scene list.
+- **Audio for the explainer is undecided.** See "Audio: what is possible" in `demo/storyboard.md`
+  for the three routes (synthesised music, browser TTS, a real recording) and what each costs.
+  Nothing is implemented — the video is silent, including its exported `.webm`, and that is
+  deliberate rather than an oversight. The music route is the only one that stays asset-free, and
+  it is the only one whose quality **cannot be verified in this environment** (no audio output), so
+  whoever picks it up should listen on a real device before shipping.
 
 ## How to extend safely
 

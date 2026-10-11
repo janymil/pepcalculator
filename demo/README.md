@@ -1,7 +1,7 @@
 # Hand-drawn explainer
 
 `public/explainer.html` is a self-contained, hand-drawn ("kreslené") animation that shows what
-PepCalculator does: **~38 seconds, 9 scenes, in English, Slovak and Spanish**.
+PepCalculator does: **~55 seconds, 9 scenes, in English, Slovak and Spanish**.
 
 It lives in `public/` because Vite copies that folder to the site root, so the app serves the
 file at `/explainer.html` and its **Guide** page frames it. `demo/` holds the tooling —
@@ -22,7 +22,7 @@ Three ways, best first:
 
 1. **Built-in export.** Press **Export video (.webm)** — the page records its own canvas
    (`canvas.captureStream()` + `MediaRecorder`) and downloads
-   `pepcalculator-explainer-<lang>.webm`. Recording runs in real time, so it takes ~38 s.
+   `pepcalculator-explainer-<lang>.webm`. Recording runs in real time, so it takes ~55 s.
    Works in Chrome, Edge and Firefox.
 2. **Screen recording.** Press **Play**, then record the window with Xbox Game Bar (`Win+G`),
    OBS, or your phone. Press `F11` first for a clean full-screen capture. This gives you MP4
@@ -60,6 +60,14 @@ app's **Guide** page uses; it only hides the chrome around the stage, so the vid
 - Each scene is `{ dur, draw(ctx, t) }`, where `t` runs 0→1. Because drawing is a pure
   function of time, scrubbing is free and the same renderer both plays on screen and gets
   recorded.
+- **Every scene holds its finished frame.** Each scene's drawing completes at exactly `t = 1`,
+  so a scene that ends when its drawing ends shows its last stroke on its final frame and
+  nothing more — inside the app that is what made the whole video feel rushed. Each scene
+  therefore sits finished for `HOLD` (1.8 s) and dips to paper over the last `FADE` (0.32 s)
+  instead of hard-cutting, and the last scene never fades because it is the frame the video
+  ends on. `sceneAt()` pins `t` at 1 through the hold, so the scenes themselves know nothing
+  about it. To retime the video, change `dur` or `HOLD` — the timeline, the dots, the clock,
+  the exported file and `demo/storyboard.md`'s table all follow.
 - **The frame clock is capped.** `frame(now)` advances the timeline by the real gap between
   frames, but never by more than `MAX_STEP` (100 ms), and it re-arms whenever playback
   starts. A browser may stop calling `requestAnimationFrame` for a while — a background tab,

@@ -366,7 +366,7 @@ export const en: Strings = {
   /** The "How to use" page: the animated explainer, embedded. */
   guide: {
     title: 'How to use the app',
-    subtitle: 'A 38-second, hand-drawn walkthrough — in English, Slovak and Spanish.',
+    subtitle: 'A 55-second, hand-drawn walkthrough — in English, Slovak and Spanish.',
     /** Opens the explainer standalone, outside the app shell. */
     open: 'Open the video on its own',
     saveHint:

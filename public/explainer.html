@@ -828,7 +828,18 @@
 
       const canvas = document.getElementById('c');
       const ctx = canvas.getContext('2d');
-      const TOTAL = SCENES.reduce((sum, s) => sum + s.dur, 0);
+      /*
+       * A scene holds its finished frame before the next one starts. Without it the
+       * last stroke of a scene lands on that scene's final frame and is gone before
+       * anyone can read it — every scene is drawn to complete at exactly t = 1, so
+       * the cut used to happen the instant the drawing finished.
+       */
+      const HOLD = 1800;
+
+      /** The finished frame dips to paper over this long, so scenes do not hard-cut. */
+      const FADE = 320;
+
+      const TOTAL = SCENES.reduce((sum, s) => sum + s.dur + HOLD, 0);
 
       const playBtn = document.getElementById('play');
       const restartBtn = document.getElementById('restart');
@@ -850,8 +861,8 @@
        * which is exactly what this page is inside the app's Guide tab. Wall-clock
        * time keeps running during that gap, so an unclamped `now - lastFrame`
        * hands the animation the whole gap at once and the timeline skips
-       * forward through whole scenes. Dropping a frame is fine; jumping four
-       * seconds of a 38-second video is not.
+       * forward through whole scenes. Dropping a frame is fine; jumping seconds of
+       * this video is not.
        */
       const MAX_STEP = 100;
 
@@ -863,14 +874,23 @@
       /** The scene (and its local 0..1 progress) at a point in the timeline. */
       function sceneAt(ms) {
         let left = clamp(ms, 0, TOTAL);
-        for (let i = 0; i < SCENES.length; i++) {
-          if (left < SCENES[i].dur) {
-            return { index: i, scene: SCENES[i], t: left / SCENES[i].dur };
-          }
-          left -= SCENES[i].dur;
-        }
         const lastIndex = SCENES.length - 1;
-        return { index: lastIndex, scene: SCENES[lastIndex], t: 1 };
+        for (let i = 0; i < SCENES.length; i++) {
+          const span = SCENES[i].dur + HOLD;
+          if (left < span) {
+            return {
+              index: i,
+              scene: SCENES[i],
+              // Pinned at 1 through the hold, so the finished drawing stays put.
+              t: clamp(left / SCENES[i].dur, 0, 1),
+              // The last scene never fades: it is the frame the video ends on.
+              fade:
+                i === lastIndex || left <= span - FADE ? 1 : clamp((span - left) / FADE, 0, 1),
+            };
+          }
+          left -= span;
+        }
+        return { index: lastIndex, scene: SCENES[lastIndex], t: 1, fade: 1 };
       }
 
       function paper() {
@@ -898,7 +918,11 @@
       function render(ms) {
         paper();
         const at = sceneAt(ms);
+        // The dip between scenes. Reset explicitly rather than relying on a save()
+        // pair inside a scene, since a leaked alpha would darken every later frame.
+        ctx.globalAlpha = at.fade;
         at.scene.draw(ctx, clamp(at.t, 0, 1));
+        ctx.globalAlpha = 1;
         watermark();
 
         // scene dots along the bottom
@@ -978,9 +1002,9 @@
       });
 
       /*
-       * Half speed for the dense scenes. 38 seconds is short, but the first two
-       * scenes carry the whole draw-the-dose idea, and a phone screen makes the
-       * copy smaller than the desktop it was animated on. The clock and the
+       * Half speed for the dense scenes. The copy is written, not narrated, and a
+       * phone screen makes it smaller than the desktop this was animated on, so
+       * every scene gets the option of twice as long on screen. The clock and the
        * scrubber keep showing real timeline milliseconds — only playback is slowed.
        */
       speedBtn.addEventListener('click', () => {
@@ -1024,7 +1048,7 @@
 
         exportBtn.disabled = true;
         exportBtn.textContent = 'Recording…';
-        // Always record at 1x, so the file matches what the button promises (~38 s).
+        // Always record at 1x, so the file matches what the button promises (~55 s).
         speed = 1;
         speedBtn.textContent = '1×';
         speedBtn.classList.remove('active');

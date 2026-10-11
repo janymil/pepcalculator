@@ -368,7 +368,7 @@ export const es: Strings = {
   /** The "How to use" page: the animated explainer, embedded. */
   guide: {
     title: 'Cómo usar la app',
-    subtitle: 'Un recorrido dibujado a mano de 38 segundos — en inglés, eslovaco y español.',
+    subtitle: 'Un recorrido dibujado a mano de 55 segundos — en inglés, eslovaco y español.',
     open: 'Abrir el vídeo por separado',
     saveHint:
       '¿Quieres el archivo? Pulsa Export video (.webm) bajo el vídeo para grabarlo y conviértelo a MP4 si lo necesitas.',
