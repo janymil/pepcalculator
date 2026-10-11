@@ -65,6 +65,8 @@ export const es: Strings = {
     emptyHint: 'Rellena los campos de la izquierda para ver el resultado aquí.',
     unitsWord: 'unidades',
     notApplicable: '—',
+    waterHint:
+      'Con {water} mL de agua, en la jeringa habría unas {units} unidades — más fácil de leer.',
   },
   syringeVisual: { ariaLabel: 'Jeringa llenada hasta el volumen calculado' },
   warnings: {
@@ -81,7 +83,7 @@ export const es: Strings = {
     doseTooSmallVolume:
       'Solo unos {volume} mL — es muy difícil medirlo con precisión con una jeringa de aceite. Revisa bien la dosis y las marcas de la jeringa.',
   },
-  actions: { reset: 'Restablecer' },
+  actions: { reset: 'Restablecer', useWater: 'Usar {water} mL' },
   validation: { invalidNumber: 'Introduce un número mayor que 0.' },
   units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
   disclaimer: {
@@ -159,6 +161,9 @@ export const es: Strings = {
       'Solo orientativo: una vez mezclado con agua bacteriostática, un vial suele conservarse hasta 28 días. Consulta tu producto.',
     costPerDose: 'Coste por dosis',
     planCost: 'Coste del plan',
+    costPerMonth: 'Coste al mes',
+    ratioMismatch:
+      'Otro vial con este nombre está mezclado de otra forma — comprueba de cuál estás extrayendo.',
     details: 'Ver detalles',
     search: 'Buscar viales',
     sortLabel: 'Ordenar',
@@ -218,6 +223,9 @@ export const es: Strings = {
     errorInvalidJson: 'Ese archivo no es JSON válido.',
     errorNotABackup: 'Ese archivo no es una copia de PepCalculator.',
     errorNoVials: 'Esa copia no contiene viales.',
+    never: 'Aún no hay ninguna copia',
+    lastAt: 'Última copia {when}',
+    nudge: 'Han pasado {days} días desde la última copia.',
   },
   sync: {
     title: 'Sincronizar entre dispositivos',
@@ -331,5 +339,38 @@ export const es: Strings = {
     halfLifeUnit: 'h',
     halfLifeDaysUnit: 'días',
     note: 'Son cifras redondeadas y ampliamente publicadas en la comunidad, usadas solo como ilustración. No son consejo médico ni sustituyen a un médico o farmacéutico.',
+    range: {
+      label: 'Tu dosis',
+      within: 'Dentro del rango habitual',
+      below: 'Por debajo del rango habitual',
+      wellBelow: 'Muy por debajo del rango habitual',
+      above: 'Por encima del rango habitual',
+    },
+  },
+  supply: {
+    title: 'Existencias',
+    subtitle: 'Cuánto te dura la reserva y qué pedir después.',
+    inStock: '{count} viales en existencias',
+    runsOutOn: 'Dura hasta el {date}',
+    daysOfSupply: 'Para {days} días',
+    ongoing: 'Sin fecha de fin — un plan continuo',
+    reorder: 'Unos {count} viales más para cubrir tus planes',
+    dosesAtRisk: 'Caduca el {date} con unas {doses} dosis dentro',
+    lowLine: 'Solo quedan {count} dosis',
+    allGood: 'Nada se está acabando ni caduca pronto.',
+    empty: 'Guarda un vial con un plan y aquí verás sus existencias.',
+  },
+  sites: {
+    label: 'Punto de inyección',
+    next: 'Siguiente punto: {site}',
+    hint: 'Alternar el punto de inyección evita usar el mismo sitio dos veces seguidas.',
+    names: {
+      abdomenLeft: 'Abdomen izquierdo',
+      abdomenRight: 'Abdomen derecho',
+      thighLeft: 'Muslo izquierdo',
+      thighRight: 'Muslo derecho',
+      deltoidLeft: 'Deltoides izquierdo',
+      deltoidRight: 'Deltoides derecho',
+    },
   },
 };

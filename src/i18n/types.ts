@@ -1,4 +1,5 @@
 import type { ModeId, WarningCode } from '../lib/calc';
+import type { SiteId } from '../lib/sites';
 
 export type Lang = 'en' | 'sk' | 'es';
 
@@ -52,10 +53,15 @@ export interface Strings {
     emptyHint: string;
     unitsWord: string;
     notApplicable: string;
+    /**
+     * The concrete fix offered beside the "hard to measure" warning.
+     * Placeholders: `{water}` (mL to add) and `{units}` (units that would show).
+     */
+    waterHint: string;
   };
   syringeVisual: { ariaLabel: string };
   warnings: Record<WarningCode, string>;
-  actions: { reset: string };
+  actions: { reset: string; /** Applies the suggested water volume. `{water}` */ useWater: string };
   validation: {
     /** Shown under a field whose text is not a usable positive number. */
     invalidNumber: string;
@@ -131,6 +137,10 @@ export interface Strings {
     costPerDose: string;
     /** Cost to finish the whole saved plan, derived from the vial price. */
     planCost: string;
+    /** Cost per month at the plan's cadence, derived from the vial price. */
+    costPerMonth: string;
+    /** Two vials share a name but were mixed differently — a drawing hazard. */
+    ratioMismatch: string;
     /** Accessible label for the button that expands a vial card's detail. */
     details: string;
     /** Placeholder for the vial search box. */
@@ -193,6 +203,12 @@ export interface Strings {
     errorInvalidJson: string;
     errorNotABackup: string;
     errorNoVials: string;
+    /** Shown when no backup has ever been downloaded on this device. */
+    never: string;
+    /** When the last backup was taken. Placeholder: `{when}`. */
+    lastAt: string;
+    /** Gentle reminder to take one again. Placeholder: `{days}`. */
+    nudge: string;
   };
   sync: {
     title: string;
@@ -323,5 +339,57 @@ export interface Strings {
     halfLifeDaysUnit: string;
     /** The strong reminder under the list that this is not advice. */
     note: string;
+    /**
+     * A neutral read of the user's own dose against the cited range. Offered as
+     * context only — the wording must never sound like a recommendation.
+     */
+    range: {
+      label: string;
+      within: string;
+      below: string;
+      wellBelow: string;
+      above: string;
+    };
+  };
+  /**
+   * The supply outlook on the Vials page: how long the stack lasts, which vials
+   * are running low and how many more to order.
+   * Placeholders: `{date}`, `{days}`, `{count}`, `{doses}`.
+   */
+  supply: {
+    title: string;
+    subtitle: string;
+    /** Vials currently in stock. `{count}` */
+    inStock: string;
+    /** The soonest date the stack runs out. `{date}` */
+    runsOutOn: string;
+    /** Days of supply left for one vial. `{days}` */
+    daysOfSupply: string;
+    /** Used when a plan has no end date. */
+    ongoing: string;
+    /** How many more vials the plans need. `{count}` */
+    reorder: string;
+    /** A vial will expire before it is used up. `{doses}` `{date}` */
+    dosesAtRisk: string;
+    /** A vial is nearly empty. `{count}` */
+    lowLine: string;
+    /** Shown when there is nothing to flag. */
+    allGood: string;
+    /** Shown when there are no vials at all. */
+    empty: string;
+  };
+  /**
+   * Injection-site rotation. Progress is derived from the plan, so the app can
+   * name the next site without the user logging anything. `{site}` is filled
+   * from `sites.names`.
+   */
+  sites: {
+    label: string;
+    /** e.g. "Next site: left abdomen". `{site}` */
+    next: string;
+    /** One-line explanation of why the app suggests a site. */
+    hint: string;
+    /** A label for every `SiteId`. */
+    names: Record<SiteId, string>;
   };
 }

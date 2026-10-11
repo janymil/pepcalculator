@@ -28,7 +28,7 @@ import { useDoseReminders } from './hooks/useDoseReminders';
 import { DICTIONARIES, detectLang, interpolate } from './i18n';
 import { I18nProvider } from './i18n/I18nContext';
 import type { Lang } from './i18n/types';
-import { calculateAnabolic, calculatePeptide, type ModeId } from './lib/calc';
+import { calculateAnabolic, calculatePeptide, suggestWaterMl, unitsPerMlOf, type ModeId } from './lib/calc';
 import { parseNumber } from './lib/format';
 import { toIsoDate } from './lib/dates';
 import type { VialSchedule } from './lib/schedule';
@@ -278,6 +278,26 @@ export default function App() {
       syringeCapacityMl: capacityMl,
     });
   }, [mode, peptide, anabolic, syringe]);
+
+  /*
+   * The "hard to measure" warning is only useful with a fix attached, so when
+   * that warning fires we look for a water volume that would make the draw
+   * bigger. `suggestWaterMl` returns null when more water would not help, so
+   * this stays quiet for every other case.
+   */
+  const waterHint = useMemo(() => {
+    if (mode !== 'peptide') return null;
+    if (!result.warnings.some((warning) => warning.code === 'doseTooSmall')) return null;
+
+    return suggestWaterMl({
+      vialAmount: parseNumber(peptide.vialAmount),
+      vialUnit: peptide.vialUnit,
+      doseAmount: parseNumber(peptide.doseAmount),
+      doseUnit: peptide.doseUnit,
+      unitsPerMl: unitsPerMlOf(syringe.type),
+      currentWaterMl: parseNumber(peptide.waterMl),
+    });
+  }, [mode, peptide, syringe.type, result.warnings]);
 
   const handleReset = () => {
     setPeptide(DEFAULT_PEPTIDE_FORM);
@@ -632,6 +652,10 @@ export default function App() {
                   capacityMl={capacityMl}
                   measure={measure}
                   doseUnit={mode === 'anabolic' ? anabolic.doseUnit : peptide.doseUnit}
+                  waterHint={waterHint}
+                  onApplyWater={(waterMl) =>
+                    setPeptide((prev) => ({ ...prev, waterMl: String(waterMl) }))
+                  }
                 />
               </div>
 

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { unitsPerMlOf } from '../lib/calc';
-import { costPerDose, planCost } from '../lib/cost';
+import { costPerDose, costPerMonth, planCost } from '../lib/cost';
 import { addDays } from '../lib/dates';
 import { fmt, formatDate, formatMoney } from '../lib/format';
 import {
+  dosesPerWeek,
   elapsedDoses,
   nextDose,
   planEndDate,
@@ -13,6 +14,7 @@ import {
   vialsNeeded,
   type DoseSlot,
 } from '../lib/schedule';
+import type { VialSupply } from '../lib/supply';
 import { vialKind, vialStatus, type SavedVial } from '../lib/vials';
 import { vialColor } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
@@ -28,6 +30,13 @@ export interface VialCardProps {
   onAddDose: (id: string) => void;
   onRemoveDose: (id: string) => void;
   onDelete: (id: string) => void;
+  /** The supply projection for this vial, when the page has already built one. */
+  supply?: VialSupply;
+  /**
+   * True when another live vial carries the same name but a different
+   * concentration — the single most dangerous mix-up, so the card says so.
+   */
+  ratioMismatch?: boolean;
 }
 
 /**
@@ -47,6 +56,8 @@ export function VialCard({
   onAddDose,
   onRemoveDose,
   onDelete,
+  supply,
+  ratioMismatch,
 }: VialCardProps) {
   const { strings } = useI18n();
   // The card is a scannable summary by default; the detail expands on demand.
@@ -90,6 +101,9 @@ export function VialCard({
   // Optional cost figures — only shown when the user entered a vial price.
   const costPerDoseValue = costPerDose(vial.price, status.totalDoses);
   const planCostValue = planCost(vial.price, plannedTotal, status.totalDoses);
+  // What the protocol costs each month, so a cheap vial that needs three a month
+  // does not look cheaper than an expensive one that lasts.
+  const perMonth = schedule ? costPerMonth(costPerDoseValue, dosesPerWeek(schedule)) : null;
 
   const dayLabel = (slot: DoseSlot): string => {
     if (slot.date === todayIso) return strings.schedule.today;
@@ -202,6 +216,12 @@ export function VialCard({
             <dd>{formatMoney(planCostValue, locale, vial.currency)}</dd>
           </div>
         ) : null}
+        {perMonth !== null ? (
+          <div className="vial__stat">
+            <dt>{strings.vials.costPerMonth}</dt>
+            <dd>{formatMoney(perMonth, locale, vial.currency)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <p className="vial__meta">
@@ -227,6 +247,28 @@ export function VialCard({
       {schedule && vialsForPlan > 1 ? (
         <p className="vial__note">
           {interpolate(strings.schedule.needsVials, { count: vialsForPlan })}
+        </p>
+      ) : null}
+
+      {ratioMismatch ? (
+        <p className="vial__note vial__note--warn">{strings.vials.ratioMismatch}</p>
+      ) : null}
+
+      {supply && supply.runOutOn ? (
+        <p className="vial__note">
+          {interpolate(strings.supply.runsOutOn, { date: formatDate(supply.runOutOn, locale) })}
+          {supply.daysOfSupply !== null
+            ? ` · ${interpolate(strings.supply.daysOfSupply, { days: supply.daysOfSupply })}`
+            : ''}
+        </p>
+      ) : null}
+
+      {supply && supply.expiresWithDosesLeft && supply.expiresOn ? (
+        <p className="vial__note vial__note--warn">
+          {interpolate(strings.supply.dosesAtRisk, {
+            date: formatDate(supply.expiresOn, locale),
+            doses: Math.round(supply.dosesAtRisk),
+          })}
         </p>
       ) : null}
 

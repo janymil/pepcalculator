@@ -65,6 +65,8 @@ export const sk: Strings = {
     emptyHint: 'Vyplňte polia vľavo a výsledok sa zobrazí tu.',
     unitsWord: 'jednotiek',
     notApplicable: '—',
+    waterHint:
+      'Ak by ste použili {water} mL vody, na striekačke by bolo približne {units} jednotiek — ľahšie sa odčíta.',
   },
   syringeVisual: { ariaLabel: 'Striekačka naplnená po vypočítaný objem' },
   warnings: {
@@ -81,7 +83,7 @@ export const sk: Strings = {
     doseTooSmallVolume:
       'Len približne {volume} mL — veľmi ťažké presne odmerať olejovou striekačkou. Skontrolujte dávku aj dieliky na striekačke.',
   },
-  actions: { reset: 'Vymazať' },
+  actions: { reset: 'Vymazať', useWater: 'Použiť {water} mL' },
   validation: { invalidNumber: 'Zadajte číslo väčšie ako 0.' },
   units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
   disclaimer: {
@@ -159,6 +161,9 @@ export const sk: Strings = {
       'Len orientačne: po nariedení bakteriostatickou vodou sa fľaštička zvyčajne používa najviac 28 dní. Overte si to pre svoj produkt.',
     costPerDose: 'Cena za dávku',
     planCost: 'Cena plánu',
+    costPerMonth: 'Cena za mesiac',
+    ratioMismatch:
+      'Iná fľaštička s týmto názvom je nariedená inak — overte si, z ktorej natiahnete.',
     details: 'Zobraziť podrobnosti',
     search: 'Hľadať fľaštičky',
     sortLabel: 'Zoradiť',
@@ -218,6 +223,9 @@ export const sk: Strings = {
     errorInvalidJson: 'Tento súbor nie je platný JSON.',
     errorNotABackup: 'Tento súbor nie je záloha PepCalculator.',
     errorNoVials: 'Táto záloha neobsahuje žiadne fľaštičky.',
+    never: 'Zatiaľ žiadna záloha',
+    lastAt: 'Posledná záloha {when}',
+    nudge: 'Od poslednej zálohy ubehlo {days} dní.',
   },
   sync: {
     title: 'Synchronizácia medzi zariadeniami',
@@ -329,5 +337,38 @@ export const sk: Strings = {
     halfLifeUnit: 'h',
     halfLifeDaysUnit: 'dní',
     note: 'Toto sú zaokrúhlené, bežne publikované údaje z komunity, slúžia len na ilustráciu. Nie sú lekárskou radou a nenahrádzajú lekára ani lekárnika.',
+    range: {
+      label: 'Vaša dávka',
+      within: 'V bežne uvádzanom rozsahu',
+      below: 'Pod bežne uvádzaným rozsahom',
+      wellBelow: 'Hlboko pod bežne uvádzaným rozsahom',
+      above: 'Nad bežne uvádzaným rozsahom',
+    },
+  },
+  supply: {
+    title: 'Zásoba',
+    subtitle: 'Ako dlho vám zásoba vydrží a čo dokúpiť.',
+    inStock: '{count} fľaštičiek na sklade',
+    runsOutOn: 'Vydrží do {date}',
+    daysOfSupply: 'Zásoba na {days} dní',
+    ongoing: 'Bez dátumu konca — priebežný plán',
+    reorder: 'Približne {count} ďalších fľaštičiek na pokrytie plánov',
+    dosesAtRisk: 'Exspiruje {date} a zostane v nej približne {doses} dávok',
+    lowLine: 'Zostáva len {count} dávok',
+    allGood: 'Nič sa nekončí a nič čoskoro neexspiruje.',
+    empty: 'Uložte fľaštičku s plánom a tu sa zobrazí prehľad zásoby.',
+  },
+  sites: {
+    label: 'Miesto vpichu',
+    next: 'Ďalšie miesto: {site}',
+    hint: 'Striedanie miest vpichu zabráni tomu, aby sa to isté miesto použilo dvakrát za sebou.',
+    names: {
+      abdomenLeft: 'Ľavá časť brucha',
+      abdomenRight: 'Pravá časť brucha',
+      thighLeft: 'Ľavé stehno',
+      thighRight: 'Pravé stehno',
+      deltoidLeft: 'Ľavý deltoid',
+      deltoidRight: 'Pravý deltoid',
+    },
   },
 };

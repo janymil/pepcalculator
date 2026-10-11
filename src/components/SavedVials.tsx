@@ -1,12 +1,14 @@
-import { useState, type ChangeEvent } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { STORAGE_KEYS } from '../config/defaults';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { backupFileName, parseBackup, serializeBackup } from '../lib/backup';
+import { daysBetween } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
 import type { Owner } from '../lib/owners';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
+import { buildSupply } from '../lib/supply';
 import {
   filterVialsByKind,
   searchVials,
@@ -20,6 +22,7 @@ import {
 import { vialColor } from '../lib/vialColors';
 import { KindFilterControl } from './KindFilterControl';
 import { Icon } from './Icon';
+import { SupplyPanel } from './SupplyPanel';
 import { VialCard } from './VialCard';
 import { VialEditor } from './VialEditor';
 
@@ -202,8 +205,51 @@ export function SavedVials({
   const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<VialSort>('newest');
+  const [lastBackup, setLastBackup] = useLocalStorage<string>(STORAGE_KEYS.lastBackup, '');
 
   const visible = sortVials(searchVials(filterVialsByKind(vials, filter), query), sort, todayIso);
+
+  // The stack-level outlook for the selected person, computed once per render.
+  const supply = useMemo(() => buildSupply(vials, todayIso, nowTime), [vials, todayIso, nowTime]);
+  const supplyById = useMemo(
+    () => new Map(supply.vials.map((row) => [row.vial.id, row])),
+    [supply],
+  );
+
+  /**
+   * Vials that share a name but not a concentration.
+   *
+   * This is the classic home mix-up: two bottles of the same peptide, one mixed
+   * with 1 mL and one with 2 mL. The numbers on the card are then different for
+   * what looks like the same thing, so flag every vial in such a group rather
+   * than letting the user read the wrong one.
+   */
+  const ratioOutliers = useMemo(() => {
+    const concentrationOf = (vial: SavedVial): number =>
+      Number(vialStatus(vial, todayIso).concentrationMgPerMl.toFixed(4));
+
+    const byName = new Map<string, Set<number>>();
+    for (const vial of vials) {
+      const name = (vial.name || '').trim().toLowerCase();
+      if (name === '') continue;
+      const concentration = concentrationOf(vial);
+      if (!(concentration > 0)) continue;
+      const seen = byName.get(name) ?? new Set<number>();
+      seen.add(concentration);
+      byName.set(name, seen);
+    }
+
+    const flagged = new Set<string>();
+    for (const vial of vials) {
+      const name = (vial.name || '').trim().toLowerCase();
+      if (name === '') continue;
+      if ((byName.get(name)?.size ?? 0) > 1) flagged.add(vial.id);
+    }
+    return flagged;
+  }, [vials, todayIso]);
+
+  /** Whole days since the last backup, or null when there has never been one. */
+  const backupAge = lastBackup ? daysBetween(lastBackup.slice(0, 10), todayIso) : null;
 
   const handleSaveEdit = (updated: SavedVial) => {
     onUpdate(updated);
@@ -221,6 +267,7 @@ export function SavedVials({
     link.download = backupFileName(todayIso);
     link.click();
     URL.revokeObjectURL(url);
+    setLastBackup(todayIso);
     setNotice(strings.backup.done);
   };
 
@@ -252,6 +299,8 @@ export function SavedVials({
       <h2 className="card__title" id="vials-title">
         {strings.vials.title}
       </h2>
+
+      <SupplyPanel summary={supply} />
 
       <div className="vials__toolbar">
         <KindFilterControl value={filter} onChange={setFilter} />
@@ -321,6 +370,8 @@ export function SavedVials({
                 onAddDose={onAddDose}
                 onRemoveDose={onRemoveDose}
                 onDelete={onDelete}
+                supply={supplyById.get(vial.id)}
+                ratioMismatch={ratioOutliers.has(vial.id)}
               />
             ) : (
               <VialCardLegacy
@@ -341,6 +392,16 @@ export function SavedVials({
       <div className="backup">
         <p className="backup__title">{strings.backup.title}</p>
         <p className="backup__note">{strings.backup.note}</p>
+        <p className="backup__notice">
+          {lastBackup
+            ? interpolate(strings.backup.lastAt, { when: formatDate(lastBackup.slice(0, 10), LOCALES[lang]) })
+            : strings.backup.never}
+        </p>
+        {backupAge !== null && backupAge >= 30 ? (
+          <p className="backup__notice backup__notice--warn">
+            {interpolate(strings.backup.nudge, { days: backupAge })}
+          </p>
+        ) : null}
         <div className="backup__actions">
           <button type="button" className="btn btn--sm" onClick={handleBackup}>
             {strings.backup.download}

@@ -65,6 +65,8 @@ export const en: Strings = {
     emptyHint: 'Enter the fields on the left to see the result here.',
     unitsWord: 'units',
     notApplicable: '—',
+    waterHint:
+      'Using {water} mL of water instead would put about {units} units on the syringe — easier to read.',
   },
   syringeVisual: { ariaLabel: 'Syringe filled to the calculated volume' },
   warnings: {
@@ -81,7 +83,7 @@ export const en: Strings = {
     doseTooSmallVolume:
       'Only about {volume} mL — that is very hard to measure accurately with an oil syringe. Double-check the dose and the graduations on your syringe.',
   },
-  actions: { reset: 'Reset' },
+  actions: { reset: 'Reset', useWater: 'Use {water} mL' },
   validation: { invalidNumber: 'Enter a number greater than 0.' },
   units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
   disclaimer: {
@@ -159,6 +161,9 @@ export const en: Strings = {
       'Guidance only: once mixed with bacteriostatic water a vial is usually kept for up to 28 days. Check your own product.',
     costPerDose: 'Cost per dose',
     planCost: 'Plan cost',
+    costPerMonth: 'Cost per month',
+    ratioMismatch:
+      'Another vial with this name is mixed differently — check which one you are drawing from.',
     details: 'Show details',
     search: 'Search vials',
     sortLabel: 'Sort',
@@ -218,6 +223,9 @@ export const en: Strings = {
     errorInvalidJson: 'That file is not valid JSON.',
     errorNotABackup: 'That file is not a PepCalculator backup.',
     errorNoVials: 'That backup contains no vials.',
+    never: 'No backup taken yet',
+    lastAt: 'Last backup {when}',
+    nudge: 'It has been {days} days since your last backup.',
   },
   sync: {
     title: 'Sync between devices',
@@ -326,5 +334,38 @@ export const en: Strings = {
     halfLifeUnit: 'h',
     halfLifeDaysUnit: 'days',
     note: 'These are rounded, widely published community figures used for illustration. They are not medical advice and must not replace a doctor or pharmacist.',
+    range: {
+      label: 'Your dose',
+      within: 'Within the range usually discussed',
+      below: 'Below the range usually discussed',
+      wellBelow: 'Well below the range usually discussed',
+      above: 'Above the range usually discussed',
+    },
+  },
+  supply: {
+    title: 'Supply',
+    subtitle: 'How long your stack lasts, and what to order next.',
+    inStock: '{count} vials in stock',
+    runsOutOn: 'Lasts until {date}',
+    daysOfSupply: '{days} days of supply',
+    ongoing: 'No end date — an ongoing plan',
+    reorder: 'About {count} more vials to cover your plans',
+    dosesAtRisk: 'Expires {date} with about {doses} doses still in it',
+    lowLine: 'Only {count} doses left',
+    allGood: 'Nothing is running out and nothing expires soon.',
+    empty: 'Save a vial with a plan and its supply outlook appears here.',
+  },
+  sites: {
+    label: 'Injection site',
+    next: 'Next site: {site}',
+    hint: 'Rotating where you inject stops one spot being used twice in a row.',
+    names: {
+      abdomenLeft: 'Left abdomen',
+      abdomenRight: 'Right abdomen',
+      thighLeft: 'Left thigh',
+      thighRight: 'Right thigh',
+      deltoidLeft: 'Left deltoid',
+      deltoidRight: 'Right deltoid',
+    },
   },
 };

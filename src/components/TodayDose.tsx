@@ -1,7 +1,9 @@
-import { LOCALES } from '../i18n';
+import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { addDays } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
+import { elapsedDoses } from '../lib/schedule';
+import { nextSite } from '../lib/sites';
 import { nextDoseToday, type TodayDose } from '../lib/today';
 import { vialColor } from '../lib/vialColors';
 import type { SavedVial } from '../lib/vials';
@@ -33,6 +35,12 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
 
   const canMark = !next.vial.schedule;
 
+  // Where to inject. Because "how many doses have happened?" is derived from the
+  // plan, so is the site — the rotation needs no logging of its own.
+  const site = next.vial.schedule
+    ? nextSite(elapsedDoses(next.vial.schedule, todayIso, nowTime))
+    : null;
+
   return (
     <section className="card today-card" aria-labelledby="today-title">
       <h2 className="card__title" id="today-title">
@@ -62,6 +70,12 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
             {next.kind === 'anabolic' ? strings.units.ml : strings.results.unitsWord}
           </span>
         </p>
+
+        {site ? (
+          <p className="today-card__site" title={strings.sites.hint}>
+            {interpolate(strings.sites.next, { site: strings.sites.names[site] })}
+          </p>
+        ) : null}
 
         <div className="today-card__actions">
           <button

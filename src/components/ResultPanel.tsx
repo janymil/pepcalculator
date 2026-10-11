@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { useCountUp } from '../hooks/useCountUp';
 import type { CalcResult, DoseUnit, MeasureSystem } from '../lib/calc';
@@ -15,6 +16,13 @@ interface ResultPanelProps {
   measure: MeasureSystem;
   /** The dose unit the user picked — the inverse answer uses the same one. */
   doseUnit: DoseUnit;
+  /**
+   * A water volume that would make a hard-to-read draw easier, when one helps.
+   * Shown beside the warnings as the concrete fix for "too small to measure".
+   */
+  waterHint?: { waterMl: number; units: number } | null;
+  /** Applies the suggested water volume back into the form. */
+  onApplyWater?: (waterMl: number) => void;
 }
 
 interface StatItem {
@@ -23,7 +31,14 @@ interface StatItem {
 }
 
 /** The right-hand column: the headline answer, the syringe and the details. */
-export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPanelProps) {
+export function ResultPanel({
+  result,
+  capacityMl,
+  measure,
+  doseUnit,
+  waterHint,
+  onApplyWater,
+}: ResultPanelProps) {
   const { strings } = useI18n();
 
   // Peptides are measured with an insulin syringe, so the headline answer is
@@ -170,6 +185,25 @@ export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPan
           <p className="empty__hint">{strings.results.emptyHint}</p>
         </div>
       )}
+
+      {/* The concrete fix for a draw that is too small to read: a bigger volume. */}
+      {waterHint && onApplyWater ? (
+        <div className="result__tip">
+          <p className="result__tip-text">
+            {interpolate(strings.results.waterHint, {
+              water: fmt.volume(waterHint.waterMl),
+              units: fmt.units(waterHint.units),
+            })}
+          </p>
+          <button
+            type="button"
+            className="btn btn--sm btn--ghost"
+            onClick={() => onApplyWater(waterHint.waterMl)}
+          >
+            {interpolate(strings.actions.useWater, { water: fmt.volume(waterHint.waterMl) })}
+          </button>
+        </div>
+      ) : null}
 
       <AlertList warnings={result.warnings} />
     </section>

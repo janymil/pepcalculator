@@ -2927,3 +2927,122 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+
+/* ---------- supply outlook (inside the Vials card) ---------- */
+.supply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.supply__title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.supply__subtitle,
+.supply__ok {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.supply__ok {
+  color: var(--accent-strong);
+}
+
+.supply__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.supply__flag {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.supply__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.supply__list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--fs-xs);
+}
+
+.supply__name {
+  font-weight: 700;
+}
+
+.supply__meta {
+  color: var(--text-muted);
+}
+
+/* ---------- the "use more water" tip under the result ---------- */
+.result__tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--accent-strong);
+}
+
+.result__tip-text {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+/* ---------- injection site on the Today card ---------- */
+.today-card__site {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ---------- louder warning variants ---------- */
+
+/* Two vials, one name, different strengths: the mix-up this app exists to stop. */
+.vial__note--warn {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-left-color: var(--danger);
+  font-weight: 600;
+}
+
+.backup__notice--warn {
+  color: var(--warn);
+}
+

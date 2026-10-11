@@ -50,4 +50,6 @@ export const STORAGE_KEYS = {
   kindFilter: 'pepcalc.v1.kindFilter',
   owners: 'pepcalc.v1.owners',
   activeOwner: 'pepcalc.v1.activeOwner',
+  /** When the user last downloaded a JSON backup — drives the backup reminder. */
+  lastBackup: 'pepcalc.v1.lastBackup',
 } as const;
