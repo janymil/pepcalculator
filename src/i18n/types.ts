@@ -401,4 +401,33 @@ export interface Strings {
     /** A label for every `SiteId`. */
     names: Record<SiteId, string>;
   };
+  /**
+   * The printable protocol sheet and the vial labels. Both are rendered from the
+   * saved plans, so a copy stuck on the fridge can never drift from the app.
+   * Placeholders: `{name}`, `{date}`, `{amount}`, `{water}`.
+   */
+  print: {
+    /** Button on the Calendar page. */
+    action: string;
+    title: string;
+    forPerson: string;
+    generated: string;
+    /** Column: the vial / compound. */
+    plan: string;
+    /** Column: how far to draw. */
+    draw: string;
+    /** Column: which clock times. */
+    times: string;
+    /** Column: which days the plan repeats on. */
+    days: string;
+    /** Column: first day to last day. */
+    period: string;
+    /** Column: how many vials that works out to. */
+    vials: string;
+    /** Heading of the sticker strip. */
+    labels: string;
+    /** A vial label's ratio line, e.g. "5 mg in 2 mL". */
+    labelRatio: string;
+    empty: string;
+  };
 }

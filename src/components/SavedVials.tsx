@@ -415,6 +415,9 @@ export function SavedVials({
               onChange={handleRestore}
             />
           </label>
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => window.print()}>
+            {strings.print.action}
+          </button>
         </div>
         {notice ? <p className="backup__notice">{notice}</p> : null}
       </div>

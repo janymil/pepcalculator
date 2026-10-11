@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { MobileSummaryBar } from './components/MobileSummaryBar';
 import { ModeTabs } from './components/ModeTabs';
 import { OwnerTabs } from './components/OwnerTabs';
+import { PrintSheet } from './components/PrintSheet';
 import { ReferencePage } from './components/ReferencePage';
 import { ResultPanel } from './components/ResultPanel';
 import { SaveVialForm } from './components/SaveVialForm';
@@ -42,6 +43,7 @@ import {
   defaultOwners,
   filterByOwner,
   mergeOwners,
+  ownerName,
   resolveOwnerId,
   vialOwnerId,
   type Owner,
@@ -145,6 +147,11 @@ export default function App() {
   }, [liveVialList]);
 
   const strings = DICTIONARIES[lang];
+
+  /** How the selected person is written on the printable sheet. */
+  const ownerLabel =
+    ownerName(owners, ownerId) ||
+    (ownerId === DEFAULT_OWNER_ID ? strings.people.me : strings.vials.untitled);
 
   // Each workflow has its own syringe setup (see src/config/modes.ts). Resolving
   // the capacity guards against a remembered value that doesn't fit the current
@@ -682,6 +689,13 @@ export default function App() {
           onDismiss={dismissToast}
         />
       </div>
+
+      {/*
+       * The printable sheet lives *outside* the app shell on purpose: `@media
+       * print` hides `.app` and reveals this, which keeps every screen style out
+       * of the printout without a portal or a second document.
+       */}
+      <PrintSheet vials={scopedVials} ownerName={ownerLabel} todayIso={todayIso} />
     </I18nProvider>
   );
 }

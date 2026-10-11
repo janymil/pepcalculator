@@ -15,6 +15,7 @@ import {
   type DoseSlot,
 } from '../lib/schedule';
 import type { VialSupply } from '../lib/supply';
+import { formatRange, matchCompound, rangeHint, type RangeVerdict } from '../lib/reference';
 import { vialKind, vialStatus, type SavedVial } from '../lib/vials';
 import { vialColor } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
@@ -104,6 +105,17 @@ export function VialCard({
   // What the protocol costs each month, so a cheap vial that needs three a month
   // does not look cheaper than an expensive one that lasts.
   const perMonth = schedule ? costPerMonth(costPerDoseValue, dosesPerWeek(schedule)) : null;
+
+  /*
+   * Context, never advice: if the vial's name matches a compound in the
+   * reference list, say where this dose sits against the range people commonly
+   * discuss. Only shown when it falls outside — matching the range is not worth
+   * a line of its own.
+   */
+  const compound = matchCompound(vial.name);
+  const verdict = compound ? rangeHint(compound, status.doseMg) : null;
+  const outOfRange: Exclude<RangeVerdict, 'within'> | null =
+    verdict && verdict !== 'within' ? verdict : null;
 
   const dayLabel = (slot: DoseSlot): string => {
     if (slot.date === todayIso) return strings.schedule.today;
@@ -252,6 +264,13 @@ export function VialCard({
 
       {ratioMismatch ? (
         <p className="vial__note vial__note--warn">{strings.vials.ratioMismatch}</p>
+      ) : null}
+
+      {outOfRange && compound ? (
+        <p className="vial__note vial__note--info">
+          {strings.reference.range.label}: {strings.reference.range[outOfRange]} ·{' '}
+          {strings.reference.typical} {formatRange(compound)}
+        </p>
       ) : null}
 
       {supply && supply.runOutOn ? (

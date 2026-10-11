@@ -3046,3 +3046,123 @@ body {
   color: var(--warn);
 }
 
+/* Reference context: informative, so it must not look like a warning. */
+.vial__note--info {
+  color: var(--text-muted);
+  background: var(--surface);
+  border-left-color: var(--accent-strong);
+}
+
+/* ---------- printable protocol sheet ---------- */
+/*
+ * Hidden on screen. `window.print()` hides the whole app shell and reveals this
+ * instead, so the printout never inherits a screen style. It is rendered as a
+ * sibling of `.app` for exactly that reason.
+ */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .app {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+    color: #000;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+
+  .print-sheet__title {
+    margin: 0 0 2mm;
+    font-size: 20pt;
+  }
+
+  .print-sheet__meta {
+    margin: 0 0 6mm;
+    font-size: 9pt;
+    color: #333;
+  }
+
+  .print-sheet__subtitle {
+    margin: 8mm 0 3mm;
+    font-size: 12pt;
+  }
+
+  .print-sheet__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  .print-sheet__table th,
+  .print-sheet__table td {
+    padding: 1.5mm 2mm;
+    border: 1px solid #999;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .print-sheet__table thead th {
+    background: #eee;
+  }
+
+  .print-sheet__table tfoot td {
+    font-weight: 700;
+  }
+
+  .print-sheet__labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3mm;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Roughly a 58 x 30 mm sticker: fits beside a small vial. */
+  .print-label {
+    width: 58mm;
+    padding: 2mm 3mm;
+    border: 1px dashed #666;
+    border-radius: 2mm;
+    font-size: 9pt;
+  }
+
+  .print-label__name {
+    margin: 0 0 1mm;
+    font-size: 11pt;
+    font-weight: 700;
+  }
+
+  .print-label__ratio,
+  .print-label__draw,
+  .print-label__expiry {
+    margin: 0;
+  }
+
+  .print-label__draw {
+    font-weight: 700;
+  }
+
+  .print-label__expiry {
+    margin-top: 1mm;
+    font-size: 8pt;
+  }
+
+  .print-sheet__note {
+    margin-top: 8mm;
+    font-size: 8pt;
+    color: #444;
+  }
+}
+
