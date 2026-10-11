@@ -1,69 +1,32 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
-import { buildCurve, concentrationAt, peakOf } from '../lib/pk';
 import { COMPOUNDS, formatRange, type CompoundClass, type CompoundReference } from '../lib/reference';
+import type { SavedVial } from '../lib/vials';
+import { PkChart } from './PkChart';
+import { ProtocolPlot } from './ProtocolPlot';
 import { UnitConverter } from './UnitConverter';
 
-/** How many simulation hours the tiny decay chart shows. */
-const CHART_HOURS = 72;
-const CHART_STEP = 2;
-const CHART_W = 240;
-const CHART_H = 56;
-
-interface DecayChartProps {
-  compound: CompoundReference;
-  ariaLabel: string;
+interface ReferencePageProps {
+  /** Live vials, so the user's own plan can be plotted from this page too. */
+  vials: SavedVial[];
+  todayIso: string;
 }
 
 /**
- * A small, honest decay curve for one compound: the modelled amount still
- * present if a single typical dose is repeated on the compound's cadence. It is
- * labelled as an illustration, not a prediction.
+ * The decay curve for a compound's *typical* dose range — the reference version
+ * of the same chart the user can now plot for their own plan.
  */
-function DecayChart({ compound, ariaLabel }: DecayChartProps) {
+function DecayChart({ compound, ariaLabel }: { compound: CompoundReference; ariaLabel: string }) {
   // A representative dose: the midpoint of the cited range, converted to mg.
   const midMg = (compound.typicalLowMg + compound.typicalHighMg) / 2;
   const doseMg = compound.unit === 'mcg' ? midMg / 1000 : midMg;
   const intervalHours = compound.halfLifeHours * 4;
-  const schedule = { doseMg, intervalHours, halfLifeHours: compound.halfLifeHours, doses: 4 };
-
-  const curve = buildCurve(schedule, CHART_HOURS, CHART_STEP);
-  const peak = peakOf(curve) || 1;
-
-  const x = (hour: number) => (hour / CHART_HOURS) * CHART_W;
-  const y = (amount: number) => CHART_H - (amount / peak) * (CHART_H - 6) - 3;
-  const path = curve.map((point) => `${x(point.hour)},${y(point.amountMg)}`).join(' ');
-
-  // Faint day gridlines, plus a dot at the start of each modelled dose.
-  const gridHours = [0, 24, 48, 72].filter((hour) => hour <= CHART_HOURS);
-  const doseHours = [0, 1, 2, 3]
-    .map((index) => index * intervalHours)
-    .filter((hour) => hour <= CHART_HOURS);
 
   return (
-    <svg
-      className="ref__chart"
-      viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-      role="img"
-      aria-label={ariaLabel}
-      preserveAspectRatio="none"
-    >
-      {gridHours.map((hour) => (
-        <line key={hour} className="ref__grid" x1={x(hour)} y1={0} x2={x(hour)} y2={CHART_H} />
-      ))}
-      <polyline className="ref__chart-area" points={`0,${CHART_H} ${path} ${CHART_W},${CHART_H}`} />
-      <polyline className="ref__chart-line" points={path} />
-      <line className="ref__axis" x1={0} y1={CHART_H} x2={CHART_W} y2={CHART_H} />
-      {doseHours.map((hour) => (
-        <circle
-          key={hour}
-          className="ref__dose"
-          cx={x(hour)}
-          cy={y(concentrationAt(schedule, hour))}
-          r={2.4}
-        />
-      ))}
-    </svg>
+    <PkChart
+      schedule={{ doseMg, intervalHours, halfLifeHours: compound.halfLifeHours, doses: 4 }}
+      ariaLabel={ariaLabel}
+    />
   );
 }
 
@@ -72,7 +35,7 @@ function DecayChart({ compound, ariaLabel }: DecayChartProps) {
  * ranges, half-lives and reconstitution volumes. It never feeds the calculator
  * automatically — it is context, and it always carries the disclaimer.
  */
-export function ReferencePage() {
+export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
   const { strings } = useI18n();
   const copy = strings.reference;
   const [klass, setKlass] = useState<CompoundClass>('peptide');
@@ -150,6 +113,8 @@ export function ReferencePage() {
       </ul>
 
       <p className="ref__note">{copy.note}</p>
+
+      <ProtocolPlot vials={vials} todayIso={todayIso} />
 
       <UnitConverter />
     </section>

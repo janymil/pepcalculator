@@ -275,6 +275,19 @@ export const sk: Strings = {
     errorWrongPassphrase: 'Toto heslo zálohu neotvorí.',
     errorNoCrypto: 'Šifrovanie vyžaduje zabezpečené spojenie (https).',
   },
+  plot: {
+    title: 'Váš protokol',
+    subtitle:
+      'Vaša vlastná dávka, vo vašom vlastnom režime, proti uvádzanému polčasu látky, podľa ktorej je fľaštička pomenovaná.',
+    empty:
+      'Uložte fľaštičku s plánom a pomenujte ju podľa látky, aby sa tu zobrazila. Fľaštičky s hormónmi v IU sa zobraziť nedajú, model je v mg.',
+    choose: 'Ktorá fľaštička',
+    perWeek: 'za týždeň',
+    halfLife: 'polčas',
+    titration: 'Plán so stupňovaním sa zobrazuje v kroku, v ktorom práve ste. Krivka sa zmení, keď sa zmení dávka.',
+    strength: 'Sila',
+    note: 'Len ilustrácia — toto je aritmetika v lib/pk.ts, nie meranie ani predpoveď.',
+  },
   check: {
     title: 'Skontrolovať pred natiahnutím',
     hint: 'Podržte fľaštičku pri obrazovke a overte, že názov súhlasí.',

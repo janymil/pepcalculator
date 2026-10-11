@@ -275,6 +275,19 @@ export const en: Strings = {
     errorWrongPassphrase: 'That passphrase does not open this backup.',
     errorNoCrypto: 'Encryption needs a secure (https) connection.',
   },
+  plot: {
+    title: 'Your protocol',
+    subtitle:
+      'Your own dose, on your own cadence, against the half-life cited for the compound the vial is named after.',
+    empty:
+      'Save a vial with a plan and name it after a compound to plot it here. Hormone vials dosed in IU cannot be plotted, because the model is in mg.',
+    choose: 'Which vial',
+    perWeek: 'per week',
+    halfLife: 'half-life',
+    titration: 'A step-up plan is drawn at the step you are in now. The curve changes when the dose does.',
+    strength: 'Strength',
+    note: 'Illustration only — this is the arithmetic in lib/pk.ts, not a measurement or a prediction.',
+  },
   check: {
     title: 'Check before you draw',
     hint: 'Hold the vial next to the screen and make sure the name matches.',

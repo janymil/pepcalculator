@@ -679,7 +679,7 @@ export default function App() {
               onRemoveOwner={handleRemoveOwner}
             />
           ) : view === 'reference' ? (
-            <ReferencePage />
+            <ReferencePage vials={savedVials} todayIso={todayIso} />
           ) : (
             <>
               {showFirstRun ? (

@@ -254,6 +254,23 @@ export interface Strings {
     errorWrongPassphrase: string;
     errorNoCrypto: string;
   };
+  /** Plots the user's own plan against a cited half-life. */
+  plot: {
+    title: string;
+    subtitle: string;
+    /** Shown when there is nothing that can honestly be plotted. */
+    empty: string;
+    choose: string;
+    /** Unit of cadence on the facts line, e.g. "per week". */
+    perWeek: string;
+    /** Row label for the cited half-life. */
+    halfLife: string;
+    /** Explains that a step-up plan is drawn at the current step. */
+    titration: string;
+    /** Row label for the vial's strength. */
+    strength: string;
+    note: string;
+  };
   /** The full-screen "check before you draw" card on the Today list. */
   check: {
     title: string;

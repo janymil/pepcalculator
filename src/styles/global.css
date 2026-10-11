@@ -3376,6 +3376,53 @@ body {
   );
 }
 
+/* ---------- your-protocol plot ---------- */
+.plot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.plot__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.plot__subtitle {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.plot__picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plot__select {
+  max-width: 240px;
+}
+
+.plot__facts {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.plot__note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
 /* ---------- settings toggles ---------- */
 .settings__toggle {
   display: flex;

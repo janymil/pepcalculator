@@ -3,11 +3,35 @@ import { describe, expect, it } from 'vitest';
 import { DICTIONARIES } from '../i18n';
 import { I18nProvider } from '../i18n/I18nContext';
 import { COMPOUNDS } from '../lib/reference';
+import type { SavedVial } from '../lib/vials';
 import { ReferencePage } from './ReferencePage';
+
+/** A planned vial named after a compound, so the plot has something to draw. */
+const planned = {
+  id: 'bpc',
+  name: 'BPC-157',
+  reconstitutedOn: '2026-01-05',
+  vialAmount: 5,
+  vialUnit: 'mg',
+  waterMl: 2,
+  doseAmount: 250,
+  doseUnit: 'mcg',
+  syringeType: 'U100',
+  syringeCapacityMl: 1,
+  dosesTaken: 0,
+  schedule: {
+    times: ['09:00'],
+    repeat: 'daily',
+    weekdays: [],
+    startsOn: '2026-01-05',
+    durationValue: 4,
+    durationUnit: 'weeks',
+  },
+} as unknown as SavedVial;
 
 const html = renderToString(
   <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
-    <ReferencePage />
+    <ReferencePage vials={[planned]} todayIso="2026-01-06" />
   </I18nProvider>,
 );
 

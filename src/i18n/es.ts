@@ -275,6 +275,19 @@ export const es: Strings = {
     errorWrongPassphrase: 'Esa contraseña no abre esta copia.',
     errorNoCrypto: 'El cifrado necesita una conexión segura (https).',
   },
+  plot: {
+    title: 'Tu protocolo',
+    subtitle:
+      'Tu propia dosis, en tu propia pauta, frente a la semivida citada para el compuesto con el que está nombrado el vial.',
+    empty:
+      'Guarda un vial con un plan y ponle el nombre de un compuesto para verlo aquí. Los viales de hormonas en UI no se pueden representar: el modelo está en mg.',
+    choose: 'Qué vial',
+    perWeek: 'por semana',
+    halfLife: 'semivida',
+    titration: 'Un plan escalonado se dibuja en el paso en el que estás ahora. La curva cambia cuando cambia la dosis.',
+    strength: 'Concentración',
+    note: 'Solo ilustrativo: es la aritmética de lib/pk.ts, no una medición ni una predicción.',
+  },
   check: {
     title: 'Comprueba antes de extraer',
     hint: 'Acerca el vial a la pantalla y comprueba que el nombre coincide.',
