@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n/I18nContext';
 import type { AnabolicForm, PeptideForm } from '../types';
+import { Icon } from './Icon';
 
 /**
  * A starting point the user can load with one tap. The numbers are illustrative
@@ -41,7 +42,7 @@ export function FirstRunCard({ onApply, onDismiss }: FirstRunCardProps) {
     <section className="first-run" aria-labelledby="first-run-title">
       <div className="first-run__lead">
         <span className="first-run__icon" aria-hidden="true">
-          👋
+          <Icon name="sparkles" size={22} />
         </span>
         <div>
           <p className="first-run__title" id="first-run-title">

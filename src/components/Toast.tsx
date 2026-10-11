@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { Icon } from './Icon';
 
 interface ToastProps {
   /** The message to show; an empty string hides the toast. */
@@ -47,7 +48,7 @@ export function Toast({
         aria-label={strings.toast.dismiss}
         onClick={onDismiss}
       >
-        ×
+        <Icon name="close" size={16} />
       </button>
     </div>
   );

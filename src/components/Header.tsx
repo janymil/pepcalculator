@@ -2,6 +2,7 @@ import { LANGUAGES, LANGUAGE_LABELS } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import type { Lang } from '../i18n/types';
 import type { ThemeName } from '../types';
+import { Icon } from './Icon';
 
 interface HeaderProps {
   theme: ThemeName;
@@ -16,7 +17,7 @@ export function Header({ theme, onThemeToggle }: HeaderProps) {
     <header className="app-header">
       <div className="brand">
         <span className="brand__mark" aria-hidden="true">
-          💊
+          <Icon name="pill" size={22} />
         </span>
         <div className="brand__text">
           <h1 className="brand__name">{strings.appName}</h1>
@@ -46,7 +47,7 @@ export function Header({ theme, onThemeToggle }: HeaderProps) {
           aria-label={strings.theme.label}
           title={strings.theme.label}
         >
-          <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={19} />
         </button>
       </div>
     </header>

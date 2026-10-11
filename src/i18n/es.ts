@@ -82,6 +82,7 @@ export const es: Strings = {
       'Solo unos {volume} mL — es muy difícil medirlo con precisión con una jeringa de aceite. Revisa bien la dosis y las marcas de la jeringa.',
   },
   actions: { reset: 'Restablecer' },
+  validation: { invalidNumber: 'Introduce un número mayor que 0.' },
   units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
   disclaimer: {
     title: 'No es consejo médico',
@@ -158,6 +159,12 @@ export const es: Strings = {
       'Solo orientativo: una vez mezclado con agua bacteriostática, un vial suele conservarse hasta 28 días. Consulta tu producto.',
     costPerDose: 'Coste por dosis',
     planCost: 'Coste del plan',
+    details: 'Ver detalles',
+    search: 'Buscar viales',
+    sortLabel: 'Ordenar',
+    sortNewest: 'Más recientes',
+    sortName: 'Nombre',
+    sortExpiry: 'Caducidad',
   },
   schedule: {
     title: '¿Cuándo lo tomas?',

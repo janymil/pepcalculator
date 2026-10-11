@@ -1,6 +1,7 @@
 import { MODES } from '../config/modes';
 import { useI18n } from '../i18n/I18nContext';
 import type { ModeId } from '../lib/calc';
+import { Icon } from './Icon';
 
 interface ModeTabsProps {
   mode: ModeId;
@@ -28,7 +29,7 @@ export function ModeTabs({ mode, onChange }: ModeTabsProps) {
             onClick={() => onChange(item.id)}
           >
             <span className="mode__icon" aria-hidden="true">
-              {item.icon}
+              <Icon name={item.icon} size={22} />
             </span>
             <span className="mode__body">
               <span className="mode__head">

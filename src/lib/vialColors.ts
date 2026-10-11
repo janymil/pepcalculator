@@ -9,17 +9,21 @@
  * stand out on both the light and the dark theme.
  */
 
+/**
+ * A muted categorical palette: mid-tone, slightly desaturated hues that stay
+ * readable as small dots on both themes and never shout over the accent colour.
+ */
 export const VIAL_COLORS = [
-  '#0d9488', // teal
-  '#2563eb', // blue
-  '#7c3aed', // violet
-  '#db2777', // pink
-  '#ea580c', // orange
-  '#ca8a04', // amber
-  '#16a34a', // green
-  '#0891b2', // cyan
-  '#4f46e5', // indigo
-  '#be123c', // rose
+  '#0e8a7d', // teal
+  '#4a63c8', // indigo
+  '#7a5bc4', // violet
+  '#b8467f', // plum
+  '#b8630f', // amber
+  '#0e7490', // cyan
+  '#4a7c59', // moss
+  '#8f5a3c', // clay
+  '#5b6b7c', // slate
+  '#7d6a2f', // olive
 ] as const;
 
 /** Index into `VIAL_COLORS` for a vial id (djb2-style, deterministic). */

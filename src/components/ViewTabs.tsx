@@ -1,12 +1,13 @@
 import { useI18n } from '../i18n/I18nContext';
 import { VIEWS, type ViewId } from '../lib/views';
+import { Icon, type IconName } from './Icon';
 
-const VIEW_ICONS: Record<ViewId, string> = {
-  calculator: '🧮',
-  vials: '🧪',
-  calendar: '📅',
-  reference: '📖',
-  settings: '⚙️',
+const VIEW_ICONS: Record<ViewId, IconName> = {
+  calculator: 'calculator',
+  vials: 'flask',
+  calendar: 'calendar',
+  reference: 'book',
+  settings: 'settings',
 };
 
 interface ViewTabsProps {
@@ -34,7 +35,7 @@ export function ViewTabs({ view, onChange }: ViewTabsProps) {
             onClick={() => onChange(id)}
           >
             <span className="views__icon" aria-hidden="true">
-              {VIEW_ICONS[id]}
+              <Icon name={VIEW_ICONS[id]} size={18} />
             </span>
             <span className="views__label">{strings.views[id]}</span>
           </button>

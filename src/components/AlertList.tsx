@@ -2,11 +2,12 @@ import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import type { CalcWarning, WarningSeverity } from '../lib/calc';
 import { fmt } from '../lib/format';
+import { Icon, type IconName } from './Icon';
 
-const ICONS: Record<WarningSeverity, string> = {
-  error: '⛔',
-  warning: '⚠️',
-  info: 'ℹ️',
+const ICONS: Record<WarningSeverity, IconName> = {
+  error: 'error',
+  warning: 'alert',
+  info: 'info',
 };
 
 /** Formats the numeric placeholders inside a warning so they read nicely. */
@@ -40,7 +41,7 @@ export function AlertList({ warnings }: { warnings: CalcWarning[] }) {
           role={warning.severity === 'error' ? 'alert' : undefined}
         >
           <span className="alert__icon" aria-hidden="true">
-            {ICONS[warning.severity]}
+            <Icon name={ICONS[warning.severity]} size={18} />
           </span>
           <span>{interpolate(strings.warnings[warning.code], formatParams(warning))}</span>
         </li>

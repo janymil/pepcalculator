@@ -56,6 +56,10 @@ export interface Strings {
   syringeVisual: { ariaLabel: string };
   warnings: Record<WarningCode, string>;
   actions: { reset: string };
+  validation: {
+    /** Shown under a field whose text is not a usable positive number. */
+    invalidNumber: string;
+  };
   units: { mg: string; mcg: string; ml: string };
   disclaimer: { title: string; body: string; pointOfUse: string };
   firstRun: {
@@ -127,6 +131,15 @@ export interface Strings {
     costPerDose: string;
     /** Cost to finish the whole saved plan, derived from the vial price. */
     planCost: string;
+    /** Accessible label for the button that expands a vial card's detail. */
+    details: string;
+    /** Placeholder for the vial search box. */
+    search: string;
+    /** Label for the sort control. */
+    sortLabel: string;
+    sortNewest: string;
+    sortName: string;
+    sortExpiry: string;
   };
   schedule: {
     title: string;

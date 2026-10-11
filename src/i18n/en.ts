@@ -82,6 +82,7 @@ export const en: Strings = {
       'Only about {volume} mL — that is very hard to measure accurately with an oil syringe. Double-check the dose and the graduations on your syringe.',
   },
   actions: { reset: 'Reset' },
+  validation: { invalidNumber: 'Enter a number greater than 0.' },
   units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
   disclaimer: {
     title: 'Not medical advice',
@@ -158,6 +159,12 @@ export const en: Strings = {
       'Guidance only: once mixed with bacteriostatic water a vial is usually kept for up to 28 days. Check your own product.',
     costPerDose: 'Cost per dose',
     planCost: 'Plan cost',
+    details: 'Show details',
+    search: 'Search vials',
+    sortLabel: 'Sort',
+    sortNewest: 'Newest',
+    sortName: 'Name',
+    sortExpiry: 'Expiry',
   },
   schedule: {
     title: 'When do you take it?',

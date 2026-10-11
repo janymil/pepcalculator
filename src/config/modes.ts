@@ -1,3 +1,4 @@
+import type { IconName } from '../components/Icon';
 import type { MeasureSystem, ModeId } from '../lib/calc';
 
 /**
@@ -18,7 +19,7 @@ import type { MeasureSystem, ModeId } from '../lib/calc';
  */
 export interface ModeMeta {
   id: ModeId;
-  icon: string;
+  icon: IconName;
   /** How the drawn amount is read off the syringe for this workflow. */
   measure: MeasureSystem;
   /** Syringe sizes (in mL) offered for this workflow. */
@@ -30,14 +31,14 @@ export interface ModeMeta {
 export const MODES: readonly ModeMeta[] = [
   {
     id: 'peptide',
-    icon: '🧬',
+    icon: 'dna',
     measure: 'insulin',
     capacities: [0.3, 0.5, 1, 2, 3],
     defaultCapacityMl: 1,
   },
   {
     id: 'anabolic',
-    icon: '💉',
+    icon: 'syringe',
     measure: 'volume',
     capacities: [1, 2, 3, 5, 10],
     defaultCapacityMl: 3,

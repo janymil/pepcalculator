@@ -15,6 +15,7 @@ import { fmt, formatDate, monthLabel, weekdayShort } from '../lib/format';
 import { normalizeTimes, planEndDate } from '../lib/schedule';
 import { filterVialsByKind, type KindFilter, type SavedVial } from '../lib/vials';
 import { vialColor } from '../lib/vialColors';
+import { Icon } from './Icon';
 import { KindFilterControl } from './KindFilterControl';
 
 /** Weeks start on Monday, matching the rest of the app. */
@@ -144,7 +145,7 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
       {!hasPlan ? (
         <div className="empty">
           <span className="empty__icon" aria-hidden="true">
-            📅
+            <Icon name="calendar" size={26} />
           </span>
           <p className="empty__title">{strings.agenda.empty}</p>
           {onGoToCalculator ? (

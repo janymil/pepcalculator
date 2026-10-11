@@ -82,6 +82,7 @@ export const sk: Strings = {
       'Len približne {volume} mL — veľmi ťažké presne odmerať olejovou striekačkou. Skontrolujte dávku aj dieliky na striekačke.',
   },
   actions: { reset: 'Vymazať' },
+  validation: { invalidNumber: 'Zadajte číslo väčšie ako 0.' },
   units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
   disclaimer: {
     title: 'Toto nie je lekárska rada',
@@ -158,6 +159,12 @@ export const sk: Strings = {
       'Len orientačne: po nariedení bakteriostatickou vodou sa fľaštička zvyčajne používa najviac 28 dní. Overte si to pre svoj produkt.',
     costPerDose: 'Cena za dávku',
     planCost: 'Cena plánu',
+    details: 'Zobraziť podrobnosti',
+    search: 'Hľadať fľaštičky',
+    sortLabel: 'Zoradiť',
+    sortNewest: 'Najnovšie',
+    sortName: 'Podľa názvu',
+    sortExpiry: 'Exspirácia',
   },
   schedule: {
     title: 'Kedy to užívate?',

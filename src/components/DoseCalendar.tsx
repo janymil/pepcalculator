@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { addDays, addMonths, startOfWeek, toIsoDate, weekdayOf } from '../lib/dates';
 import { formatDate, monthLabel, weekdayShort } from '../lib/format';
 import { doseDaysInMonth, timesOnDay, type VialSchedule } from '../lib/schedule';
+import { Icon } from './Icon';
 import { SegmentedControl, type SegmentedOption } from './SegmentedControl';
 
 /** Weeks start on Monday, matching how the schedule form lists days. */
@@ -65,7 +66,7 @@ export function DoseCalendar({ schedule, todayIso, nowTime }: DoseCalendarProps)
           onClick={() => shift(-1)}
           aria-label={strings.schedule.prevMonth}
         >
-          ‹
+          <Icon name="chevronLeft" size={20} />
         </button>
         <span className="calendar__month">{heading}</span>
         <button
@@ -74,7 +75,7 @@ export function DoseCalendar({ schedule, todayIso, nowTime }: DoseCalendarProps)
           onClick={() => shift(1)}
           aria-label={strings.schedule.nextMonth}
         >
-          ›
+          <Icon name="chevronRight" size={20} />
         </button>
       </div>
 
