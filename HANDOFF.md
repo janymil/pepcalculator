@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **326 passing / 31 files** |
-| Build | `npm run build` | ✅ ~364 kB JS / 110 kB gzip · ~43 kB CSS |
+| Tests | `npm test` | ✅ **381 passing / 35 files** |
+| Build | `npm run build` | ✅ ~388 kB JS / 118 kB gzip · ~46 kB CSS |
 
 ## Run it
 
@@ -307,7 +307,38 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
 **saved anabolics** with kind filters and per-vial calendar colours, and the **tombstone purge**
 (90-day retention, swept on open and after every merge, with the trade-off documented).
 
-**Shipped since (326 tests, 31 files):**
+**Shipped since (381 tests, 35 files) — four workflows, and everything that hung off them:**
+
+- **IU as a first-class unit** (`lib/calc.ts`) — `DoseUnit` gained `'IU'`, and the engine now
+  works in the **base unit of each family** (mg for mass, IU for activity) and **refuses to mix
+  families** instead of inventing a factor. Derived fields were renamed
+  `concentrationPerMl` / `doseBase` / `totalVialBase` to say what they actually hold. HGH/HCG is
+  its own workflow and vial kind; it answers in **mL** with the graduations beside it, because
+  "units" on a barrel collides with the IU on the label. **Additive schema only — no storage-key
+  migration was needed** (the earlier note about a `v2` migration was over-cautious: a new
+  *value* in an existing field needs no migration, only new *keys* would).
+- **Pen workflows / GLP-1** — `MeasureSystem` gained `'clicks'`; the result carries clicks
+  alongside units and mL. Dial resolution is always an input (`DEFAULT_CLICKS_PER_ML`), never a
+  brand table. Saved pens remember `device: 'pen'`, so every surface says clicks.
+- **Step-up (titration) plans** (`DosePhase[]` on `VialSchedule`) — the biggest remaining gap for
+  GLP-1. `phaseDoseOn` / `phaseIndexOn` / `phaseWindows` are the whole API; `today.ts` asks for
+  **the date's** dose, and `supply.ts` was rewritten to subtract **what each day actually draws**
+  rather than a fixed dose, so a vial lasts longer while the dose is still low. The printed sheet
+  emits one row per step — printing a single "draw to X" line would be actively misleading.
+- **Sync conflict awareness** — `mergeWithConflicts` reports the cases where both devices changed
+  the same vial to different things (including a deletion racing an edit). The merge itself is
+  unchanged; Settings now says how many edits were resolved newest-wins.
+- **A unit converter** — `lib/convert.ts`, pure: mg ↔ mcg, and one draw in mL / graduations /
+  clicks. No IU row, on purpose.
+- **Plot your own protocol** — `PkChart` was extracted from the Reference page so the same chart
+  draws either a compound's typical dose or the user's actual plan. It refuses to draw when a
+  half-life, a cadence or a mg dose is missing, and says what is missing.
+- **Check before you draw** (`DrawCheck.tsx`) — a full-screen overlay: which vial, how much,
+  where — and nothing else.
+- **Readability mode** — opt-in larger type, stronger borders, and a **non-colour marker**: a
+  stripe pattern on every vial dot whose angle comes from the vial id (`vialPatternAngle`).
+
+**Shipped earlier (326 tests, 31 files) — supply, sites, intervals:**
 
 - **Supply outlook** (`lib/supply.ts`) — when each vial runs out, which ones will expire with
   doses left, how many doses that wastes, and how many **extra vials the plans need**. Shown as
@@ -395,6 +426,24 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
     because no QR decoder is available here.
 13. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
     Recovery-code sync was chosen **deliberately** instead of email/password.
+
+## Still open
+
+The numbered roadmap above is the **current** list: items **1, 5, 6, 8, 9, 10 and 11 shipped in
+the round described under "Open items" (see the entries for sync conflicts, IU, pens + titration,
+the protocol plot, readability mode, the draw check and the converter) — the numbers are kept so
+the cross-references stay stable.
+
+- **QR pairing** — deliberately **not shipped** in this round. It needs a full QR encoder
+  (versions, error correction, masking, Reed–Solomon) and there is **no decoder available in this
+  environment to verify the output against**, so a produced symbol could not be checked by
+  scanning it. The risky half of the work is not the encoder, it is *trusting* it. If it is
+  picked up later: implement it against the published ISO/IEC 18004 vectors (the 1-M `01234567`
+  example's nine data codewords and ten EC codewords are printed in the spec) **and** verify a
+  real symbol with a real scanner before shipping. Anything less is a pairing feature nobody can
+  debug.
+- **Verify the printed sheet by actually printing it** — the last unverified surface in the app.
+  `@media print` can only be confirmed at a printer, not in a headless browser.
 
 ## How to extend safely
 

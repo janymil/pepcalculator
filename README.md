@@ -13,14 +13,18 @@ An **installable, offline-first** web app (five pages: Calculator · My vials ·
 
 Type what's on your vial and the app answers, live, with the volume (mL) and insulin units to draw — plus a syringe graphic and friendly warnings when a dose doesn't fit.
 
-### Two modes
+### Four workflows
 
 | Mode | Who it's for | Inputs | Formula |
 | --- | --- | --- | --- |
 | 🧬 **Peptides** | Lyophilized powder you reconstitute | 1. mg (or mcg) in the vial<br>2. mL of bacteriostatic water added<br>3. desired dose | `concentration = vial ÷ water`<br>`volume = dose ÷ concentration` |
 | 💉 **Anabolics** | Oils that are already mixed | 1. concentration (mg/mL)<br>2. desired dose<br>3. vial size (optional) | `volume = dose ÷ concentration` |
+| ✨ **HGH / HCG** | Hormones labelled and dosed in **IU** | the same as peptides, in IU | the same as peptides — but answered in **mL** |
+| 💊 **GLP-1 pens** | Ready-to-use solutions you dial | 1. concentration printed on the pen<br>2. desired dose<br>3. the pen's dial (clicks per mL) | `volume = dose ÷ concentration` — answered in **clicks** |
 
 Anabolics need **no reconstitution**, so the app asks for the label concentration directly instead of vial + water.
+
+> **IU is an activity unit, not a mass.** One IU of HGH is a defined biological effect, not a number of milligrams, so the engine works in the **base unit of each family** (mg for mass, IU for activity) and **refuses to mix the two** rather than inventing a conversion factor it cannot know. An IU workflow answers in mL with the syringe graduations beside it, because "units" on a barrel would be confused with the IU printed on the vial — which is the whole reason it is a separate workflow.
 
 ### Shared features
 
@@ -34,6 +38,13 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Supply outlook** — the Vials page answers "how long does this last, and what do I order?" It projects the day each vial runs out from its plan, warns when a vial will expire with doses still in it (and roughly how many), and totals the extra vials your plans will need.
 - **Injection sites that rotate themselves** — the Today card names the next site (left abdomen, right thigh…) by counting doses from your plan, so rotating needs no logging — the same trick that already made the calendar free.
 - **Interval plans** — along with daily and chosen weekdays, a plan can repeat **every N days**: every other day, every third day, weekly, or every two weeks.
+- **Step-up (titration) plans** — a plan can change its dose over time: 0.25 mg for four weeks, then 0.5 mg until the end. The Today card draws **today's step**, the supply outlook subtracts what each day *actually* draws (so the same vial lasts longer while the dose is still low), the vial card shows the steps and marks the one you are in, and the printed sheet gets **one row per step** rather than a single misleading line.
+- **Pen workflows (GLP-1)** — a pen is a third way of reading the same volume, so the answer can be in **dial clicks**. The dial resolution (clicks per mL) is an input with a plain default, never a table of brands the app could get wrong, and a dose smaller than one click warns instead of pretending to be measurable.
+- **Check before you draw** — the Today card opens a full-screen card showing only the three things that have to match — **which vial, how much, and where** — in type big enough to read at arm's length.
+- **Readability mode** — opt-in larger type, stronger borders, and a **stripe pattern on every vial dot** at one of four angles derived from the vial id, so two vials never have to be told apart by colour alone.
+- **A converter** — mg ↔ mcg, and one draw shown in **mL, syringe graduations and pen clicks** side by side. There is deliberately no IU row: there is no factor to convert with.
+- **Plot your own protocol** — the Reference sheet draws the decay curve for **your** plan (your dose, your cadence, the half-life cited for the compound the vial is named after), not just for a compound's typical dose. It says what is missing rather than guessing.
+- **Sync tells you what it overwrote** — when both devices edited the same vial the newer copy still wins, but Settings now says **how many edits were resolved that way**, instead of letting one vanish silently.
 - **A fix, not just a warning** — when a dose is too small to read off the syringe, the app works out a water volume that would put around 10 units on it and applies it with one tap.
 - **Print a protocol and vial labels** — one page with the draw amount, times, repeat pattern and end date, plus a strip of stickers for the bottles (ratio, draw amount, use-by date). The copy in the fridge always matches the app.
 - **Encrypted backups** — add a passphrase and the downloaded file is encrypted (PBKDF2 + AES-GCM); restoring asks for the same passphrase and refuses a wrong one.
