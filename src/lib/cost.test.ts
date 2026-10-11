@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { costForDoses, costPerDose, isLowStock, planCost } from './cost';
+import { costForDoses, costPerDose, costPerMonth, isLowStock, planCost } from './cost';
 
 describe('costPerDose', () => {
   it('divides the vial price by how many doses it holds', () => {
@@ -34,5 +34,22 @@ describe('isLowStock', () => {
     expect(isLowStock(2)).toBe(true);
     expect(isLowStock(10)).toBe(false);
     expect(isLowStock(null)).toBe(false);
+  });
+});
+
+describe('costPerMonth', () => {
+  it('turns a per-dose cost and a weekly cadence into a monthly figure', () => {
+    // Seven doses a week at €1 each -> 7 x 52 / 12.
+    expect(costPerMonth(1, 7)).toBe(30.33);
+  });
+
+  it('handles a twice-daily protocol', () => {
+    expect(costPerMonth(2.5, 14)).toBe(151.67);
+  });
+
+  it('has no answer without a price or a cadence', () => {
+    expect(costPerMonth(null, 7)).toBeNull();
+    expect(costPerMonth(0, 7)).toBeNull();
+    expect(costPerMonth(1, 0)).toBeNull();
   });
 });

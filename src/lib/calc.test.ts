@@ -3,6 +3,7 @@ import {
   calculateAnabolic,
   calculatePeptide,
   fromMg,
+  suggestWaterMl,
   toMg,
   unitsPerMlOf,
   type SyringeTypeId,
@@ -307,6 +308,57 @@ describe('inverse mode (draw → dose)', () => {
       inverseDoseUnit: 'mg',
     });
     expect(noConcentration.doseFromVolume).toBeNull();
+  });
+});
+
+describe('suggestWaterMl', () => {
+  it('works backwards from the units you would like to see', () => {
+    // 5 mg in 10 mL puts a 50 mcg dose at 10 units on a U-100 syringe.
+    const suggestion = suggestWaterMl({
+      vialAmount: 5,
+      vialUnit: 'mg',
+      doseAmount: 50,
+      doseUnit: 'mcg',
+      unitsPerMl: 100,
+      currentWaterMl: 2,
+    });
+
+    expect(suggestion?.waterMl).toBe(10);
+    expect(suggestion?.volumeMl).toBeCloseTo(0.1, 6);
+    expect(suggestion?.units).toBeCloseTo(10, 6);
+  });
+
+  it('stays quiet when what the user already used is just as good', () => {
+    const suggestion = suggestWaterMl({
+      vialAmount: 5,
+      vialUnit: 'mg',
+      doseAmount: 50,
+      doseUnit: 'mcg',
+      unitsPerMl: 100,
+      currentWaterMl: 10,
+    });
+
+    expect(suggestion).toBeNull();
+  });
+
+  it('never suggests more water than the cap', () => {
+    const suggestion = suggestWaterMl({
+      vialAmount: 5,
+      vialUnit: 'mg',
+      doseAmount: 10,
+      doseUnit: 'mcg',
+      unitsPerMl: 100,
+    });
+
+    expect(suggestion?.waterMl).toBe(10);
+  });
+
+  it('has nothing to suggest without usable numbers', () => {
+    const base = { vialUnit: 'mg', doseAmount: 250, doseUnit: 'mcg', unitsPerMl: 100 } as const;
+
+    expect(suggestWaterMl({ ...base, vialAmount: 0 })).toBeNull();
+    expect(suggestWaterMl({ ...base, vialAmount: 5, doseAmount: 0 })).toBeNull();
+    expect(suggestWaterMl({ ...base, vialAmount: 5, unitsPerMl: 0 })).toBeNull();
   });
 });
 

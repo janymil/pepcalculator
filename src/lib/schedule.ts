@@ -207,3 +207,15 @@ export function vialsNeeded(plannedDoses: number, dosesPerVial: number): number 
   if (!Number.isFinite(dosesPerVial) || dosesPerVial <= 0) return 1;
   return Math.max(1, Math.ceil(plannedDoses / dosesPerVial));
 }
+
+/**
+ * Average doses per week, measured over the plan's first seven days. Used for
+ * the "cost per month" line and for any other per-week view, so a
+ * twice-a-week plan and a twice-a-day one are not confused.
+ */
+export function dosesPerWeek(schedule: VialSchedule): number {
+  const perDay = timesPerDay(schedule);
+  if (perDay === 0) return 0;
+  const activeDays = countDoseDays(schedule, schedule.startsOn, addDays(schedule.startsOn, 6));
+  return activeDays * perDay;
+}

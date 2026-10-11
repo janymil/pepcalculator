@@ -3,6 +3,7 @@ import {
   DURATION_PRESETS,
   countDoseDays,
   doseDaysInMonth,
+  dosesPerWeek,
   durationPresetId,
   elapsedDoses,
   isDoseDay,
@@ -277,5 +278,24 @@ describe('vialsNeeded', () => {
   it('never suggests less than one vial', () => {
     expect(vialsNeeded(0, 20)).toBe(1);
     expect(vialsNeeded(10, 0)).toBe(1);
+  });
+});
+
+describe('dosesPerWeek', () => {
+  it('counts a daily protocol as seven', () => {
+    expect(dosesPerWeek(makeSchedule())).toBe(7);
+  });
+
+  it('counts a twice-daily protocol as fourteen', () => {
+    expect(dosesPerWeek(makeSchedule({ times: ['08:00', '20:00'] }))).toBe(14);
+  });
+
+  it('counts only the chosen weekdays', () => {
+    const schedule = makeSchedule({ repeat: 'weekdays', weekdays: [1, 3, 5] });
+    expect(dosesPerWeek(schedule)).toBe(3);
+  });
+
+  it('is zero when no times are set', () => {
+    expect(dosesPerWeek(makeSchedule({ times: [] }))).toBe(0);
   });
 });

@@ -42,3 +42,13 @@ export function planCost(
 export function isLowStock(dosesLeft: number | null, threshold = 3): boolean {
   return dosesLeft !== null && dosesLeft <= threshold;
 }
+
+/**
+ * What a protocol costs per month, given what one dose costs and how often it is
+ * taken. Weeks are converted with 52/12 so a weekly protocol does not drift.
+ */
+export function costPerMonth(perDose: number | null, dosesPerWeek: number): number | null {
+  if (perDose === null || !Number.isFinite(perDose) || perDose <= 0) return null;
+  if (!Number.isFinite(dosesPerWeek) || dosesPerWeek <= 0) return null;
+  return round2((perDose * dosesPerWeek * 52) / 12);
+}

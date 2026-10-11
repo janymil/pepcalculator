@@ -260,6 +260,67 @@ export interface AnabolicInput {
 }
 
 /**
+ * Suggests a water volume that makes the draw easier to read.
+ *
+ * "Use more water" is only useful advice if it comes with a number, so this
+ * works backwards from a target: find the concentration that would put
+ * `targetUnits` on the syringe, then round the water up to the next 0.5 mL step
+ * (about what a syringe can actually measure). Returns null when the inputs are
+ * unusable, or when more water would not be an improvement on what the user
+ * already used.
+ */
+export interface WaterSuggestion {
+  /** The rounder water volume to try, in mL. */
+  waterMl: number;
+  /** The volume that would then be drawn, in mL. */
+  volumeMl: number;
+  /** The insulin units that would then show on the syringe. */
+  units: number;
+}
+
+export function suggestWaterMl(input: {
+  vialAmount: number;
+  vialUnit: DoseUnit;
+  doseAmount: number;
+  doseUnit: DoseUnit;
+  unitsPerMl: number;
+  /** How many units we would like to see on the syringe. Default 10. */
+  targetUnits?: number;
+  /** Never suggest more than this, because a vial only holds so much. Default 10 mL. */
+  maxWaterMl?: number;
+  /** What the user is using now — a suggestion must beat it to be worth showing. */
+  currentWaterMl?: number;
+}): WaterSuggestion | null {
+  const { vialAmount, vialUnit, doseAmount, doseUnit, unitsPerMl } = input;
+  const targetUnits = input.targetUnits ?? 10;
+  const maxWaterMl = input.maxWaterMl ?? 10;
+
+  if (!isPositive(unitsPerMl) || !isPositive(targetUnits)) return null;
+
+  const totalMg = toMg(vialAmount, vialUnit);
+  const doseMg = toMg(doseAmount, doseUnit);
+  if (!isPositive(totalMg) || !isPositive(doseMg)) return null;
+
+  // The volume that shows `targetUnits`, and the concentration it implies.
+  const targetVolumeMl = targetUnits / unitsPerMl;
+  const concentrationNeeded = doseMg / targetVolumeMl;
+  if (!isPositive(concentrationNeeded)) return null;
+
+  const idealWaterMl = totalMg / concentrationNeeded;
+  if (!Number.isFinite(idealWaterMl) || idealWaterMl <= 0) return null;
+
+  const rounded = Math.min(Math.ceil(idealWaterMl * 2) / 2, maxWaterMl);
+  if (rounded < 0.5) return null;
+  if (input.currentWaterMl !== undefined && rounded <= input.currentWaterMl + 0.01) return null;
+
+  const volumeMl = doseMg / (totalMg / rounded);
+  const units = volumeMl * unitsPerMl;
+  if (!Number.isFinite(units) || units <= 0) return null;
+
+  return { waterMl: rounded, volumeMl, units };
+}
+
+/**
  * Anabolics: already dissolved in oil, so there is nothing to reconstitute.
  * The label gives the concentration directly.
  *   volume = dose / concentration

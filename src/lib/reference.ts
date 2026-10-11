@@ -8,6 +8,8 @@
  * to this data.
  */
 
+import { isPositive, toMg } from './calc';
+
 export type CompoundClass = 'peptide' | 'anabolic';
 
 export interface CompoundReference {
@@ -193,4 +195,56 @@ export function formatRange(compound: CompoundReference): string {
   const { typicalLowMg, typicalHighMg, unit } = compound;
   const value = typicalLowMg === typicalHighMg ? `${typicalLowMg}` : `${typicalLowMg}–${typicalHighMg}`;
   return `${value} ${unit}`;
+}
+
+/** Letters and digits only, lower-cased — so `BPC-157`, `bpc 157` and `bpc157` agree. */
+function normalizeName(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Finds the reference entry a user's vial name refers to, if any.
+ *
+ * Matching is deliberately forgiving about punctuation and spacing (`BPC 157`,
+ * `bpc-157`, `bpc157` all match) but still tight: a full match, or a prefix of
+ * at least four characters. That way "TB-500" finds `TB-500 (Thymosin β4)`
+ * without a loose "contains" search quietly matching the wrong compound.
+ */
+export function matchCompound(name: string): CompoundReference | undefined {
+  const needle = normalizeName(name);
+  if (needle.length < 3) return undefined;
+
+  const exact = COMPOUNDS.find(
+    (compound) =>
+      normalizeName(compound.id) === needle || normalizeName(compound.name) === needle,
+  );
+  if (exact) return exact;
+
+  if (needle.length < 4) return undefined;
+  return COMPOUNDS.find(
+    (compound) =>
+      normalizeName(compound.id).startsWith(needle) ||
+      normalizeName(compound.name).startsWith(needle),
+  );
+}
+
+/** Where a dose sits against a compound's commonly cited range. */
+export type RangeVerdict = 'wellBelow' | 'below' | 'within' | 'above';
+
+/**
+ * A deliberately neutral read of a dose against the cited range — used only to
+ * offer context ("this is well outside the range usually discussed"), never to
+ * advise. Returns null when there is nothing sensible to compare.
+ */
+export function rangeHint(compound: CompoundReference, doseMg: number): RangeVerdict | null {
+  if (!isPositive(doseMg)) return null;
+
+  const low = toMg(compound.typicalLowMg, compound.unit);
+  const high = toMg(compound.typicalHighMg, compound.unit);
+  if (!isPositive(low) || !isPositive(high)) return null;
+
+  if (doseMg < low * 0.5) return 'wellBelow';
+  if (doseMg < low) return 'below';
+  if (doseMg > high) return 'above';
+  return 'within';
 }
