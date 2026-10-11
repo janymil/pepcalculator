@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PepCalculator — animated explainer</title>
+    <style>
+      :root {
+        --paper: #fdfcf8;
+        --ink: #1f2937;
+        --accent: #0d9488;
+        --panel: #ffffff;
+        --line: #e7e9ef;
+        --muted: #6b7280;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: #eef1f5;
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+      }
+      h1 { font-size: 1rem; margin: 0; letter-spacing: -0.01em; }
+      h1 span { color: var(--muted); font-weight: 500; }
+      .stage {
+        width: min(1280px, 100%);
+        aspect-ratio: 16 / 9;
+        background: var(--paper);
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 44px -24px rgba(15, 23, 42, 0.4);
+        overflow: hidden;
+      }
+      canvas { display: block; width: 100%; height: 100%; }
+      .bar {
+        width: min(1280px, 100%);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      button {
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 8px 14px;
+        color: var(--ink);
+        background: #f5f6f9;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      button:hover { border-color: #cfd4de; }
+      button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+      button.primary:hover { filter: brightness(0.95); }
+      button.active { color: var(--accent); background: rgba(13, 148, 136, 0.1); border-color: var(--accent); }
+      input[type="range"] { flex: 1 1 220px; min-width: 160px; accent-color: var(--accent); }
+      .spacer { flex: 1 1 auto; }
+      .note { font-size: 0.78rem; color: var(--muted); max-width: 1280px; }
+      .sep { width: 1px; height: 22px; background: var(--line); }
+    </style>
+  </head>
+  <body>
+    <h1>PepCalculator <span>— animated explainer (hand-drawn)</span></h1>
+
+    <div class="stage">
+      <canvas id="c" width="1280" height="720"></canvas>
+    </div>
+
+    <div class="bar">
+      <button id="play" class="primary">Play</button>
+      <button id="restart">Restart</button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Timeline" />
+      <span id="clock" class="note" style="min-width: 78px; text-align: right">0:00 / 0:00</span>
+      <div class="sep"></div>
+      <button id="lang-en" class="active">EN</button>
+      <button id="lang-sk">SK</button>
+      <button id="lang-es">ES</button>
+      <div class="spacer"></div>
+      <button id="export" class="primary">Export video (.webm)</button>
+    </div>
+
+    <p class="note">
+      Screen-record this page to get an MP4, or press <strong>Export</strong> to record it to a
+      real <code>.webm</code> file (records in real time, ~45 s). Everything here is offline and
+      dependency-free.
+    </p>
+
+    <script>
+      /* ------------------------------------------------------------------ *
+       * PepCalculator — a small, hand-drawn explainer.
+       *
+       * Every frame is drawn on a <canvas> by code, so the same renderer can
+       * both play on screen and be recorded (canvas.captureStream + 
+       * MediaRecorder) into a real video file. No libraries, no assets.
+       * ------------------------------------------------------------------ */
+
+      const W = 1280;
+      const H = 720;
+      const FONT = '"Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Neue", cursive';
+
+      /** Deterministic noise so the "hand-drawn" wobble never flickers. */
+      function rnd(seed) {
+        const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+        return x - Math.floor(x);
+      }
+      function jit(seed, amount) {
+        return (rnd(seed) - 0.5) * 2 * (amount === undefined ? 1.4 : amount);
+      }
+
+      /* ---------- sketch drawing engine ---------- */
+
+      function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+      function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+      function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+      function polylineLength(pts) {
+        let total = 0;
+        for (let i = 1; i < pts.length; i++) {
+          total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+        }
+        return total;
+      }
+
+      function pointAt(pts, dist) {
+        let left = dist;
+        for (let i = 1; i < pts.length; i++) {
+          const seg = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+          if (left <= seg) {
+            const t = seg === 0 ? 0 : left / seg;
+            return {
+              x: lerp(pts[i - 1][0], pts[i][0], t),
+              y: lerp(pts[i - 1][1], pts[i][1], t),
+              angle: Math.atan2(pts[i][1] - pts[i - 1][1], pts[i][0] - pts[i - 1][0]),
+            };
+          }
+          left -= seg;
+        }
+        const last = pts[pts.length - 1];
+        return { x: last[0], y: last[1], angle: 0 };
+      }
+
+      /**
+       * Strokes a polyline as if drawn by hand: the line reveals up to
+       * `progress`, wobbles with *deterministic* noise (so it never flickers),
+       * and gets a faint second pass for a pen feel.
+       * Returns the tip point, so a nib can be drawn there.
+       */
+      function strokeSketch(ctx, pts, o) {
+        o = o || {};
+        const p = clamp(o.progress === undefined ? 1 : o.progress, 0, 1);
+        if (p <= 0) return null;
+        const seed = o.seed || 1;
+        const total = polylineLength(pts);
+        const target = Math.max(0.001, total * p);
+        const wobble = o.wobble === undefined ? 1.2 : o.wobble;
+        const width = o.width || 3.2;
+        const color = o.color || '#1f2937';
+
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        const steps = Math.max(2, Math.min(220, Math.round(target / 7)));
+        const build = (amp) => {
+          ctx.beginPath();
+          for (let i = 0; i <= steps; i++) {
+            const d = (target * i) / steps;
+            const q = pointAt(pts, d);
+            const nx = jit(seed + i * 3.17, amp);
+            const ny = jit(seed + i * 7.91, amp);
+            if (i === 0) ctx.moveTo(q.x + nx, q.y + ny);
+            else ctx.lineTo(q.x + nx, q.y + ny);
+          }
+        };
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        build(wobble);
+        ctx.stroke();
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = Math.max(1, width * 0.55);
+        build(wobble * 1.6);
+        ctx.stroke();
+        ctx.restore();
+
+        return pointAt(pts, target);
+      }
+
+      function rectPts(x, y, w, h) {
+        return [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
+      }
+
+      function strokeRectSketch(ctx, x, y, w, h, o) {
+        return strokeSketch(ctx, rectPts(x, y, w, h), o || {});
+      }
+
+      /** A rough circle (used for highlights and doodles). */
+      function strokeCircle(ctx, cx, cy, r, o) {
+        o = o || {};
+        const steps = 48;
+        const pts = [];
+        for (let i = 0; i <= steps; i++) {
+          const a = (i / steps) * Math.PI * 2 - Math.PI / 2;
+          const rr = r * (1 + jit((o.seed || 3) + i, 0.012));
+          pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+        }
+        return strokeSketch(ctx, pts, o);
+      }
+
+      /** Hand-written-looking text, revealed left→right by `progress`. */
+      function drawText(ctx, text, x, y, o) {
+        o = o || {};
+        const size = o.size || 34;
+        const weight = o.weight || 700;
+        ctx.save();
+        ctx.font = weight + ' ' + size + 'px ' + FONT;
+        ctx.textBaseline = o.baseline || 'alphabetic';
+        ctx.textAlign = o.align || 'left';
+        const w = ctx.measureText(text).width;
+        const p = clamp(o.progress === undefined ? 1 : o.progress, 0, 1);
+        if (p < 1) {
+          let x0 = x;
+          if (o.align === 'center') x0 = x - w / 2;
+          if (o.align === 'right') x0 = x - w;
+          ctx.beginPath();
+          ctx.rect(x0 - size * 0.3, y - size * 1.35, w * p + size * 0.6, size * 2);
+          ctx.clip();
+        }
+        ctx.fillStyle = o.color || '#1f2937';
+        ctx.fillText(text, x, y);
+        ctx.restore();
+        return w;
+      }
+
+      /** The little pen nib that follows whatever is being drawn. */
+      function nib(ctx, pt, color) {
+        if (!pt) return;
+        ctx.save();
+        ctx.fillStyle = color || '#0d9488';
+        ctx.globalAlpha = 0.22;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function arrow(ctx, from, to, o) {
+        o = o || {};
+        const tip = strokeSketch(ctx, [[from[0], from[1]], [to[0], to[1]]], o);
+        const done = o.progress === undefined || o.progress >= 1;
+        if (!tip || !done) return tip;
+        ctx.save();
+        ctx.translate(to[0], to[1]);
+        ctx.rotate(tip.angle);
+        ctx.fillStyle = o.color || '#1f2937';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-16, -8);
+        ctx.lineTo(-16, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        return tip;
+      }
+
+      /** A tick (yes) or cross (never) mark. */
+      function mark(ctx, kind, cx, cy, size, o) {
+        const s = size || 18;
+        if (kind === 'cross') {
+          const a = strokeSketch(ctx, [[cx - s, cy + s], [cx + s, cy - s]], o);
+          strokeSketch(ctx, [[cx - s, cy - s], [cx + s, cy + s]], o);
+          return a;
+        }
+        return strokeSketch(ctx, [[cx - s, cy], [cx - s * 0.25, cy + s * 0.72], [cx + s, cy - s * 0.72]], o);
+      }
+
+      /* ---------- doodles (simple, hand-drawn shapes) ---------- */
+
+      /** A little vial. */
+      function drawVial(ctx, x, y, s, o) {
+        o = o || {};
+        const p = o.progress === undefined ? 1 : o.progress;
+        const tip = strokeSketch(
+          ctx,
+          [
+            [x, y],
+            [x + s * 0.62, y],
+            [x + s * 0.62, y + s * 0.6],
+            [x + s, y + s * 0.9],
+            [x + s, y + s * 1.75],
+            [x - s * 0.38, y + s * 1.75],
+            [x - s * 0.38, y + s * 0.9],
+            [x, y + s * 0.6],
+            [x, y],
+          ],
+          { progress: p, seed: 11, color: o.color, width: o.width || 2.8 },
+        );
+        if (p >= 1) {
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          strokeSketch(
+            ctx,
+            [
+              [x - s * 0.38, y + s * 1.35],
+              [x + s, y + s * 1.35],
+            ],
+            { seed: 12, color: o.color || '#0d9488', width: 3 },
+          );
+          ctx.restore();
+        }
+        return tip;
+      }
+
+      /** A syringe with a fill level and a dashed target line. */
+      function drawSyringe(ctx, x, y, w, h, fill, o) {
+        o = o || {};
+        const cx = x;
+        const cy = y;
+        const body = rectPts(cx, cy, w, h);
+        const tip = strokeSketch(ctx, body, { progress: o.progress, seed: 21, width: 3, color: '#1f2937' });
+        if (o.progress !== undefined && o.progress < 1) return tip;
+
+        // needle
+        strokeSketch(ctx, [[cx + w, cy + h / 2], [cx + w + 46, cy + h / 2]], { seed: 22, width: 2.6 });
+        // plunger rod
+        strokeSketch(ctx, [[cx - 34, cy + h / 2], [cx, cy + h / 2]], { seed: 23, width: 6, color: '#9ca3af' });
+        // graduations
+        for (let i = 0; i <= 4; i++) {
+          strokeSketch(ctx, [[cx + (w * i) / 4, cy], [cx + (w * i) / 4, cy + 10]], { seed: 30 + i, width: 1.6 });
+        }
+        // liquid
+        const level = clamp(fill, 0, 1);
+        if (level > 0) {
+          ctx.save();
+          ctx.globalAlpha = 0.75;
+          ctx.fillStyle = '#2dd4bf';
+          ctx.fillRect(cx + w * (1 - level), cy + 3, w * level, h - 6);
+          ctx.restore();
+        }
+        // dashed target marker = a slight wobble so it reads as a pencil line
+        ctx.save();
+        ctx.setLineDash([7, 6]);
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(cx + w * (1 - level), cy - 16);
+        ctx.lineTo(cx + w * (1 - level), cy + h + 16);
+        ctx.stroke();
+        ctx.restore();
+        return tip;
+      }
+
+      /* ---------- copy (en / sk / es) ---------- */
+
+      const LANGS = {
+        en: {
+          s1_title: 'PepCalculator',
+          s1_sub: 'Turn a dose into the units to draw.',
+          s2_head: 'You know the dose. You need the draw.',
+          s2_vial: '5 mg in the vial',
+          s2_water: '2 mL of bac water',
+          s2_dose: 'you want 250 mcg',
+          s2_q: 'how many units?',
+          s3_head: 'The app does the maths',
+          s3_conc: 'concentration = 5 mg / 2 mL = 2.5 mg/mL',
+          s3_vol: 'volume = 0.25 mg / 2.5 = 0.1 mL',
+          s3_units: 'units = 0.1 x 100 = 10',
+          s4_label: 'DRAW TO',
+          s4_value: '10 units',
+          s4_sub: 'that is 0.1 mL on a U-100 syringe',
+          s5_head: 'Today',
+          s5_name: 'BPC-157',
+          s5_time: 'next dose at 20:00',
+          s5_draw: 'draw 10 units',
+          s5_load: 'one tap loads it',
+          s6_head: 'Your stack. Their stack.',
+          s6_me: 'Me',
+          s6_her: 'Wife',
+          s6_never: 'never mixed',
+          s7_head: 'Plans and calendar',
+          s7_left: 'doses left',
+          s7_vials: 'vials needed',
+          s7_bud: '28-day use-by',
+          s8_head: 'Offline and private',
+          s8_a: 'works with no signal',
+          s8_b: 'nothing leaves this device',
+          s8_c: 'backup + sync by code',
+          s9_head: 'Peptides and anabolic oils',
+          s9_note: 'Not medical advice - it only does the maths.',
+          s9_end: 'PepCalculator',
+        },
+        sk: {
+          s1_title: 'PepCalculator',
+          s1_sub: 'Premeňte dávku na jednotky, ktoré natiahnete.',
+          s2_head: 'Dávku poznáte. Potrebujete natiahnuť.',
+          s2_vial: '5 mg vo fľaštičke',
+          s2_water: '2 mL bakteriostatickej vody',
+          s2_dose: 'chcete 250 mcg',
+          s2_q: 'koľko jednotiek?',
+          s3_head: 'Výpočet spraví aplikácia',
+          s3_conc: 'koncentrácia = 5 mg / 2 mL = 2,5 mg/mL',
+          s3_vol: 'objem = 0,25 mg / 2,5 = 0,1 mL',
+          s3_units: 'jednotky = 0,1 × 100 = 10',
+          s4_label: 'NATIAHNUŤ PO',
+          s4_value: '10 jednotiek',
+          s4_sub: 'to je 0,1 mL na U-100 striekačke',
+          s5_head: 'Dnes',
+          s5_name: 'BPC-157',
+          s5_time: 'najbližšia dávka o 20:00',
+          s5_draw: 'natiahnuť 10 jednotiek',
+          s5_load: 'jedným klikom do kalkulačky',
+          s6_head: 'Vaša zásoba. Jej zásoba.',
+          s6_me: 'Ja',
+          s6_her: 'Manželka',
+          s6_never: 'nikdy sa nemieša',
+          s7_head: 'Plány a kalendár',
+          s7_left: 'zostáva dávok',
+          s7_vials: 'potrebných fľaštičiek',
+          s7_bud: '28-dňová exspirácia',
+          s8_head: 'Offline a v súkromí',
+          s8_a: 'funguje bez signálu',
+          s8_b: 'nič neopúšťa zariadenie',
+          s8_c: 'záloha + synchronizácia kódom',
+          s9_head: 'Peptidy aj anabolické oleje',
+          s9_note: 'Nie je lekárska rada – robí len výpočet.',
+          s9_end: 'PepCalculator',
+        },
+        es: {
+          s1_title: 'PepCalculator',
+          s1_sub: 'Convierte una dosis en las unidades a extraer.',
+          s2_head: 'Sabes la dosis. Necesitas la extracción.',
+          s2_vial: '5 mg en el vial',
+          s2_water: '2 mL de agua bacteriostática',
+          s2_dose: 'quieres 250 mcg',
+          s2_q: '¿cuántas unidades?',
+          s3_head: 'La app hace los cálculos',
+          s3_conc: 'concentración = 5 mg / 2 mL = 2,5 mg/mL',
+          s3_vol: 'volumen = 0,25 mg / 2,5 = 0,1 mL',
+          s3_units: 'unidades = 0,1 × 100 = 10',
+          s4_label: 'EXTRAE HASTA',
+          s4_value: '10 unidades',
+          s4_sub: 'son 0,1 mL en una jeringa U-100',
+          s5_head: 'Hoy',
+          s5_name: 'BPC-157',
+          s5_time: 'próxima dosis a las 20:00',
+          s5_draw: 'extrae 10 unidades',
+          s5_load: 'un toque y listo',
+          s6_head: 'Tu reserva. La suya.',
+          s6_me: 'Yo',
+          s6_her: 'Esposa',
+          s6_never: 'nunca se mezclan',
+          s7_head: 'Planes y calendario',
+          s7_left: 'dosis restantes',
+          s7_vials: 'viales necesarios',
+          s7_bud: 'caducidad de 28 días',
+          s8_head: 'Sin conexión y privada',
+          s8_a: 'funciona sin señal',
+          s8_b: 'nada sale del dispositivo',
+          s8_c: 'copia + sincronía por código',
+          s9_head: 'Péptidos y aceites anabólicos',
+          s9_note: 'No es consejo médico: solo calcula.',
+          s9_end: 'PepCalculator',
+        },
+      };
+
+      let lang = 'en';
+      function tr(key) {
+        return LANGS[lang][key] || LANGS.en[key] || key;
+      }
+
+      /** Progress of a sub-animation that runs between `a` and `b` of a scene. */
+      function seg(t, a, b) {
+        return clamp((t - a) / (b - a), 0, 1);
+      }
+
+      /* ---------- scenes ---------- */
+
+      const SCENES = [];
+
+      // 1 — title
+      SCENES.push({
+        dur: 3400,
+        draw(ctx, t) {
+          const titleP = seg(t, 0.06, 0.5);
+          const subP = seg(t, 0.5, 0.86);
+          drawVial(ctx, 205, 292, 58, { progress: seg(t, 0.12, 0.62) });
+          drawSyringe(ctx, 905, 330, 200, 58, 0, { progress: seg(t, 0.22, 0.8) });
+          drawText(ctx, tr('s1_title'), W / 2, 296, { size: 76, align: 'center', progress: titleP });
+          drawText(ctx, tr('s1_sub'), W / 2, 372, {
+            size: 29,
+            align: 'center',
+            progress: subP,
+            color: '#4b5563',
+            weight: 600,
+          });
+          if (titleP >= 1) {
+            strokeSketch(ctx, [[W / 2 - 250, 320], [W / 2 + 250, 324]], {
+              seed: 5,
+              color: '#0d9488',
+              width: 4,
+              progress: subP,
+            });
+          }
+        },
+      });
+
+      // 2 — the problem
+      SCENES.push({
+        dur: 4400,
+        draw(ctx, t) {
+          drawText(ctx, tr('s2_head'), 90, 108, { size: 38, progress: seg(t, 0, 0.22) });
+          const rows = [
+            { y: 210, item: 'vial', label: 's2_vial' },
+            { y: 320, item: 'drop', label: 's2_water' },
+            { y: 430, item: 'dose', label: 's2_dose' },
+          ];
+          rows.forEach((row, i) => {
+            const p = seg(t, 0.18 + i * 0.14, 0.42 + i * 0.14);
+            if (row.item === 'vial') drawVial(ctx, 118, row.y - 26, 26, { progress: p });
+            if (row.item === 'drop') {
+              const tip = strokeSketch(ctx, [[128, row.y - 10], [118, row.y + 8], [138, row.y + 8], [128, row.y - 10]], {
+                progress: p,
+                seed: 41,
+                color: '#2563eb',
+                width: 2.6,
+              });
+              nib(ctx, p < 1 ? tip : null, '#2563eb');
+            }
+            if (row.item === 'dose') strokeCircle(ctx, 128, row.y, 15, { progress: p, seed: 42, width: 2.6 });
+            drawText(ctx, tr(row.label), 176, row.y + 9, { size: 27, progress: p, weight: 600 });
+          });
+          const qP = seg(t, 0.62, 0.9);
+          strokeCircle(ctx, 940, 330, 168, { progress: qP, seed: 43, width: 4, color: '#0d9488' });
+          drawText(ctx, tr('s2_q'), 940, 344, { size: 40, align: 'center', progress: seg(t, 0.78, 1) });
+        },
+      });
+
+      // 3 — the maths
+      SCENES.push({
+        dur: 5200,
+        draw(ctx, t) {
+          drawText(ctx, tr('s3_head'), 90, 108, { size: 38, progress: seg(t, 0, 0.16) });
+          const lines = [
+            { y: 230, key: 's3_conc' },
+            { y: 350, key: 's3_vol' },
+            { y: 470, key: 's3_units' },
+          ];
+          lines.forEach((line, i) => {
+            const p = seg(t, 0.14 + i * 0.26, 0.42 + i * 0.26);
+            drawText(ctx, tr(line.key), 130, line.y, { size: 36, progress: p, weight: 600 });
+          });
+          if (t > 0.86) {
+            strokeSketch(ctx, [[120, 492], [1160, 496]], {
+              seed: 51,
+              color: '#0d9488',
+              width: 4,
+              progress: seg(t, 0.86, 1),
+            });
+          }
+        },
+      });
+
+      // 4 — the answer: how far to draw
+      SCENES.push({
+        dur: 4400,
+        draw(ctx, t) {
+          const labelP = seg(t, 0, 0.2);
+          const valueP = seg(t, 0.12, 0.5);
+          drawText(ctx, tr('s4_label'), W / 2, 170, {
+            size: 26,
+            align: 'center',
+            progress: labelP,
+            color: '#0d9488',
+            weight: 700,
+          });
+          drawText(ctx, tr('s4_value'), W / 2, 268, { size: 88, align: 'center', progress: valueP });
+          const fill = easeOut(seg(t, 0.45, 0.8)) * 0.1;
+          drawSyringe(ctx, 470, 380, 340, 84, fill, { progress: seg(t, 0.2, 0.5) });
+          drawText(ctx, tr('s4_sub'), W / 2, 560, {
+            size: 28,
+            align: 'center',
+            progress: seg(t, 0.8, 1),
+            color: '#4b5563',
+            weight: 600,
+          });
+        },
+      });
+      // 5 — the Today card
+      SCENES.push({
+        dur: 4400,
+        draw(ctx, t) {
+          drawText(ctx, tr('s5_head'), 90, 108, { size: 38, progress: seg(t, 0, 0.16) });
+          const cardP = seg(t, 0.1, 0.5);
+          strokeRectSketch(ctx, 150, 170, 980, 400, { progress: cardP, seed: 61, width: 3.4 });
+          if (cardP < 1) return;
+
+          ctx.save();
+          ctx.globalAlpha = seg(t, 0.5, 0.6);
+          ctx.fillStyle = '#0e8a7d';
+          ctx.beginPath();
+          ctx.arc(212, 250, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          drawText(ctx, tr('s5_name'), 238, 262, { size: 36, progress: seg(t, 0.5, 0.64) });
+          drawText(ctx, tr('s5_time'), 200, 316, {
+            size: 26,
+            progress: seg(t, 0.58, 0.72),
+            color: '#4b5563',
+            weight: 600,
+          });
+          drawText(ctx, tr('s5_draw'), 640, 428, {
+            size: 58,
+            align: 'center',
+            progress: seg(t, 0.66, 0.88),
+            color: '#0f766e',
+          });
+          strokeCircle(ctx, 640, 405, 190, {
+            progress: seg(t, 0.84, 0.96),
+            seed: 62,
+            width: 3,
+            color: '#0d9488',
+            wobble: 2.2,
+          });
+          drawText(ctx, tr('s5_load'), 640, 528, {
+            size: 26,
+            align: 'center',
+            progress: seg(t, 0.9, 1),
+            color: '#4b5563',
+            weight: 600,
+          });
+        },
+      });
+
+      // 6 — separate stacks, never mixed
+      SCENES.push({
+        dur: 4800,
+        draw(ctx, t) {
+          drawText(ctx, tr('s6_head'), 90, 108, { size: 38, progress: seg(t, 0, 0.16) });
+          [
+            { x: 120, label: 's6_me', seed: 71 },
+            { x: 760, label: 's6_her', seed: 72 },
+          ].forEach((box, i) => {
+            const p = seg(t, 0.12 + i * 0.16, 0.46 + i * 0.16);
+            strokeRectSketch(ctx, box.x, 210, 400, 330, {
+              progress: p,
+              seed: box.seed,
+              width: 3.4,
+            });
+            if (p < 1) return;
+            drawText(ctx, tr(box.label), box.x + 200, 186, {
+              size: 32,
+              align: 'center',
+              progress: seg(t, 0.4 + i * 0.16, 0.56 + i * 0.16),
+            });
+            const vp = seg(t, 0.52 + i * 0.14, 0.74 + i * 0.14);
+            drawVial(ctx, box.x + 120, 290, 46, { progress: vp });
+            drawVial(ctx, box.x + 250, 290, 46, { progress: vp });
+          });
+          const dp = seg(t, 0.78, 0.92);
+          ctx.save();
+          ctx.setLineDash([9, 9]);
+          strokeSketch(ctx, [[640, 200], [640, 560]], {
+            progress: dp,
+            seed: 73,
+            width: 3,
+            color: '#dc2626',
+            wobble: 0.6,
+          });
+          ctx.restore();
+          mark(ctx, 'cross', 640, 380, 24, {
+            seed: 74,
+            color: '#dc2626',
+            width: 4.5,
+            progress: seg(t, 0.86, 0.97),
+          });
+          drawText(ctx, tr('s6_never'), 640, 628, {
+            size: 30,
+            align: 'center',
+            progress: seg(t, 0.92, 1),
+            color: '#dc2626',
+          });
+        },
+      });
+
+      // 7 — calendar and plans
+      SCENES.push({
+        dur: 4400,
+        draw(ctx, t) {
+          drawText(ctx, tr('s7_head'), 90, 108, { size: 38, progress: seg(t, 0, 0.16) });
+          const cols = 7;
+          const rows = 5;
+          const cell = 60;
+          const gap = 9;
+          const dose = new Set([2, 4, 9, 11, 16, 18, 23, 25, 30]);
+          for (let i = 0; i < cols * rows; i++) {
+            const p = seg(t, 0.08 + i * 0.006, 0.36 + i * 0.006);
+            if (p <= 0) continue;
+            const cx = 140 + (i % cols) * (cell + gap);
+            const cy = 200 + Math.floor(i / cols) * (cell + gap);
+            strokeRectSketch(ctx, cx, cy, cell, cell, {
+              progress: p,
+              seed: 80 + i,
+              width: 2,
+              wobble: 0.8,
+            });
+            if (p >= 1 && dose.has(i)) {
+              ctx.save();
+              ctx.fillStyle = '#0d9488';
+              ctx.beginPath();
+              ctx.arc(cx + cell / 2, cy + cell - 13, 6, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            }
+          }
+          ['s7_left', 's7_vials', 's7_bud'].forEach((key, i) => {
+            const y = 250 + i * 100;
+            mark(ctx, 'check', 700, y - 8, 15, {
+              seed: 90 + i,
+              color: '#0d9488',
+              width: 3,
+              progress: seg(t, 0.62 + i * 0.1, 0.78 + i * 0.1),
+            });
+            drawText(ctx, tr(key), 732, y, {
+              size: 28,
+              progress: seg(t, 0.66 + i * 0.1, 0.84 + i * 0.1),
+              weight: 600,
+            });
+          });
+        },
+      });
+
+      // 8 — offline and private
+      SCENES.push({
+        dur: 3600,
+        draw(ctx, t) {
+          drawText(ctx, tr('s8_head'), 90, 132, { size: 40, progress: seg(t, 0, 0.2) });
+          ['s8_a', 's8_b', 's8_c'].forEach((key, i) => {
+            const y = 280 + i * 110;
+            strokeCircle(ctx, 150, y - 10, 30, {
+              progress: seg(t, 0.18 + i * 0.2, 0.44 + i * 0.2),
+              seed: 100 + i,
+              width: 2.6,
+            });
+            mark(ctx, 'check', 150, y - 10, 14, {
+              seed: 110 + i,
+              color: '#0d9488',
+              width: 4,
+              progress: seg(t, 0.34 + i * 0.2, 0.58 + i * 0.2),
+            });
+            drawText(ctx, tr(key), 218, y, {
+              size: 32,
+              progress: seg(t, 0.3 + i * 0.2, 0.58 + i * 0.2),
+              weight: 600,
+            });
+          });
+        },
+      });
+
+      // 9 — close
+      SCENES.push({
+        dur: 3800,
+        draw(ctx, t) {
+          strokeRectSketch(ctx, 120, 150, 1040, 420, {
+            progress: seg(t, 0, 0.34),
+            seed: 120,
+            width: 3.4,
+          });
+          drawText(ctx, tr('s9_end'), W / 2, 322, {
+            size: 72,
+            align: 'center',
+            progress: seg(t, 0.3, 0.66),
+          });
+          drawText(ctx, tr('s9_head'), W / 2, 402, {
+            size: 30,
+            align: 'center',
+            progress: seg(t, 0.5, 0.78),
+            color: '#4b5563',
+            weight: 600,
+          });
+          drawText(ctx, tr('s9_note'), W / 2, 486, {
+            size: 25,
+            align: 'center',
+            progress: seg(t, 0.68, 1),
+            color: '#b45309',
+            weight: 600,
+          });
+        },
+      });
+
+      /* ---------- player, timeline and video export ---------- */
+
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const TOTAL = SCENES.reduce((sum, s) => sum + s.dur, 0);
+
+      const playBtn = document.getElementById('play');
+      const restartBtn = document.getElementById('restart');
+      const scrub = document.getElementById('scrub');
+      const clock = document.getElementById('clock');
+      const exportBtn = document.getElementById('export');
+
+      let elapsed = 0;
+      let playing = false;
+      let lastFrame = 0;
+      let onFinished = null;
+
+      function fmtTime(ms) {
+        const secs = Math.round(ms / 1000);
+        return Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+      }
+
+      /** The scene (and its local 0..1 progress) at a point in the timeline. */
+      function sceneAt(ms) {
+        let left = clamp(ms, 0, TOTAL);
+        for (let i = 0; i < SCENES.length; i++) {
+          if (left < SCENES[i].dur) {
+            return { index: i, scene: SCENES[i], t: left / SCENES[i].dur };
+          }
+          left -= SCENES[i].dur;
+        }
+        const lastIndex = SCENES.length - 1;
+        return { index: lastIndex, scene: SCENES[lastIndex], t: 1 };
+      }
+
+      function paper() {
+        ctx.fillStyle = '#fdfcf8';
+        ctx.fillRect(0, 0, W, H);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.05)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(64, 0);
+        ctx.lineTo(64, H);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function watermark() {
+        ctx.save();
+        ctx.font = '600 20px ' + FONT;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.16)';
+        ctx.textAlign = 'right';
+        ctx.fillText('PepCalculator', W - 40, H - 30);
+        ctx.restore();
+      }
+
+      function render(ms) {
+        paper();
+        const at = sceneAt(ms);
+        at.scene.draw(ctx, clamp(at.t, 0, 1));
+        watermark();
+
+        // scene dots along the bottom
+        ctx.save();
+        let dotX = W / 2 - (SCENES.length * 17) / 2;
+        SCENES.forEach((_, i) => {
+          ctx.beginPath();
+          ctx.arc(dotX, H - 42, i === at.index ? 5 : 3.4, 0, Math.PI * 2);
+          ctx.fillStyle = i === at.index ? 'rgba(13, 148, 136, 0.8)' : 'rgba(15, 23, 42, 0.18)';
+          ctx.fill();
+          dotX += 17;
+        });
+        ctx.restore();
+
+        clock.textContent = fmtTime(ms) + ' / ' + fmtTime(TOTAL);
+        scrub.value = String(Math.round((ms / TOTAL) * 1000));
+      }
+
+      function frame(now) {
+        if (!lastFrame) lastFrame = now;
+        const dt = now - lastFrame;
+        lastFrame = now;
+
+        if (playing) {
+          elapsed += dt;
+          if (elapsed >= TOTAL) {
+            elapsed = TOTAL;
+            playing = false;
+            playBtn.textContent = 'Play';
+            playBtn.classList.add('primary');
+            if (onFinished) {
+              const done = onFinished;
+              onFinished = null;
+              done();
+            }
+          }
+        }
+
+        render(elapsed);
+        requestAnimationFrame(frame);
+      }
+
+      function setPlaying(next) {
+        playing = next;
+        playBtn.textContent = next ? 'Pause' : 'Play';
+        playBtn.classList.toggle('primary', !next);
+      }
+
+      playBtn.addEventListener('click', () => {
+        if (elapsed >= TOTAL) elapsed = 0;
+        setPlaying(!playing);
+      });
+
+      restartBtn.addEventListener('click', () => {
+        elapsed = 0;
+        setPlaying(false);
+      });
+
+      scrub.addEventListener('input', () => {
+        setPlaying(false);
+        elapsed = (Number(scrub.value) / 1000) * TOTAL;
+      });
+
+      function setLang(next) {
+        lang = next;
+        ['en', 'sk', 'es'].forEach((code) => {
+          document.getElementById('lang-' + code).classList.toggle('active', code === next);
+        });
+      }
+      ['en', 'sk', 'es'].forEach((code) => {
+        document.getElementById('lang-' + code).addEventListener('click', () => setLang(code));
+      });
+
+      /* ---------- export the animation to a real video file ---------- */
+
+      function pickMime() {
+        const options = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+        for (const m of options) {
+          if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+        }
+        return '';
+      }
+
+      exportBtn.addEventListener('click', () => {
+        if (!window.MediaRecorder || !canvas.captureStream) {
+          alert(
+            'This browser cannot record video. Use Chrome/Edge, or screen-record this page instead.',
+          );
+          return;
+        }
+
+        exportBtn.disabled = true;
+        exportBtn.textContent = 'Recording…';
+        elapsed = 0;
+        setPlaying(true);
+
+        const stream = canvas.captureStream(30);
+        const mime = pickMime();
+        const recorder = new MediaRecorder(
+          stream,
+          mime ? { mimeType: mime, videoBitsPerSecond: 8000000 } : undefined,
+        );
+        const chunks = [];
+
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size) chunks.push(event.data);
+        };
+
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: mime || 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'pepcalculator-explainer-' + lang + '.webm';
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+          exportBtn.disabled = false;
+          exportBtn.textContent = 'Export video (.webm)';
+          setPlaying(false);
+        };
+
+        recorder.start();
+        onFinished = () => recorder.stop();
+      });
+
+      // Optional deep-links: ?lang=sk and ?at=12000 (milliseconds) — handy for
+      // screenshots and for sharing a single frame.
+      const params = new URLSearchParams(location.search);
+      const wantedLang = params.get('lang');
+      if (wantedLang && LANGS[wantedLang]) setLang(wantedLang);
+      const wantedAt = Number(params.get('at'));
+      if (Number.isFinite(wantedAt) && wantedAt > 0) elapsed = clamp(wantedAt, 0, TOTAL);
+
+      render(elapsed);
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>
