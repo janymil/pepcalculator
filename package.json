@@ -9,6 +9,7 @@
     "dev:host": "vite --host",
     "server": "node --disable-warning=ExperimentalWarning server/server.mjs",
     "server:watch": "node --watch --disable-warning=ExperimentalWarning server/server.mjs",
+    "icons": "node scripts/generate-icons.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "preview:host": "vite preview --host",

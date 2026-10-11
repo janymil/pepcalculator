@@ -67,6 +67,8 @@ export interface Strings {
     namePlaceholder: string;
     untitled: string;
     dateLabel: string;
+    /** Date field label for anabolic vials (they are never "reconstituted"). */
+    dateLabelAnabolic: string;
     dosesLeft: string;
     volumeLeft: string;
     perDose: string;
@@ -75,6 +77,8 @@ export interface Strings {
     daysLeft: string;
     lastDay: string;
     expired: string;
+    /** Shown instead of a use-by date for anabolics, which have no 28-day BUD. */
+    noExpiry: string;
     load: string;
     addDose: string;
     removeDose: string;
@@ -158,5 +162,61 @@ export interface Strings {
     errorServer: string;
     errorBadPayload: string;
     errorUnavailable: string;
+  };
+  reminders: {
+    title: string;
+    intro: string;
+    enable: string;
+    disable: string;
+    allow: string;
+    permissionGranted: string;
+    permissionDefault: string;
+    permissionDenied: string;
+    permissionUnsupported: string;
+    /** e.g. "Next: {name}" — the following date/time is appended by the UI. */
+    nextUp: string;
+    noneUpcoming: string;
+    today: string;
+    tomorrow: string;
+    installedHint: string;
+    keepOpenHint: string;
+    /** Title of the OS notification. */
+    notifyTitle: string;
+    /** Body of the OS notification. */
+    notifyBody: string;
+  };
+  views: {
+    /** Accessible name for the page switcher. */
+    label: string;
+    calculator: string;
+    vials: string;
+    calendar: string;
+    settings: string;
+  };
+  kinds: {
+    /** Accessible name for the peptide/anabolic filter. */
+    label: string;
+    all: string;
+    peptide: string;
+    anabolic: string;
+  };
+  agenda: {
+    subtitle: string;
+    empty: string;
+    calendarAria: string;
+    today: string;
+    upcoming: string;
+    upcomingNone: string;
+    plans: string;
+    /** e.g. "Days: {days}". */
+    onDays: string;
+    /** e.g. "Times: {times}". */
+    atTimes: string;
+    /** Overflow marker inside a day cell, e.g. "+{count}". */
+    more: string;
+  };
+  settings: {
+    title: string;
+    subtitle: string;
   };
 }

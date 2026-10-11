@@ -20,6 +20,12 @@ export const BUD_DAYS = 28;
 /** A dose below this many mL cannot realistically be measured. */
 export const MIN_MEASURABLE_ML = 0.02;
 
+/** Peptides are reconstituted powder; anabolics are ready-to-use oils. */
+export type VialKind = 'peptide' | 'anabolic';
+
+/** UI filter: everything, or a single kind. */
+export type KindFilter = 'all' | VialKind;
+
 export interface SavedVial {
   id: string;
   name: string;
@@ -30,6 +36,16 @@ export interface SavedVial {
   vialUnit: DoseUnit;
   /** mL of bacteriostatic water that was added. */
   waterMl: number;
+  /**
+   * `'peptide'` (reconstituted powder) or `'anabolic'` (ready-to-use oil).
+   * Records saved before kinds existed have no value — `vialKind()` treats
+   * those as peptides.
+   */
+  kind?: VialKind;
+  /** Anabolics only: the strength on the label, in mg per mL. */
+  concentrationMgPerMl?: number;
+  /** Anabolics only: vial size in mL, when known. */
+  vialMl?: number;
   /** The dose this vial is being used for. */
   doseAmount: number;
   doseUnit: DoseUnit;
@@ -68,33 +84,68 @@ export interface VialStatus {
   volumeLeftMl: number;
   /** Fraction of the vial still remaining, 0..1. */
   percentLeft: number;
-  /** ISO date the vial should be discarded by. */
-  expiresOn: string;
-  /** Whole days until `expiresOn`; negative once it has passed. */
-  daysUntilExpiry: number;
+  /** ISO date the vial should be discarded by; `null` for anabolics (no BUD rule). */
+  expiresOn: string | null;
+  /** Whole days until `expiresOn`; negative once it has passed. `null` when there is no date. */
+  daysUntilExpiry: number | null;
   isExpired: boolean;
+}
+
+/** The kind of a saved vial. Records from before kinds existed are peptides. */
+export function vialKind(vial: SavedVial): VialKind {
+  return vial.kind === 'anabolic' ? 'anabolic' : 'peptide';
+}
+
+/** Keeps only the vials matching a UI filter (`all` keeps everything). */
+export function filterVialsByKind(vials: SavedVial[], filter: KindFilter): SavedVial[] {
+  if (filter === 'all') return vials;
+  return vials.filter((vial) => vialKind(vial) === filter);
 }
 
 /** Derives everything the UI needs to show for a saved vial. */
 export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Date())): VialStatus {
+  const anabolic = vialKind(vial) === 'anabolic';
+
   const totalMg = isPositive(vial.vialAmount) ? toMg(vial.vialAmount, vial.vialUnit) : 0;
-  const concentrationMgPerMl =
-    isPositive(vial.waterMl) && totalMg > 0 ? totalMg / vial.waterMl : 0;
+  const concentrationMgPerMl = anabolic
+    ? isPositive(vial.concentrationMgPerMl ?? 0)
+      ? (vial.concentrationMgPerMl as number)
+      : 0
+    : isPositive(vial.waterMl) && totalMg > 0
+      ? totalMg / vial.waterMl
+      : 0;
 
   const doseMg = isPositive(vial.doseAmount) ? toMg(vial.doseAmount, vial.doseUnit) : 0;
   const volumePerDoseMl =
     concentrationMgPerMl > 0 && doseMg > 0 ? doseMg / concentrationMgPerMl : 0;
 
-  const totalDoses = totalMg > 0 && doseMg > 0 ? totalMg / doseMg : 0;
+  // Peptides know their mL from the water added; oils only if a size was entered.
+  const volumeTotalMl = anabolic
+    ? isPositive(vial.vialMl ?? 0)
+      ? (vial.vialMl as number)
+      : 0
+    : isPositive(vial.waterMl)
+      ? vial.waterMl
+      : 0;
+
+  // Peptide: mg in the vial ÷ dose. Oil: mL in the vial ÷ mL per dose.
+  const totalDoses = anabolic
+    ? volumeTotalMl > 0 && volumePerDoseMl > 0
+      ? volumeTotalMl / volumePerDoseMl
+      : 0
+    : totalMg > 0 && doseMg > 0
+      ? totalMg / doseMg
+      : 0;
+
   const dosesTaken = Math.max(0, Math.floor(vial.dosesTaken));
   const dosesLeft = Math.max(0, totalDoses - dosesTaken);
 
-  const volumeTotalMl = isPositive(vial.waterMl) ? vial.waterMl : 0;
   const volumeLeftMl = Math.max(0, volumeTotalMl - dosesTaken * volumePerDoseMl);
   const percentLeft = volumeTotalMl > 0 ? volumeLeftMl / volumeTotalMl : 0;
 
-  const expiresOn = addDays(vial.reconstitutedOn, BUD_DAYS);
-  const daysUntilExpiry = daysBetween(todayIso, expiresOn);
+  // The 28-day BUD is a bacteriostatic-water rule, so it does not apply to oils.
+  const expiresOn = anabolic ? null : addDays(vial.reconstitutedOn, BUD_DAYS);
+  const daysUntilExpiry = expiresOn === null ? null : daysBetween(todayIso, expiresOn);
 
   return {
     concentrationMgPerMl,
@@ -108,13 +159,22 @@ export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Dat
     percentLeft,
     expiresOn,
     daysUntilExpiry,
-    isExpired: daysUntilExpiry < 0,
+    isExpired: daysUntilExpiry !== null && daysUntilExpiry < 0,
   };
 }
 
-/** A vial is only worth saving when the reconstitution makes sense. */
-export function canSaveVial(vial: Pick<SavedVial, 'vialAmount' | 'waterMl' | 'doseAmount'>): boolean {
-  return isPositive(vial.vialAmount) && isPositive(vial.waterMl) && isPositive(vial.doseAmount);
+/** A vial is only worth saving when its numbers make sense for its kind. */
+export function canSaveVial(
+  vial: Pick<SavedVial, 'doseAmount'> & {
+    kind?: VialKind;
+    vialAmount?: number;
+    waterMl?: number;
+    concentrationMgPerMl?: number;
+  },
+): boolean {
+  if (!isPositive(vial.doseAmount)) return false;
+  if (vial.kind === 'anabolic') return isPositive(vial.concentrationMgPerMl ?? 0);
+  return isPositive(vial.vialAmount ?? 0) && isPositive(vial.waterMl ?? 0);
 }
 
 /** Collision-resistant id for a new saved vial. */
@@ -146,10 +206,14 @@ export function normalizeSavedVial(value: unknown): SavedVial {
   const vial = value as Record<string, unknown>;
   return {
     ...(vial as unknown as SavedVial),
+    kind: vial.kind === 'anabolic' ? 'anabolic' : 'peptide',
     dosesTaken: typeof vial.dosesTaken === 'number' ? vial.dosesTaken : 0,
     syringeType:
       vial.syringeType === 'U40' || vial.syringeType === 'U50' ? vial.syringeType : 'U100',
     syringeCapacityMl: typeof vial.syringeCapacityMl === 'number' ? vial.syringeCapacityMl : 1,
+    concentrationMgPerMl:
+      typeof vial.concentrationMgPerMl === 'number' ? vial.concentrationMgPerMl : undefined,
+    vialMl: typeof vial.vialMl === 'number' ? vial.vialMl : undefined,
   };
 }
 

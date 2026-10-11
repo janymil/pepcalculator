@@ -1,15 +1,22 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { backupFileName, parseBackup, serializeBackup } from '../lib/backup';
 import { fmt, formatDate } from '../lib/format';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
-import { vialStatus, type SavedVial } from '../lib/vials';
-import { ScheduleForm } from './ScheduleForm';
+import {
+  filterVialsByKind,
+  vialKind,
+  vialStatus,
+  type KindFilter,
+  type SavedVial,
+} from '../lib/vials';
+import { vialColor } from '../lib/vialColors';
+import { KindFilterControl } from './KindFilterControl';
 import { VialCard } from './VialCard';
 import { VialEditor } from './VialEditor';
 
-/** Starting point for the schedule form: once a day, every day, 4 weeks. */
+/** Used when an older vial has no saved plan yet. */
 const INITIAL_SCHEDULE: VialSchedule = {
   times: TIMES_PER_DAY_PRESETS[1],
   repeat: 'daily',
@@ -20,14 +27,10 @@ const INITIAL_SCHEDULE: VialSchedule = {
 };
 
 interface SavedVialsProps {
+  /** Live vials (all kinds) — tombstones are already filtered out. */
   vials: SavedVial[];
-  /** True when the current workflow can be saved (peptides are the ones reconstituted). */
-  canSave: boolean;
-  /** Today's date (`yyyy-mm-dd`) used as the default reconstitution date. */
   todayIso: string;
-  /** Current local time as `HH:mm`, used to work out the next dose. */
   nowTime: string;
-  onSave: (name: string, reconstitutedOn: string, schedule: VialSchedule) => void;
   onUpdate: (vial: SavedVial) => void;
   onRestore: (vials: SavedVial[]) => void;
   onLoad: (vial: SavedVial) => void;
@@ -56,20 +59,33 @@ function VialCardLegacy({
 }) {
   const { strings } = useI18n();
   const status = vialStatus(vial);
+  const anabolic = vialKind(vial) === 'anabolic';
+  const color = vialColor(vial.id);
 
-  const badgeTone = status.isExpired ? 'expired' : status.daysUntilExpiry <= 3 ? 'soon' : 'ok';
-  const badgeText = status.isExpired
-    ? interpolate(strings.vials.expired, { days: Math.abs(status.daysUntilExpiry) })
-    : status.daysUntilExpiry === 0
-      ? strings.vials.lastDay
-      : interpolate(strings.vials.daysLeft, { days: status.daysUntilExpiry });
+  const expiryDays = status.daysUntilExpiry;
+  const badgeTone =
+    expiryDays === null ? 'ok' : status.isExpired ? 'expired' : expiryDays <= 3 ? 'soon' : 'ok';
+  const badgeText =
+    expiryDays === null
+      ? strings.vials.noExpiry
+      : status.isExpired
+        ? interpolate(strings.vials.expired, { days: Math.abs(expiryDays) })
+        : expiryDays === 0
+          ? strings.vials.lastDay
+          : interpolate(strings.vials.daysLeft, { days: expiryDays });
 
   const percent = Math.max(0, Math.min(100, Math.round(status.percentLeft * 100)));
 
   return (
     <li className="vial">
       <div className="vial__head">
-        <h3 className="vial__name">{vial.name || strings.vials.untitled}</h3>
+        <h3 className="vial__name">
+          <span className="vial__dot" style={{ backgroundColor: color }} aria-hidden="true" />
+          {vial.name || strings.vials.untitled}
+        </h3>
+        <span className={`vial__kind vial__kind--${anabolic ? 'anabolic' : 'peptide'}`}>
+          {anabolic ? strings.kinds.anabolic : strings.kinds.peptide}
+        </span>
         <span className={`vial__badge vial__badge--${badgeTone}`}>{badgeText}</span>
       </div>
 
@@ -110,11 +126,15 @@ function VialCardLegacy({
       </dl>
 
       <p className="vial__meta">
-        {interpolate(strings.vials.reconstitutedOn, {
-          date: formatDate(vial.reconstitutedOn, locale),
-        })}
+        {anabolic
+          ? `${strings.vials.dateLabelAnabolic}: ${formatDate(vial.reconstitutedOn, locale)}`
+          : interpolate(strings.vials.reconstitutedOn, {
+              date: formatDate(vial.reconstitutedOn, locale),
+            })}
         {' · '}
-        {interpolate(strings.vials.useBy, { date: formatDate(status.expiresOn, locale) })}
+        {status.expiresOn
+          ? interpolate(strings.vials.useBy, { date: formatDate(status.expiresOn, locale) })
+          : strings.vials.noExpiry}
       </p>
 
       <div className="vial__actions">
@@ -148,15 +168,14 @@ function VialCardLegacy({
 }
 
 /**
- * "My reconstituted vials" — save the vial you just mixed, then keep an eye on
- * what is left and when to stop using it. Everything lives in localStorage.
+ * The Vials page — "My reconstituted vials": every saved peptide and anabolic,
+ * filterable by kind, plus the JSON backup/restore. Saving happens on the
+ * Calculator page, so this page is only about looking after what you have.
  */
 export function SavedVials({
   vials,
-  canSave,
   todayIso,
   nowTime,
-  onSave,
   onUpdate,
   onRestore,
   onLoad,
@@ -165,18 +184,11 @@ export function SavedVials({
   onDelete,
 }: SavedVialsProps) {
   const { lang, strings } = useI18n();
-  const [name, setName] = useState('');
-  const [date, setDate] = useState(todayIso);
-  const [schedule, setSchedule] = useState<VialSchedule>(INITIAL_SCHEDULE);
+  const [filter, setFilter] = useState<KindFilter>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    // The plan starts on the day the vial was mixed.
-    onSave(name.trim(), date || todayIso, { ...schedule, startsOn: date || todayIso });
-    setName('');
-  };
+  const visible = filterVialsByKind(vials, filter);
 
   const handleSaveEdit = (updated: SavedVial) => {
     onUpdate(updated);
@@ -226,46 +238,21 @@ export function SavedVials({
         {strings.vials.title}
       </h2>
 
-      {canSave ? (
-        <form className="vials__form" onSubmit={handleSubmit}>
-          <label className="vials__field">
-            <span className="field__label">{strings.vials.nameLabel}</span>
-            <input
-              className="field__input"
-              type="text"
-              value={name}
-              placeholder={strings.vials.namePlaceholder}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label className="vials__field">
-            <span className="field__label">{strings.vials.dateLabel}</span>
-            <input
-              className="field__input"
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
-          </label>
-          <button type="submit" className="btn btn--accent">
-            {strings.vials.save}
-          </button>
-        </form>
-      ) : null}
+      <div className="vials__toolbar">
+        <KindFilterControl value={filter} onChange={setFilter} />
+      </div>
 
-      {canSave ? <ScheduleForm value={schedule} onChange={setSchedule} /> : null}
-
-      {vials.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="empty">
           <span className="empty__icon" aria-hidden="true">
             🧪
           </span>
           <p className="empty__title">{strings.vials.empty}</p>
-          {canSave ? <p className="empty__hint">{strings.vials.emptyHint}</p> : null}
+          <p className="empty__hint">{strings.vials.emptyHint}</p>
         </div>
       ) : (
         <ul className="vials">
-          {vials.map((vial) => {
+          {visible.map((vial) => {
             if (vial.id === editingId) {
               return (
                 <li className="vial" key={vial.id}>
@@ -308,8 +295,6 @@ export function SavedVials({
         </ul>
       )}
 
-      {canSave ? <p className="vials__note">{strings.vials.budNote}</p> : null}
-
       <div className="backup">
         <p className="backup__title">{strings.backup.title}</p>
         <p className="backup__note">{strings.backup.note}</p>
@@ -332,3 +317,4 @@ export function SavedVials({
     </section>
   );
 }
+

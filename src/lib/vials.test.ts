@@ -4,11 +4,13 @@ import {
   BUD_DAYS,
   canSaveVial,
   createVialId,
+  filterVialsByKind,
   liveVials,
   looksLikeSavedVial,
   mergeVials,
   normalizeSavedVial,
   tombstoneVial,
+  vialKind,
   vialStatus,
   type SavedVial,
 } from './vials';
@@ -202,3 +204,60 @@ describe('looksLikeSavedVial / normalizeSavedVial', () => {
     expect(normalized.syringeCapacityMl).toBe(1);
   });
 });
+
+/** 250 mg/mL oil, dosed at 250 mg (1 mL per dose) in a 10 mL vial. */
+function makeAnabolic(overrides: Partial<SavedVial> = {}): SavedVial {
+  return makeVial({
+    kind: 'anabolic',
+    vialAmount: 0,
+    waterMl: 0,
+    concentrationMgPerMl: 250,
+    vialMl: 10,
+    doseAmount: 250,
+    doseUnit: 'mg',
+    ...overrides,
+  });
+}
+
+describe('anabolic vials', () => {
+  it('treats legacy vials without a kind as peptides', () => {
+    expect(vialKind({ ...makeVial(), kind: undefined })).toBe('peptide');
+    expect(vialKind(makeVial({ kind: 'anabolic' }))).toBe('anabolic');
+  });
+
+  it('computes the volume from the label concentration, not from water', () => {
+    const status = vialStatus(makeAnabolic(), '2024-01-01');
+    expect(status.concentrationMgPerMl).toBe(250);
+    expect(status.volumePerDoseMl).toBeCloseTo(1, 9); // 250 mg ÷ 250 mg per mL
+    expect(status.volumeTotalMl).toBe(10);
+    expect(status.totalDoses).toBeCloseTo(10, 9); // 10 mL ÷ 1 mL per dose
+  });
+
+  it('has no beyond-use date for oils', () => {
+    const status = vialStatus(makeAnabolic(), '2024-01-01');
+    expect(status.expiresOn).toBeNull();
+    expect(status.daysUntilExpiry).toBeNull();
+    expect(status.isExpired).toBe(false);
+  });
+
+  it('needs a concentration (not water) to be saveable', () => {
+    expect(canSaveVial({ kind: 'anabolic', concentrationMgPerMl: 250, doseAmount: 250 })).toBe(true);
+    expect(canSaveVial({ kind: 'anabolic', concentrationMgPerMl: 0, doseAmount: 250 })).toBe(false);
+    expect(canSaveVial({ kind: 'peptide', vialAmount: 0, waterMl: 2, doseAmount: 250 })).toBe(
+      false,
+    );
+  });
+
+  it('filters a mixed list by kind', () => {
+    const vials = [makeVial({ id: 'p' }), makeAnabolic({ id: 'a' })];
+    expect(filterVialsByKind(vials, 'all').map((vial) => vial.id)).toEqual(['p', 'a']);
+    expect(filterVialsByKind(vials, 'peptide').map((vial) => vial.id)).toEqual(['p']);
+    expect(filterVialsByKind(vials, 'anabolic').map((vial) => vial.id)).toEqual(['a']);
+  });
+
+  it('normalizes the kind when reading old or hand-edited data', () => {
+    expect(normalizeSavedVial({ ...makeAnabolic(), kind: undefined }).kind).toBe('peptide');
+    expect(normalizeSavedVial(makeAnabolic()).kind).toBe('anabolic');
+  });
+});
+

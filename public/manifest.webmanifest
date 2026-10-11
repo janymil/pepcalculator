@@ -1,0 +1,35 @@
+{
+  "name": "PepCalculator — Dose & Reconstitution Calculator",
+  "short_name": "PepCalculator",
+  "description": "Turn a desired dose (mg/mcg) into the volume and insulin units to draw on a syringe. Works offline, for reconstituted peptides and ready-to-use anabolic oils.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f6fb",
+  "theme_color": "#0d9488",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["health", "medical", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

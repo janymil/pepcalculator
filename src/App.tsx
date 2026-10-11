@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AgendaPage } from './components/AgendaPage';
 import { CalculatorForm } from './components/CalculatorForm';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { ModeTabs } from './components/ModeTabs';
 import { ResultPanel } from './components/ResultPanel';
+import { SaveVialForm } from './components/SaveVialForm';
 import { SavedVials } from './components/SavedVials';
-import { SyncPanel } from './components/SyncPanel';
+import { SettingsPage } from './components/SettingsPage';
+import { ViewTabs } from './components/ViewTabs';
 import {
   DEFAULT_ANABOLIC_FORM,
   DEFAULT_PEPTIDE_FORM,
@@ -15,20 +18,24 @@ import {
 } from './config/defaults';
 import { DEFAULT_MODE, modeMeta, resolveCapacity } from './config/modes';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { DICTIONARIES, detectLang } from './i18n';
+import { useDoseReminders } from './hooks/useDoseReminders';
+import { DICTIONARIES, detectLang, interpolate } from './i18n';
 import { I18nProvider } from './i18n/I18nContext';
 import type { Lang } from './i18n/types';
 import { calculateAnabolic, calculatePeptide, type ModeId } from './lib/calc';
 import { parseNumber } from './lib/format';
 import { toIsoDate } from './lib/dates';
 import type { VialSchedule } from './lib/schedule';
+import { isStandalone } from './lib/pwa';
 import { syncWithServer, pushVials, type SyncFailure } from './lib/sync';
+import { hashForView, viewFromHash, type ViewId } from './lib/views';
 import {
   canSaveVial,
   createVialId,
   liveVials,
   mergeVials,
   tombstoneVial,
+  vialKind,
   type SavedVial,
 } from './lib/vials';
 
@@ -61,8 +68,16 @@ export default function App() {
     DEFAULT_SYNC_SERVER,
   );
   const [syncLast, setSyncLast] = useLocalStorage<string>(STORAGE_KEYS.syncLast, '');
+  const [remindersEnabled, setRemindersEnabled] = useLocalStorage<boolean>(
+    STORAGE_KEYS.reminders,
+    false,
+  );
+  const [view, setView] = useLocalStorage<ViewId>(STORAGE_KEYS.view, 'calculator');
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<SyncFailure | null>(null);
+
+  // Read once (matchMedia): true when the app runs as an installed PWA.
+  const [installed] = useState(() => isStandalone());
 
   // Two guards that keep the background push honest: exactly what we last sent,
   // and never two syncs running at once.
@@ -91,6 +106,16 @@ export default function App() {
   const todayIso = toIsoDate(now);
   const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+  // Shows an OS notification at the next scheduled dose (see useDoseReminders).
+  const reminders = useDoseReminders({
+    vials: liveVialList,
+    now,
+    enabled: remindersEnabled,
+    title: strings.reminders.notifyTitle,
+    body: (name, time) =>
+      interpolate(strings.reminders.notifyBody, { name: name || strings.vials.untitled, time }),
+  });
+
   // Keep the <html> element in sync so CSS variables and a11y match the UI.
   useEffect(() => {
     const root = document.documentElement;
@@ -99,6 +124,27 @@ export default function App() {
     root.lang = lang;
     root.style.colorScheme = theme;
   }, [theme, mode, lang]);
+
+  /*
+   * The two pages live in the URL hash (`#calendar`), so the browser back button
+   * works and an installed PWA reopens on the page you left. An unknown or
+   * missing hash leaves the remembered page alone.
+   */
+  useEffect(() => {
+    const applyHash = () => {
+      const fromHash = viewFromHash(window.location.hash);
+      if (fromHash) setView(fromHash);
+    };
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  }, [setView]);
+
+  const changeView = (next: ViewId) => {
+    setView(next);
+    const hash = hashForView(next);
+    if (window.location.hash !== hash) window.location.hash = hash;
+  };
 
   /*
    * When the app opens with a sync code, pull once so this device catches up.
@@ -160,47 +206,89 @@ export default function App() {
     setSyringe(DEFAULT_SYRINGE);
   };
 
-  /* ---------- saved vials ("My reconstituted vials") ---------- */
+  /* ---------- saved vials ("My vials") ---------- */
 
-  // Only reconstituted peptides make sense to save, and only once the
-  // reconstitution itself is complete (vial + water + dose).
-  const vialDraft = {
-    vialAmount: parseNumber(peptide.vialAmount),
-    waterMl: parseNumber(peptide.waterMl),
-    doseAmount: parseNumber(peptide.doseAmount),
-  };
-  const canSaveCurrentVial = mode === 'peptide' && canSaveVial(vialDraft);
+  // A vial can be saved once its numbers are complete — and what counts as
+  // complete differs by workflow (peptides: vial + water; oils: mg/mL).
+  const canSaveCurrentVial =
+    mode === 'peptide'
+      ? canSaveVial({
+          kind: 'peptide',
+          vialAmount: parseNumber(peptide.vialAmount),
+          waterMl: parseNumber(peptide.waterMl),
+          doseAmount: parseNumber(peptide.doseAmount),
+        })
+      : canSaveVial({
+          kind: 'anabolic',
+          concentrationMgPerMl: parseNumber(anabolic.concentration),
+          doseAmount: parseNumber(anabolic.doseAmount),
+        });
 
-  const handleSaveVial = (name: string, reconstitutedOn: string, schedule: VialSchedule) => {
+  const handleSaveVial = (name: string, startedOn: string, schedule: VialSchedule) => {
     if (!canSaveCurrentVial) return;
-    const vial: SavedVial = {
+
+    const base = {
       id: createVialId(),
       name,
-      reconstitutedOn,
-      vialAmount: vialDraft.vialAmount,
-      vialUnit: peptide.vialUnit,
-      waterMl: vialDraft.waterMl,
-      doseAmount: vialDraft.doseAmount,
-      doseUnit: peptide.doseUnit,
+      reconstitutedOn: startedOn,
       dosesTaken: 0,
       syringeType: syringe.type,
       syringeCapacityMl: capacityMl,
       schedule,
       updatedAt: new Date().toISOString(),
     };
+
+    const vial: SavedVial =
+      mode === 'anabolic'
+        ? {
+            ...base,
+            kind: 'anabolic',
+            // Oils are not reconstituted, so the peptide side stays empty.
+            vialAmount: 0,
+            vialUnit: 'mg',
+            waterMl: 0,
+            concentrationMgPerMl: parseNumber(anabolic.concentration),
+            vialMl: anabolic.vialMl.trim() === '' ? undefined : parseNumber(anabolic.vialMl),
+            doseAmount: parseNumber(anabolic.doseAmount),
+            doseUnit: anabolic.doseUnit,
+          }
+        : {
+            ...base,
+            kind: 'peptide',
+            vialAmount: parseNumber(peptide.vialAmount),
+            vialUnit: peptide.vialUnit,
+            waterMl: parseNumber(peptide.waterMl),
+            doseAmount: parseNumber(peptide.doseAmount),
+            doseUnit: peptide.doseUnit,
+          };
+
     setSavedVials((previous) => [vial, ...previous]);
   };
 
   const handleLoadVial = (vial: SavedVial) => {
-    setMode('peptide');
-    setPeptide({
-      vialAmount: String(vial.vialAmount),
-      vialUnit: vial.vialUnit,
-      waterMl: String(vial.waterMl),
-      doseAmount: String(vial.doseAmount),
-      doseUnit: vial.doseUnit,
-    });
     setSyringe({ type: vial.syringeType, capacityMl: vial.syringeCapacityMl });
+
+    if (vialKind(vial) === 'anabolic') {
+      setMode('anabolic');
+      setAnabolic({
+        concentration: String(vial.concentrationMgPerMl ?? ''),
+        doseAmount: String(vial.doseAmount),
+        doseUnit: vial.doseUnit,
+        vialMl: vial.vialMl === undefined ? '' : String(vial.vialMl),
+      });
+    } else {
+      setMode('peptide');
+      setPeptide({
+        vialAmount: String(vial.vialAmount),
+        vialUnit: vial.vialUnit,
+        waterMl: String(vial.waterMl),
+        doseAmount: String(vial.doseAmount),
+        doseUnit: vial.doseUnit,
+      });
+    }
+
+    // Loading only makes sense on the calculator, so jump there.
+    changeView('calculator');
   };
 
   const handleAddDose = (id: string) => {
@@ -306,48 +394,65 @@ export default function App() {
         />
 
         <main className="app__main">
-          <ModeTabs mode={mode} onChange={setMode} />
+          <ViewTabs view={view} onChange={changeView} />
 
-          <div className="app__grid">
-            <CalculatorForm
-              mode={mode}
-              peptide={peptide}
-              onPeptideChange={(patch) => setPeptide((prev) => ({ ...prev, ...patch }))}
-              anabolic={anabolic}
-              onAnabolicChange={(patch) => setAnabolic((prev) => ({ ...prev, ...patch }))}
-              syringe={syringe}
-              onSyringeChange={(patch) => setSyringe((prev) => ({ ...prev, ...patch }))}
-              onReset={handleReset}
+          {view === 'calendar' ? (
+            <AgendaPage vials={liveVialList} todayIso={todayIso} nowTime={nowTime} />
+          ) : view === 'vials' ? (
+            <SavedVials
+              vials={liveVialList}
+              todayIso={todayIso}
+              nowTime={nowTime}
+              onUpdate={handleUpdateVial}
+              onRestore={handleRestoreVials}
+              onLoad={handleLoadVial}
+              onAddDose={handleAddDose}
+              onRemoveDose={handleRemoveDose}
+              onDelete={handleDeleteVial}
             />
+          ) : view === 'settings' ? (
+            <SettingsPage
+              code={syncCode}
+              serverUrl={syncServer}
+              isSyncing={syncing}
+              lastSyncedAt={syncLast}
+              error={syncError}
+              onSetCode={setSyncCode}
+              onSetServerUrl={setSyncServer}
+              onSyncNow={() => void runSync()}
+              onForget={handleForgetSync}
+              remindersEnabled={remindersEnabled}
+              permission={reminders.permission}
+              nextReminder={reminders.next}
+              todayIso={todayIso}
+              installed={installed}
+              onToggleReminders={setRemindersEnabled}
+              onRequestPermission={reminders.requestPermission}
+            />
+          ) : (
+            <>
+              <ModeTabs mode={mode} onChange={setMode} />
 
-            <ResultPanel result={result} capacityMl={capacityMl} measure={measure} />
-          </div>
+              <div className="app__grid">
+                <CalculatorForm
+                  mode={mode}
+                  peptide={peptide}
+                  onPeptideChange={(patch) => setPeptide((prev) => ({ ...prev, ...patch }))}
+                  anabolic={anabolic}
+                  onAnabolicChange={(patch) => setAnabolic((prev) => ({ ...prev, ...patch }))}
+                  syringe={syringe}
+                  onSyringeChange={(patch) => setSyringe((prev) => ({ ...prev, ...patch }))}
+                  onReset={handleReset}
+                />
 
-          <SavedVials
-            vials={liveVialList}
-            canSave={canSaveCurrentVial}
-            todayIso={todayIso}
-            nowTime={nowTime}
-            onSave={handleSaveVial}
-            onUpdate={handleUpdateVial}
-            onRestore={handleRestoreVials}
-            onLoad={handleLoadVial}
-            onAddDose={handleAddDose}
-            onRemoveDose={handleRemoveDose}
-            onDelete={handleDeleteVial}
-          />
+                <ResultPanel result={result} capacityMl={capacityMl} measure={measure} />
+              </div>
 
-          <SyncPanel
-            code={syncCode}
-            serverUrl={syncServer}
-            isSyncing={syncing}
-            lastSyncedAt={syncLast}
-            error={syncError}
-            onSetCode={setSyncCode}
-            onSetServerUrl={setSyncServer}
-            onSyncNow={() => void runSync()}
-            onForget={handleForgetSync}
-          />
+              {canSaveCurrentVial ? (
+                <SaveVialForm kind={mode} todayIso={todayIso} onSave={handleSaveVial} />
+              ) : null}
+            </>
+          )}
         </main>
 
         <Footer />

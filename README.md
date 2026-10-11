@@ -33,6 +33,11 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Dose calendar & plan** — when you save a vial, tell the app **how many times a day**, at **which times**, on **which days** and **for how long** (4/8/12 weeks, 3/4 months, ongoing). It then works everything out by itself: a month **calendar**, the **next dose**, **doses done / left**, and **how many vials the whole plan needs**. Nothing to log after an injection.
 - **Backup & restore** — download every vial as a JSON file and merge it back on any device. Because everything lives in the browser, this protects you from cleared cookies (or Safari's 7-day eviction) and doubles as data portability.
 - **Sync between devices (recovery code)** — no email, no password. The app generates one long random code; type it on your phone and the same vials come across. Runs against the tiny included Node server (`npm run server`). Edits push **automatically** about 1.5 s after you make them, and **deletions travel too** thanks to soft-delete tombstones.
+- **Installable & offline (PWA)** — add it to your home screen and it runs full-screen with no network. A hand-rolled service worker caches the app shell, so the calculator keeps working with no signal.
+- **Dose reminders** — turn reminders on and the app notifies you at the exact times of your saved plans (derived from the schedule — nothing to log). Reminders fire while the app is open or running in the background; a fully closed app would need a push server, which this offline-first app deliberately does not have.
+- **Calendar page (all peptides at once)** — a second page collects **every** saved plan in one view: a month grid showing **which days** carry a dose (each day lists its peptides as small **colour-coded pills**, with the hours), the **hours** for the selected day with the amount to draw, a "coming up" strip, and a summary of each plan (repeat pattern, times and end date). Each peptide keeps its own colour everywhere, and **only today** gets a coloured background. Lives in the URL (`#calendar`) so the browser back button works.
+- **Four pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, and **Settings** (sync + reminders). The page switcher sits at the top.
+- **Anabolics are saved too** — peptides and oils are both first-class saved vials: save an oil straight from anabolic mode and it appears on the Vials and Calendar pages, read in **mL** (no insulin units) and without a 28-day use-by. **All / Peptides / Anabolics** filters on both the list and the calendar keep them apart.
 
 ---
 
@@ -48,10 +53,14 @@ Other scripts:
 
 ```bash
 npm run build      # type-check + production build into dist/
-npm run preview    # serve the production build
-npm test           # run the calculation-engine unit tests
+npm run preview    # serve the production build (http://localhost:8138)
+npm test           # run the unit tests
 npm run typecheck  # TypeScript only
+npm run icons      # regenerate the PWA icons in public/icons/ (only if you change the design)
 ```
+
+> The service worker is only installed in the **production** build, so `npm run dev` behaves
+> normally. To try the installable / offline experience, run `npm run build && npm run preview`.
 
 ### Deploying
 
@@ -68,10 +77,15 @@ src/
 ├─ lib/
 │  ├─ calc.ts            # pure calculation engine (no React, no DOM)
 │  ├─ calc.test.ts       # unit tests for the engine
-│  ├─ vials.ts           # saved-vial logic: doses left, volume left, expiry
+│  ├─ vials.ts           # saved-vial logic: kind, doses left, volume left, expiry
+│  ├─ vialColors.ts      # stable colour per vial id (calendar pills, cards)
 │  ├─ schedule.ts        # dose plan: times, repeat, duration, calendar, next dose
 │  ├─ backup.ts          # export / import saved vials as JSON
 │  ├─ sync.ts            # recovery-code sync: code, hash, merge client
+│  ├─ reminders.ts       # pure: the next dose across all saved plans
+│  ├─ agenda.ts          # pure: ALL plans by day & hour (the Calendar page)
+│  ├─ views.ts           # pure: the two pages + URL-hash helpers
+│  ├─ pwa.ts             # guarded service-worker + notification helpers
 │  ├─ dates.ts           # tiny dependency-free date helpers
 │  └─ format.ts          # formatting, input parsing, dates
 ├─ config/
@@ -82,11 +96,20 @@ src/
 │  ├─ types.ts           # the `Strings` contract
 │  ├─ index.ts           # language detection + interpolation
 │  └─ I18nContext.tsx    # `useI18n()` hook
-├─ components/           # Header, ModeTabs, CalculatorForm, ResultPanel, …
-├─ hooks/useLocalStorage.ts
+├─ components/           # Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel,
+│                        # SaveVialForm, SavedVials, VialCard, AgendaPage, SettingsPage, …
+├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts
 ├─ styles/global.css     # design tokens + all styling
 ├─ App.tsx               # state + wiring
 └─ main.tsx
+
+public/                  # copied verbatim to the site root (PWA assets)
+├─ manifest.webmanifest
+├─ sw.js                 # hand-rolled service worker (offline shell + notifications)
+└─ icons/*.png           # generated by `npm run icons`
+
+scripts/
+└─ generate-icons.mjs    # zero-dependency PNG icon generator
 ```
 
 The optional sync backend sits beside `src/`:
@@ -119,7 +142,7 @@ Add a dictionary file, add its code to `Lang`, and register it in `src/i18n/inde
 ### Ideas already anticipated by the structure
 
 - Half-life / blood-level chart (the engine already returns every intermediate value).
-- Dose reminders / notifications for a saved vial (PWA + service worker).
+- True background reminders when the app is closed (Web Push or Notification Triggers).
 - Export or print a protocol — or a physical vial label with the expiry date.
 - Multi-vial inventory for anabolic oils (the saved-vial model is generic).
 - Additional syringe types and pen devices.

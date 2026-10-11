@@ -11,7 +11,8 @@ import {
   vialsNeeded,
   type DoseSlot,
 } from '../lib/schedule';
-import { vialStatus, type SavedVial } from '../lib/vials';
+import { vialKind, vialStatus, type SavedVial } from '../lib/vials';
+import { vialColor } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
 
 export interface VialCardProps {
@@ -47,16 +48,24 @@ export function VialCard({
   const { strings } = useI18n();
   const status = vialStatus(vial, todayIso);
   const schedule = vial.schedule;
+  const anabolic = vialKind(vial) === 'anabolic';
+  const color = vialColor(vial.id);
 
-  /** The single most important number: the units this dose needs. */
+  /** The single most important number: insulin units (peptides) or mL (oils). */
   const unitsPerDose = status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
 
-  const badgeTone = status.isExpired ? 'expired' : status.daysUntilExpiry <= 3 ? 'soon' : 'ok';
-  const badgeText = status.isExpired
-    ? interpolate(strings.vials.expired, { days: Math.abs(status.daysUntilExpiry) })
-    : status.daysUntilExpiry === 0
-      ? strings.vials.lastDay
-      : interpolate(strings.vials.daysLeft, { days: status.daysUntilExpiry });
+  // Oils have no 28-day BUD, so `daysUntilExpiry` is null for them.
+  const expiryDays = status.daysUntilExpiry;
+  const badgeTone =
+    expiryDays === null ? 'ok' : status.isExpired ? 'expired' : expiryDays <= 3 ? 'soon' : 'ok';
+  const badgeText =
+    expiryDays === null
+      ? strings.vials.noExpiry
+      : status.isExpired
+        ? interpolate(strings.vials.expired, { days: Math.abs(expiryDays) })
+        : expiryDays === 0
+          ? strings.vials.lastDay
+          : interpolate(strings.vials.daysLeft, { days: expiryDays });
 
   // Schedule-driven numbers. `dosesTaken` is only used for vials with no plan.
   const plannedTotal = schedule ? totalPlannedDoses(schedule) : null;
@@ -84,18 +93,34 @@ export function VialCard({
   return (
     <li className="vial">
       <div className="vial__head">
-        <h3 className="vial__name">{vial.name || strings.vials.untitled}</h3>
+        <h3 className="vial__name">
+          <span className="vial__dot" style={{ backgroundColor: color }} aria-hidden="true" />
+          {vial.name || strings.vials.untitled}
+        </h3>
+        <span className={`vial__kind vial__kind--${anabolic ? 'anabolic' : 'peptide'}`}>
+          {anabolic ? strings.kinds.anabolic : strings.kinds.peptide}
+        </span>
         <span className={`vial__badge vial__badge--${badgeTone}`}>{badgeText}</span>
       </div>
 
       <div className="vial__draw">
         <span className="vial__draw-label">{strings.schedule.draw}</span>
         <span className="vial__draw-value">
-          {fmt.units(unitsPerDose)} <small>{strings.results.unitsWord}</small>
+          {anabolic ? (
+            <>
+              {fmt.volume(status.volumePerDoseMl)} <small>{strings.units.ml}</small>
+            </>
+          ) : (
+            <>
+              {fmt.units(unitsPerDose)} <small>{strings.results.unitsWord}</small>
+            </>
+          )}
         </span>
-        <span className="vial__draw-sub">
-          {fmt.volume(status.volumePerDoseMl)} {strings.units.ml}
-        </span>
+        {anabolic ? null : (
+          <span className="vial__draw-sub">
+            {fmt.volume(status.volumePerDoseMl)} {strings.units.ml}
+          </span>
+        )}
       </div>
 
       {next ? (
@@ -148,11 +173,15 @@ export function VialCard({
       </dl>
 
       <p className="vial__meta">
-        {interpolate(strings.vials.reconstitutedOn, {
-          date: formatDate(vial.reconstitutedOn, locale),
-        })}
+        {anabolic
+          ? `${strings.vials.dateLabelAnabolic}: ${formatDate(vial.reconstitutedOn, locale)}`
+          : interpolate(strings.vials.reconstitutedOn, {
+              date: formatDate(vial.reconstitutedOn, locale),
+            })}
         {' · '}
-        {interpolate(strings.vials.useBy, { date: formatDate(status.expiresOn, locale) })}
+        {status.expiresOn
+          ? interpolate(strings.vials.useBy, { date: formatDate(status.expiresOn, locale) })
+          : strings.vials.noExpiry}
       </p>
 
       {schedule ? (

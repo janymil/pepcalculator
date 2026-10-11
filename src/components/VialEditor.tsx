@@ -3,7 +3,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { SYRINGE_TYPES, type DoseUnit, type SyringeTypeId } from '../lib/calc';
 import { parseNumber } from '../lib/format';
 import type { VialSchedule } from '../lib/schedule';
-import { canSaveVial, type SavedVial } from '../lib/vials';
+import { canSaveVial, vialKind, type SavedVial } from '../lib/vials';
 import { NumberField } from './NumberField';
 import { ScheduleForm } from './ScheduleForm';
 import { SegmentedControl, type SegmentedOption } from './SegmentedControl';
@@ -17,17 +17,22 @@ interface VialEditorProps {
 }
 
 /**
- * Inline editor for an already saved vial: rename it, correct the amounts, the
- * dose, the syringe scale — and fully change the dose plan.
+ * Inline editor for an already saved vial: rename it, correct the amounts (or
+ * the oil's concentration), the dose, the syringe scale — and fully change the
+ * dose plan. Peptides and anabolics edit different numbers, so the fields switch
+ * on the vial's kind.
  */
 export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEditorProps) {
   const { strings } = useI18n();
+  const anabolic = vialKind(vial) === 'anabolic';
 
   const [name, setName] = useState(vial.name);
   const [reconstitutedOn, setReconstitutedOn] = useState(vial.reconstitutedOn);
   const [vialAmount, setVialAmount] = useState(String(vial.vialAmount));
   const [vialUnit, setVialUnit] = useState<DoseUnit>(vial.vialUnit);
   const [waterMl, setWaterMl] = useState(String(vial.waterMl));
+  const [concentration, setConcentration] = useState(String(vial.concentrationMgPerMl ?? ''));
+  const [vialMl, setVialMl] = useState(String(vial.vialMl ?? ''));
   const [doseAmount, setDoseAmount] = useState(String(vial.doseAmount));
   const [doseUnit, setDoseUnit] = useState<DoseUnit>(vial.doseUnit);
   const [syringeType, setSyringeType] = useState<SyringeTypeId>(vial.syringeType);
@@ -43,11 +48,18 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
     label: type.label,
   }));
 
-  const draft = {
-    vialAmount: parseNumber(vialAmount),
-    waterMl: parseNumber(waterMl),
-    doseAmount: parseNumber(doseAmount),
-  };
+  const draft = anabolic
+    ? {
+        kind: 'anabolic' as const,
+        concentrationMgPerMl: parseNumber(concentration),
+        doseAmount: parseNumber(doseAmount),
+      }
+    : {
+        kind: 'peptide' as const,
+        vialAmount: parseNumber(vialAmount),
+        waterMl: parseNumber(waterMl),
+        doseAmount: parseNumber(doseAmount),
+      };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -56,13 +68,16 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
       ...vial,
       name: name.trim(),
       reconstitutedOn,
-      vialAmount: draft.vialAmount,
+      // The unused side of the model is zeroed, so switching kinds stays clean.
+      vialAmount: anabolic ? 0 : parseNumber(vialAmount),
       vialUnit,
-      waterMl: draft.waterMl,
-      doseAmount: draft.doseAmount,
+      waterMl: anabolic ? 0 : parseNumber(waterMl),
+      concentrationMgPerMl: anabolic ? parseNumber(concentration) : undefined,
+      vialMl: anabolic && vialMl.trim() !== '' ? parseNumber(vialMl) : undefined,
+      doseAmount: parseNumber(doseAmount),
       doseUnit,
       syringeType,
-      // The plan always starts on the (possibly corrected) mixing date.
+      // The plan always starts on the (possibly corrected) start date.
       schedule: { ...schedule, startsOn: reconstitutedOn },
     });
   };
@@ -82,7 +97,9 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
       </div>
 
       <div className="field">
-        <span className="field__label">{strings.edit.date}</span>
+        <span className="field__label">
+          {anabolic ? strings.vials.dateLabelAnabolic : strings.edit.date}
+        </span>
         <input
           className="field__input"
           type="date"
@@ -91,29 +108,51 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
         />
       </div>
 
-      <NumberField
-        id={`edit-vial-${vial.id}`}
-        label={strings.edit.vialAmount}
-        value={vialAmount}
-        onChange={setVialAmount}
-        trailing={
-          <SegmentedControl
-            ariaLabel={strings.edit.vialAmount}
-            size="sm"
-            options={unitOptions}
-            value={vialUnit}
-            onChange={setVialUnit}
+      {anabolic ? (
+        <>
+          <NumberField
+            id={`edit-conc-${vial.id}`}
+            label={strings.fields.concentration.label}
+            value={concentration}
+            onChange={setConcentration}
+            suffix={`mg/${strings.units.ml}`}
           />
-        }
-      />
 
-      <NumberField
-        id={`edit-water-${vial.id}`}
-        label={strings.edit.water}
-        value={waterMl}
-        onChange={setWaterMl}
-        suffix={strings.units.ml}
-      />
+          <NumberField
+            id={`edit-vialml-${vial.id}`}
+            label={strings.fields.vialSize.label}
+            value={vialMl}
+            onChange={setVialMl}
+            suffix={strings.units.ml}
+          />
+        </>
+      ) : (
+        <>
+          <NumberField
+            id={`edit-vial-${vial.id}`}
+            label={strings.edit.vialAmount}
+            value={vialAmount}
+            onChange={setVialAmount}
+            trailing={
+              <SegmentedControl
+                ariaLabel={strings.edit.vialAmount}
+                size="sm"
+                options={unitOptions}
+                value={vialUnit}
+                onChange={setVialUnit}
+              />
+            }
+          />
+
+          <NumberField
+            id={`edit-water-${vial.id}`}
+            label={strings.edit.water}
+            value={waterMl}
+            onChange={setWaterMl}
+            suffix={strings.units.ml}
+          />
+        </>
+      )}
 
       <NumberField
         id={`edit-dose-${vial.id}`}
@@ -131,16 +170,18 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
         }
       />
 
-      <div className="field">
-        <span className="field__label">{strings.edit.syringe}</span>
-        <SegmentedControl
-          ariaLabel={strings.edit.syringe}
-          size="sm"
-          options={syringeOptions}
-          value={syringeType}
-          onChange={setSyringeType}
-        />
-      </div>
+      {anabolic ? null : (
+        <div className="field">
+          <span className="field__label">{strings.edit.syringe}</span>
+          <SegmentedControl
+            ariaLabel={strings.edit.syringe}
+            size="sm"
+            options={syringeOptions}
+            value={syringeType}
+            onChange={setSyringeType}
+          />
+        </div>
+      )}
 
       <ScheduleForm value={schedule} onChange={setSchedule} />
 
@@ -155,3 +196,4 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
     </form>
   );
 }
+

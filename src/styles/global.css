@@ -734,6 +734,11 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .agenda__grid,
+  .agenda__panels {
+    grid-template-columns: 1fr;
+  }
+
   .card--result {
     position: static;
   }
@@ -1423,4 +1428,529 @@ body {
   color: var(--danger);
 }
 
+/* ---------- dose reminders ---------- */
+.reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.reminders__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.reminders__text {
+  margin: 0;
+  max-width: 74ch;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.reminders__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.reminders__status {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.reminders__status.is-error {
+  color: var(--danger);
+}
+
+.reminders__next {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.reminders__hint {
+  margin: 0;
+  max-width: 74ch;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+
+
+
+/* ---------- page switcher (Calculator / Calendar) ---------- */
+.views {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.views__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.views__tab:hover {
+  color: var(--text);
+}
+
+.views__tab.is-active {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='dark'] .views__tab.is-active {
+  color: #06251f;
+}
+
+.views__icon {
+  font-size: 1rem;
+}
+
+/* ---------- calendar page: all saved plans ---------- */
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Shared page heading (Calendar + Settings). */
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  margin: 0;
+  max-width: 74ch;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.agenda__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.agenda__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.agenda__dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.agenda__empty {
+  margin: 0;
+  padding: 28px 18px;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-strong);
+  background: var(--surface);
+}
+
+.agenda__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.agenda__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/*
+ * Day cells are buttons (you can pick a day). They show the day number plus a
+ * few coloured peptide pills — with NO background, except for TODAY.
+ */
+.agenda__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  aspect-ratio: auto;
+  min-height: 64px;
+  padding: 5px;
+  font: inherit;
+  text-align: left;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.agenda__cell:hover {
+  border-color: var(--border-strong);
+}
+
+.agenda__cell.has-doses {
+  color: var(--text);
+}
+
+.agenda__cell.is-selected {
+  border-color: var(--accent);
+}
+
+/* The only day that gets a coloured background. */
+.agenda__cell.is-today {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+[data-theme='dark'] .agenda__cell.is-today {
+  color: #06251f;
+}
+
+.agenda__daynum {
+  font-size: 0.7rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.agenda__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: 100%;
+}
+
+.agenda__pill {
+  max-width: 100%;
+  padding: 1px 5px;
+  border-radius: 6px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.5;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agenda__more {
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: var(--text-faint);
+}
+
+.agenda__cell.is-today .agenda__more {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme='dark'] .agenda__cell.is-today .agenda__more {
+  color: rgba(6, 37, 31, 0.75);
+}
+
+/* selected day + "coming up" + plan summary */
+.agenda__day {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.agenda__daytitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.agenda__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.agenda__item.is-done {
+  opacity: 0.5;
+}
+
+.agenda__time {
+  font-size: 0.98rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.agenda__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.agenda__draw {
+  margin-left: auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--accent-strong);
+}
+
+.agenda__draw small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+.agenda__panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.agenda__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.agenda__section {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.agenda__muted {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-faint);
+}
+
+.agenda__days {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda__dayrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.agenda__daydate {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.agenda__daytimes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agenda__chip {
+  padding: 5px 9px;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.agenda__chip:hover {
+  border-color: var(--accent);
+}
+
+.agenda__plans {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.agenda__planname {
+  font-weight: 700;
+}
+
+.agenda__planrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.agenda__plantag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.agenda__planend {
+  color: var(--text-faint);
+}
+
+/* ---------- vials page: kind filter, colour dot and kind badge ---------- */
+.vials__toolbar {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.vial__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vial__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 7px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.vial__kind {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.vial__kind--peptide {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.vial__kind--anabolic {
+  color: #c2410c;
+  background: rgba(234, 88, 12, 0.14);
+}
+
+[data-theme='dark'] .vial__kind--anabolic {
+  color: #fdba74;
+  background: rgba(234, 88, 12, 0.22);
+}
+
+/* ---------- settings page ---------- */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 

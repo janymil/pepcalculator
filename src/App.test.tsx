@@ -25,19 +25,26 @@ describe('App (server render smoke test)', () => {
     expect(html.match(/mode__title/g)).toHaveLength(2);
   });
 
-  it('renders the saved-vials panel', () => {
-    expect(html).toContain('vials-title');
+  it('renders the save-vial form with a dose schedule', () => {
+    expect(html).toContain('save-vial');
     expect(html).toContain('vials__form');
-  });
-
-  it('asks for a dose schedule when saving a vial', () => {
     expect(html).toContain('schedule__title');
     expect(html).toContain('schedule__time');
   });
 
-  it('renders the sync panel and the backup actions', () => {
-    expect(html).toContain('sync-title');
-    expect(html).toContain('backup__title');
+  it('opens on the calculator page — other pages are not rendered yet', () => {
+    // Sync, reminders and the saved-vials list now live on their own pages.
+    expect(html).not.toContain('sync-title');
+    expect(html).not.toContain('vials-title');
+    expect(html).not.toContain('reminders-title');
+  });
+
+  it('renders the four-page switcher', () => {
+    expect(html.match(/views__tab/g)).toHaveLength(4);
+    expect(html).toContain('Calculator');
+    expect(html).toContain('My vials');
+    expect(html).toContain('Calendar');
+    expect(html).toContain('Settings');
   });
 
   it('shows the default peptide result right away', () => {
