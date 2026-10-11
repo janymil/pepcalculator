@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **260 passing / 26 files** |
-| Build | `npm run build` | ✅ ~342 kB JS / 104 kB gzip · ~40 kB CSS |
+| Tests | `npm test` | ✅ **326 passing / 31 files** |
+| Build | `npm run build` | ✅ ~364 kB JS / 110 kB gzip · ~43 kB CSS |
 
 ## Run it
 
@@ -96,6 +96,8 @@ src/
 │  ├─ reminders.ts       pure: next dose across all plans (used by notifications)
 │  ├─ agenda.ts          pure: ALL plans by day & hour (the Calendar page)
 │  ├─ today.ts           pure: today's doses + the next dose (the Today card)
+│  ├─ supply.ts          pure: run-out dates, expiry waste, how many vials to reorder
+│  ├─ sites.ts           pure: the injection-site rotation, derived from the dose number
 │  ├─ owners.ts          pure: "whose stack" — people registry + strict per-person filtering
 │  ├─ pk.ts              pure: one-compartment half-life decay (reference chart)
 │  ├─ cost.ts            pure: cost per dose + plan cost (optional vial price)
@@ -305,6 +307,28 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
 **saved anabolics** with kind filters and per-vial calendar colours, and the **tombstone purge**
 (90-day retention, swept on open and after every merge, with the trade-off documented).
 
+**Shipped since (326 tests, 31 files):**
+
+- **Supply outlook** (`lib/supply.ts`) — when each vial runs out, which ones will expire with
+  doses left, how many doses that wastes, and how many **extra vials the plans need**. Shown as
+  a panel on My vials plus a line on every card. Doses-remaining for a planned vial is derived
+  from the plan, never from the stored `dosesTaken` — getting that wrong is the easy mistake here.
+- **Injection-site rotation** (`lib/sites.ts`) — the next site on the Today card, derived from
+  the dose number, so rotation needs **no logging at all**. No competitor does this.
+- **Interval schedules** — `repeat: 'interval'` + `intervalDays`, with EOD/E3D/E4D/weekly/
+  biweekly presets. Everything else followed for free because it all goes through `isDoseDay`.
+- **A fix attached to "too small to measure"** (`suggestWaterMl` in `lib/calc.ts`) — the warning
+  now offers a concrete water volume and applies it in one tap.
+- **Printable protocol + vial labels** (`components/PrintSheet.tsx`) — a protocol page and a strip
+  of stickers (ratio, draw amount, use-by) so the fridge copy cannot drift from the app.
+- **Encrypted backups** — an optional passphrase wraps the JSON in PBKDF2-SHA256 (200k) + AES-GCM.
+- **Cost per month** (`costPerMonth` + `dosesPerWeek`), and a **backup reminder** ("last backup
+  {days} ago") that only appears after 30 days.
+- **Mix-up guard** — two vials sharing a name but not a concentration are both flagged: the one
+  mistake this app most exists to prevent.
+- **Dose context** — a vial whose name matches a reference compound says where its dose sits
+  against the commonly cited range (`matchCompound` / `rangeHint`). Context only, never advice.
+
 **Improvement pass (all green, 240 tests):**
 
 - **Today card** — the next scheduled dose + one-tap load, on the Calculator (`lib/today.ts`).
@@ -355,13 +379,22 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
 3. **Deploy** — Dockerfile for the server + host config; static app to any HTTPS host.
 4. **True background reminders** — the current timer only fires while the app is alive. A push
    server (or Notification Triggers, where supported) would be needed for a closed app.
-5. **Print / export** — a physical vial label showing the expiry date, and a protocol PDF. The
-   Calendar page is the natural place to hang an "export the protocol" button.
-6. **Interval schedules & multi-compound plans** — `VialSchedule` supports daily / chosen
-   weekdays only; add `repeat: 'interval'` (+ `intervalDays`) and a split-dose model.
-7. **IU dose unit** — HGH/HCG/insulin need `'IU'` in `DoseUnit` with a `v2` storage migration.
-8. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
-   Recovery-code sync was chosen **deliberately** instead of email/password.
+5. **IU dose unit** — HGH/HCG/insulin need `'IU'` in `DoseUnit` with a `v2` storage migration.
+6. **Pen devices / GLP-1** — a third `MeasureSystem` (clicks per dose), plus **titration phases**
+   for step-up protocols: a `phases[]` model carrying a dose per window. This is the biggest
+   remaining gap for GLP-1 users and needs a `v2` migration.
+7. **Multi-compound plans** — draw two compounds in one session.
+8. **Plot the user's own protocol** — `lib/pk.ts` already models the curve, but the Reference
+   chart still shows a generic one instead of the user's saved schedule.
+9. **Readability mode** — a large-text toggle, and a non-colour marker on the vial colour chips
+   (colour is currently the only differentiator in places).
+10. **Draw-mode check card** — a full-screen, arm's-length confirmation before injecting.
+11. **Unit converter** — mg ↔ mcg ↔ IU, mL ↔ units per scale, mg/mL ↔ %.
+12. **QR code for sync pairing** — typing a 120-bit code is the roughest part of the UX. A
+    hand-rolled encoder is possible, but it needs published spec vectors to verify against,
+    because no QR decoder is available here.
+13. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
+    Recovery-code sync was chosen **deliberately** instead of email/password.
 
 ## How to extend safely
 

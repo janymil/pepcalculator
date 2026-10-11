@@ -31,6 +31,15 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Remembers your numbers** in the browser (localStorage) and updates everything as you type.
 - **Saved vials** — save a reconstitution (name, amounts, date) and the app remembers the ratio forever, so it can always show **"draw X units"** — no more guessing whether that vial was mixed with 1 mL or 2 mL. Includes the **28-day expiry** and one-click reload into the calculator.
 - **Dose calendar & plan** — when you save a vial, tell the app **how many times a day**, at **which times**, on **which days** and **for how long** (4/8/12 weeks, 3/4 months, ongoing). It then works everything out by itself: a month **calendar**, the **next dose**, **doses done / left**, and **how many vials the whole plan needs**. Nothing to log after an injection.
+- **Supply outlook** — the Vials page answers "how long does this last, and what do I order?" It projects the day each vial runs out from its plan, warns when a vial will expire with doses still in it (and roughly how many), and totals the extra vials your plans will need.
+- **Injection sites that rotate themselves** — the Today card names the next site (left abdomen, right thigh…) by counting doses from your plan, so rotating needs no logging — the same trick that already made the calendar free.
+- **Interval plans** — along with daily and chosen weekdays, a plan can repeat **every N days**: every other day, every third day, weekly, or every two weeks.
+- **A fix, not just a warning** — when a dose is too small to read off the syringe, the app works out a water volume that would put around 10 units on it and applies it with one tap.
+- **Print a protocol and vial labels** — one page with the draw amount, times, repeat pattern and end date, plus a strip of stickers for the bottles (ratio, draw amount, use-by date). The copy in the fridge always matches the app.
+- **Encrypted backups** — add a passphrase and the downloaded file is encrypted (PBKDF2 + AES-GCM); restoring asks for the same passphrase and refuses a wrong one.
+- **Mix-up guard** — if two vials share a name but were mixed differently, both cards say so. That is the single most dangerous mistake at home.
+- **Cost per month** and a gentle **backup reminder** ("last backup 43 days ago") — costs and data you can actually plan around.
+- **Dose context** — a vial whose name matches a compound in the reference list shows where your dose sits against the commonly cited range. Context only, never advice.
 - **Backup & restore** — download every vial as a JSON file and merge it back on any device. Because everything lives in the browser, this protects you from cleared cookies (or Safari's 7-day eviction) and doubles as data portability.
 - **Sync between devices (recovery code)** — no email, no password. The app generates one long random code; type it on your phone and the same vials come across. Runs against the tiny included Node server (`npm run server`). Edits push **automatically** about 1.5 s after you make them, and **deletions travel too** thanks to soft-delete tombstones — which are then swept away automatically after 90 days (`TOMBSTONE_TTL_DAYS`), so the stored payload never grows forever.
 - **Installable & offline (PWA)** — add it to your home screen and it runs full-screen with no network. A hand-rolled service worker caches the app shell, so the calculator keeps working with no signal.
@@ -169,7 +178,8 @@ Add a dictionary file, add its code to `Lang`, and register it in `src/i18n/inde
 
 - ~~Half-life / blood-level chart~~ — done: `src/lib/pk.ts` + the chart on the Reference page.
 - True background reminders when the app is closed (Web Push or Notification Triggers).
-- Export or print a protocol — or a physical vial label with the expiry date.
+- ~~Export or print a protocol~~ — done: `PrintSheet.tsx` renders the protocol page and the vial stickers. ~~Interval schedules~~ — done: `repeat: 'interval'`.
+- Titration phases (a step-up plan that changes the dose after N weeks) and pen devices, for GLP-1 users.
 - New workflows such as HGH, HCG and insulin need an **IU** dose unit added to `DoseUnit` (with a `v2` storage migration); the mode registry is otherwise ready for them.
 - Multi-vial inventory for anabolic oils (the saved-vial model is generic).
 - Additional syringe types and pen devices.
