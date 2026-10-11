@@ -132,6 +132,7 @@ export const en: Strings = {
     none: 'Nothing scheduled today.',
     load: 'Load into calculator',
     markTaken: 'Mark taken',
+    check: 'Check the draw',
     taken: 'Taken',
     timeSeparator: ' · ',
   },
@@ -273,6 +274,15 @@ export const en: Strings = {
     errorEncrypted: 'That backup is encrypted. Enter the passphrase you used.',
     errorWrongPassphrase: 'That passphrase does not open this backup.',
     errorNoCrypto: 'Encryption needs a secure (https) connection.',
+  },
+  check: {
+    title: 'Check before you draw',
+    hint: 'Hold the vial next to the screen and make sure the name matches.',
+    vial: 'Vial',
+    site: 'Site',
+    when: 'When',
+    dose: 'Draw to',
+    close: 'Done',
   },
   tools: {
     title: 'Converter',

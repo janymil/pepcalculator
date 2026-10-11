@@ -132,6 +132,7 @@ export const es: Strings = {
     none: 'Hoy no hay nada programado.',
     load: 'Cargar en la calculadora',
     markTaken: 'Marcar como puesta',
+    check: 'Comprobar la extracción',
     taken: 'Puesta',
     timeSeparator: ' · ',
   },
@@ -273,6 +274,15 @@ export const es: Strings = {
     errorEncrypted: 'Esa copia está cifrada. Introduce la contraseña que usaste.',
     errorWrongPassphrase: 'Esa contraseña no abre esta copia.',
     errorNoCrypto: 'El cifrado necesita una conexión segura (https).',
+  },
+  check: {
+    title: 'Comprueba antes de extraer',
+    hint: 'Acerca el vial a la pantalla y comprueba que el nombre coincide.',
+    vial: 'Vial',
+    site: 'Zona',
+    when: 'Cuándo',
+    dose: 'Extrae hasta',
+    close: 'Hecho',
   },
   tools: {
     title: 'Conversor',

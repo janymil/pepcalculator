@@ -3335,6 +3335,117 @@ body {
   gap: 8px;
 }
 
+/* ---------- pre-draw check card ---------- */
+.check {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 62%);
+  backdrop-filter: blur(2px);
+}
+
+.check__card {
+  width: min(100%, 460px);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px 24px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.check__title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+.check__hint {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.check__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.check__fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-sm);
+}
+
+.check__fact dt {
+  color: var(--text-muted);
+}
+
+.check__fact dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* The vial name is the thing being matched against the bottle in your hand. */
+.check__vial {
+  font-size: var(--fs-md);
+}
+
+.check__draw-label {
+  margin: 6px 0 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.check__draw {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+/* Read at arm's length, so this is the largest type in the app. */
+.check__draw-value {
+  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.check__draw-unit {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.check__sub {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.check__done {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
 /* ---------- sync conflict notice ---------- */
 .sync__conflict {
   margin: 0 0 12px;

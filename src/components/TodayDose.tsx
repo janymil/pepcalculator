@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { addDays } from '../lib/dates';
@@ -7,6 +8,7 @@ import { nextSite } from '../lib/sites';
 import { nextDoseToday, type TodayDose } from '../lib/today';
 import { vialColor } from '../lib/vialColors';
 import { type SavedVial } from '../lib/vials';
+import { DrawCheck } from './DrawCheck';
 
 interface TodayDoseProps {
   /** Live vials only (tombstones already filtered out). */
@@ -22,6 +24,7 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
   const copy = strings.today;
+  const [checking, setChecking] = useState(false);
 
   const next: TodayDose | null = nextDoseToday(vials, todayIso, nowTime, 7);
   if (!next) return null;
@@ -93,8 +96,11 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
           <button
             type="button"
             className="btn btn--sm btn--accent"
-            onClick={() => onLoad(next.vial)}
+            onClick={() => setChecking(true)}
           >
+            {copy.check}
+          </button>
+          <button type="button" className="btn btn--sm" onClick={() => onLoad(next.vial)}>
             {copy.load}
           </button>
           {canMark ? (
@@ -108,6 +114,16 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
           ) : null}
         </div>
       </div>
+
+      {/* The check card is the one thing meant to be read at arm's length, so it
+          is rendered as an overlay rather than another block on the page. */}
+      {checking ? (
+        <DrawCheck
+          dose={next}
+          site={site ? strings.sites.names[site] : undefined}
+          onClose={() => setChecking(false)}
+        />
+      ) : null}
     </section>
   );
 }

@@ -132,6 +132,7 @@ export const sk: Strings = {
     none: 'Dnes nie je naplánované nič.',
     load: 'Načítať do kalkulačky',
     markTaken: 'Označiť ako podané',
+    check: 'Skontrolovať natiahnutie',
     taken: 'Podané',
     timeSeparator: ' · ',
   },
@@ -273,6 +274,15 @@ export const sk: Strings = {
     errorEncrypted: 'Táto záloha je zašifrovaná. Zadajte heslo, ktoré ste použili.',
     errorWrongPassphrase: 'Toto heslo zálohu neotvorí.',
     errorNoCrypto: 'Šifrovanie vyžaduje zabezpečené spojenie (https).',
+  },
+  check: {
+    title: 'Skontrolovať pred natiahnutím',
+    hint: 'Podržte fľaštičku pri obrazovke a overte, že názov súhlasí.',
+    vial: 'Fľaštička',
+    site: 'Miesto',
+    when: 'Kedy',
+    dose: 'Natiahnuť po',
+    close: 'Hotovo',
   },
   tools: {
     title: 'Prepočet',

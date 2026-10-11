@@ -97,6 +97,8 @@ export interface Strings {
     none: string;
     load: string;
     markTaken: string;
+    /** Opens the full-screen pre-draw check card. */
+    check: string;
     taken: string;
     /** Joins a time to a day label, e.g. "09:00 · Today". */
     timeSeparator: string;
@@ -251,6 +253,17 @@ export interface Strings {
     errorEncrypted: string;
     errorWrongPassphrase: string;
     errorNoCrypto: string;
+  };
+  /** The full-screen "check before you draw" card on the Today list. */
+  check: {
+    title: string;
+    hint: string;
+    vial: string;
+    site: string;
+    when: string;
+    /** Headline label for how much to draw. */
+    dose: string;
+    close: string;
   };
   /** The always-available converter at the foot of the Reference sheet. */
   tools: {
