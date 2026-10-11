@@ -45,7 +45,7 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **419 passing / 38 files** |
+| Tests | `npm test` | ✅ **420 passing / 38 files** |
 | Build | `npm run build` | ✅ ~413 kB JS / 126 kB gzip · ~52 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames · timeline cap held |
 
@@ -158,6 +158,14 @@ honestly know. It carries **no target and no verdict**: a smaller waist and a la
 the signed difference. Stored under `pepcalc.v1.measurements`, tombstoned on removal (with Undo),
 wiped by "Clear all data", and carried in the JSON backup — **not** in sync, which by design only ever
 moves the vials list.
+
+**Every measurement point says where on the body it is, and how to take it.** The six points are not
+just labels: `points[field]` is a `PointCopy` (`label` + `how`), so the page answers the question
+people actually ask — belly, thighs, seat, arm, neck — in words rather than leaving them to guess at
+"hip". The `how` line is *the* part that makes a series comparable ("around the navel, relaxed, at the
+end of a normal breath"), and it is ordinary i18n copy in all three languages, so it can be corrected
+without touching a component. The log, the trend label and the change list all read the same `label`,
+so there is one place a point is named.
 
 **The Guide page is a frame, not a port.** `public/explainer.html` is a self-contained canvas
 animation (no dependencies, ~1000 lines, its own three languages). Rather than reimplement it in

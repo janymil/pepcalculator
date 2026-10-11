@@ -426,6 +426,7 @@ export const sk: Strings = {
       title: 'Sledujte zmenu',
       subtitle: 'Najprv pás, potom čokoľvek, čo viete zmerať dvakrát rovnako.',
       hint: 'Merajte rovnako, zhruba v rovnakú dennú dobu, asi raz týždenne. Smer za mesiac povie viac než jedno číslo.',
+      where: 'Kde merať',
       date: 'Dátum',
       optional: 'Vyplňte len to, čo ste zmerali — na začiatok stačí jedno číslo.',
       add: 'Uložiť meranie',
@@ -453,12 +454,30 @@ export const sk: Strings = {
       ],
     },
     points: {
-      waistCm: 'Pás',
-      hipCm: 'Boky',
-      neckCm: 'Krk',
-      armCm: 'Nadlaktie',
-      thighCm: 'Stehno',
-      weightKg: 'Hmotnosť',
+      waistCm: {
+        label: 'Pás',
+        how: 'V úrovni pupka, uvoľnene, na konci normálneho výdychu — pásku neťahajte.',
+      },
+      hipCm: {
+        label: 'Boky / zadok',
+        how: 'Najširšie miesto cez zadok, chodidlá pri sebe.',
+      },
+      neckCm: {
+        label: 'Krk',
+        how: 'Tesne pod ohryzkom, páska vpredu mierne klesá.',
+      },
+      armCm: {
+        label: 'Nadlaktie',
+        how: 'V polovici medzi ramenom a lakťom, ruka voľne visí.',
+      },
+      thighCm: {
+        label: 'Stehno',
+        how: 'V polovici medzi bokom a kolenom, váha na druhej nohe.',
+      },
+      weightKg: {
+        label: 'Hmotnosť',
+        how: 'V rovnakom čase, na tej istej váhe, ideálne pred raňajkami.',
+      },
     },
   },
   kinds: {

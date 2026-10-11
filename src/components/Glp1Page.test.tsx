@@ -52,6 +52,14 @@ describe('Glp1Page (server render smoke test)', () => {
     for (const question of copy.ask.items) expect(html).toContain(question);
   });
 
+  it('says where on the body each point is measured, and how', () => {
+    expect(html).toContain(copy.track.where);
+    for (const field of MEASURE_FIELDS) {
+      expect(html).toContain(copy.points[field].label);
+      expect(html).toContain(copy.points[field].how);
+    }
+  });
+
   it('offers one input per measurement point, and refuses an empty entry', () => {
     expect((html.match(/glp1__field"/g) ?? []).length).toBe(MEASURE_FIELDS.length);
     expect(html).toContain(copy.track.add);

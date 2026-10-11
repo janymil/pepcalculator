@@ -2699,6 +2699,33 @@ body {
   font-weight: 600;
 }
 
+/* Where on the body, and how — the "which parts do I measure?" list. */
+.glp1__where-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.glp1__where {
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.glp1__where-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.glp1__where-label::after {
+  content: ' — ';
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
 .glp1__change {
   display: flex;
   flex-direction: column;

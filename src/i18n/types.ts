@@ -24,6 +24,13 @@ export interface StepCopy {
   body: string;
 }
 
+/** One measurement point: what it is called, and how to find it on the body. */
+export interface PointCopy {
+  label: string;
+  /** Where on the body, and how — the part people actually get wrong. */
+  how: string;
+}
+
 /** A device routine: its own heading and its ordered steps. */
 export interface RoutineCopy {
   title: string;
@@ -429,6 +436,8 @@ export interface Strings {
       subtitle: string;
       /** How to measure so the numbers mean something. */
       hint: string;
+      /** Heading over the per-point "where and how" notes. */
+      where: string;
       date: string;
       /** Nudge that only what you measured needs filling in. */
       optional: string;
@@ -454,8 +463,8 @@ export interface Strings {
       subtitle: string;
       items: string[];
     };
-    /** Names of the six measurement points, in `MEASURE_FIELDS` order. */
-    points: Record<MeasureField, string>;
+    /** The six measurement points, in `MEASURE_FIELDS` order. */
+    points: Record<MeasureField, PointCopy>;
   };
   kinds: {
     /** Accessible name for the kind filter. */

@@ -428,6 +428,7 @@ export const es: Strings = {
       title: 'Sigue el cambio',
       subtitle: 'Primero la cintura; después lo que puedas medir dos veces igual.',
       hint: 'Mide igual, más o menos a la misma hora del día, una vez por semana. La dirección de un mes dice más que cualquier cifra suelta.',
+      where: 'Dónde medir',
       date: 'Fecha',
       optional: 'Rellena solo lo que hayas medido: con un número basta para empezar.',
       add: 'Guardar medición',
@@ -455,12 +456,30 @@ export const es: Strings = {
       ],
     },
     points: {
-      waistCm: 'Cintura',
-      hipCm: 'Cadera',
-      neckCm: 'Cuello',
-      armCm: 'Brazo',
-      thighCm: 'Muslo',
-      weightKg: 'Peso',
+      waistCm: {
+        label: 'Cintura',
+        how: 'A la altura del ombligo, relajado, al final de una respiración normal; no aprietes la cinta.',
+      },
+      hipCm: {
+        label: 'Cadera / glúteos',
+        how: 'El punto más ancho alrededor de los glúteos, con los pies juntos.',
+      },
+      neckCm: {
+        label: 'Cuello',
+        how: 'Justo debajo de la nuez, con la cinta un poco inclinada hacia abajo por delante.',
+      },
+      armCm: {
+        label: 'Brazo',
+        how: 'A mitad de camino entre el hombro y el codo, con el brazo relajado.',
+      },
+      thighCm: {
+        label: 'Muslo',
+        how: 'A mitad de camino entre la cadera y la rodilla, con el peso en la otra pierna.',
+      },
+      weightKg: {
+        label: 'Peso',
+        how: 'A la misma hora, en la misma báscula, mejor antes de desayunar.',
+      },
     },
   },
   kinds: {

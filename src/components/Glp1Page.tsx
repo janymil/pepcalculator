@@ -176,7 +176,8 @@ export function Glp1Page({ measurements, todayIso, onAdd, onRemove }: Glp1PagePr
             {MEASURE_FIELDS.map((field) => (
               <label className="glp1__field" key={field}>
                 <span className="field__label">
-                  {copy.points[field]} <span className="glp1__unit">{strings.units[fieldUnit(field)]}</span>
+                  {copy.points[field].label}{' '}
+                  <span className="glp1__unit">{strings.units[fieldUnit(field)]}</span>
                 </span>
                 <input
                   className="field__input"
@@ -193,6 +194,17 @@ export function Glp1Page({ measurements, todayIso, onAdd, onRemove }: Glp1PagePr
             ))}
           </div>
 
+          {/* Where each point is, and how — the part people get wrong. */}
+          <h4 className="glp1__h4">{copy.track.where}</h4>
+          <ul className="glp1__where-list">
+            {MEASURE_FIELDS.map((field) => (
+              <li className="glp1__where" key={field}>
+                <span className="glp1__where-label">{copy.points[field].label}</span>
+                {copy.points[field].how}
+              </li>
+            ))}
+          </ul>
+
           <p className="glp1__hint">{copy.track.optional}</p>
           <button type="button" className="btn btn--accent" disabled={!canSave} onClick={handleSave}>
             <Icon name="plus" size={16} />
@@ -207,7 +219,7 @@ export function Glp1Page({ measurements, todayIso, onAdd, onRemove }: Glp1PagePr
               {tracked.map((item) => (
                 <li className="glp1__change" key={item.field}>
                   <p className="glp1__change-head">
-                    <span className="glp1__change-field">{copy.points[item.field]}</span>
+                    <span className="glp1__change-field">{copy.points[item.field].label}</span>
                     <span className="glp1__change-latest">
                       {copy.track.latest} {fmt.count(item.latest.value)}{' '}
                       {strings.units[fieldUnit(item.field)]}
@@ -224,7 +236,7 @@ export function Glp1Page({ measurements, todayIso, onAdd, onRemove }: Glp1PagePr
                   {item.points.length > 1 ? (
                     <TrendLine
                       points={item.points}
-                      label={interpolate(copy.track.trend, { field: copy.points[item.field] })}
+                      label={interpolate(copy.track.trend, { field: copy.points[item.field].label })}
                     />
                   ) : null}
                 </li>
@@ -246,7 +258,7 @@ export function Glp1Page({ measurements, todayIso, onAdd, onRemove }: Glp1PagePr
                     const value = measurementValue(entry, field);
                     if (value === undefined) return [];
                     return [
-                      `${copy.points[field]} ${fmt.count(value)} ${strings.units[fieldUnit(field)]}`,
+                      `${copy.points[field].label} ${fmt.count(value)} ${strings.units[fieldUnit(field)]}`,
                     ];
                   }).join(' · ')}
                 </span>

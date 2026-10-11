@@ -427,6 +427,7 @@ export const en: Strings = {
       title: 'Follow the change',
       subtitle: 'Waist first, then whatever else you can measure the same way twice.',
       hint: 'Measure the same way, at about the same time of day, roughly once a week. The direction over a month says more than any single number.',
+      where: 'Where to measure',
       date: 'Date',
       optional: 'Fill in only what you measured — one number is enough to start.',
       add: 'Save measurement',
@@ -454,12 +455,30 @@ export const en: Strings = {
       ],
     },
     points: {
-      waistCm: 'Waist',
-      hipCm: 'Hip',
-      neckCm: 'Neck',
-      armCm: 'Upper arm',
-      thighCm: 'Thigh',
-      weightKg: 'Weight',
+      waistCm: {
+        label: 'Waist',
+        how: 'Around the navel, relaxed, at the end of a normal breath — do not pull the tape tight.',
+      },
+      hipCm: {
+        label: 'Hip / seat',
+        how: 'The widest point around the seat, with your feet together.',
+      },
+      neckCm: {
+        label: 'Neck',
+        how: 'Just below the Adam’s apple, with the tape sloping slightly downwards at the front.',
+      },
+      armCm: {
+        label: 'Upper arm',
+        how: 'Midway between the shoulder and the elbow, arm hanging relaxed.',
+      },
+      thighCm: {
+        label: 'Thigh',
+        how: 'Midway between the hip and the knee, with your weight on the other leg.',
+      },
+      weightKg: {
+        label: 'Weight',
+        how: 'The same time of day, on the same scale, before breakfast if you can.',
+      },
     },
   },
   kinds: {
