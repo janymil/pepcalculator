@@ -290,3 +290,104 @@ describe('pushVials (used by the background auto-push)', () => {
     });
   });
 });
+
+describe('the measurement log travels with the code', () => {
+  const baseUrl = 'http://localhost:8787';
+
+  const mine = {
+    id: 'm1',
+    date: '2026-01-05',
+    waistCm: 104,
+    updatedAt: '2026-01-05T08:00:00.000Z',
+  };
+  const theirs = {
+    id: 'm2',
+    date: '2026-01-12',
+    waistCm: 101,
+    updatedAt: '2026-01-12T08:00:00.000Z',
+  };
+
+  function reply(status: number, body: unknown): Response {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  /** A fake server: the GET answers with `remote`, every PUT is accepted. */
+  function server(payload: string): typeof fetch {
+    return (async (_url: string, init?: RequestInit) =>
+      (init?.method ?? 'GET') === 'GET'
+        ? reply(200, { payload })
+        : reply(200, { updatedAt: '2026-01-12T09:00:00.000Z' })) as unknown as typeof fetch;
+  }
+
+  it('carries the log when there is one, and stays silent when there is not', () => {
+    const withLog = JSON.parse(
+      serializePayload([makeVial()], undefined, [mine]),
+    ) as SyncPayload;
+    expect(withLog.measurements).toHaveLength(1);
+
+    // No log, no field: an older record and a record with an empty log look the
+    // same, and neither one claims the other device's entries are gone.
+    const without = JSON.parse(serializePayload([makeVial()])) as SyncPayload;
+    expect('measurements' in without).toBe(false);
+  });
+
+  it('keeps only entries that look like a measurement', () => {
+    const text = JSON.stringify({
+      version: 1,
+      vials: [],
+      measurements: [mine, { nope: true }, 'nonsense'],
+    });
+
+    expect(parsePayload(text)?.measurements).toHaveLength(1);
+    // A payload written before the log existed simply has none.
+    expect(parsePayload(JSON.stringify({ version: 1, vials: [] }))?.measurements).toEqual([]);
+  });
+
+  it('sends the log on a background push', async () => {
+    let sent = '';
+    const fakeFetch = (async (_url: string, init: RequestInit) => {
+      sent = String(init.body);
+      return reply(200, { updatedAt: '2026-01-05T09:00:00.000Z' });
+    }) as unknown as typeof fetch;
+
+    await pushVials(baseUrl, CODE, [makeVial()], { measurements: [mine], fetchImpl: fakeFetch });
+
+    const payload = JSON.parse((JSON.parse(sent) as { payload: string }).payload) as SyncPayload;
+    expect(payload.measurements?.[0].id).toBe('m1');
+  });
+
+  it('unites both logs instead of picking one', async () => {
+    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], {
+      measurements: [mine],
+      fetchImpl: server(serializePayload([makeVial()], undefined, [theirs])),
+    });
+
+    expect(outcome.ok && outcome.measurements.map((entry) => entry.id).sort()).toEqual([
+      'm1',
+      'm2',
+    ]);
+  });
+
+  it('lets a removal on the other device win, like a vial tombstone', async () => {
+    const removed = { ...mine, updatedAt: '2026-02-01T08:00:00.000Z', deletedAt: '2026-02-01T08:00:00.000Z' };
+
+    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], {
+      measurements: [mine],
+      fetchImpl: server(serializePayload([makeVial()], undefined, [removed])),
+    });
+
+    expect(outcome.ok && outcome.measurements[0].deletedAt).toBe('2026-02-01T08:00:00.000Z');
+  });
+
+  it('never lets a payload without a log erase this device', async () => {
+    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], {
+      measurements: [mine],
+      fetchImpl: server(serializePayload([makeVial()])),
+    });
+
+    expect(outcome.ok && outcome.measurements).toEqual([mine]);
+  });
+});

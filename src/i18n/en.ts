@@ -310,9 +310,9 @@ export const en: Strings = {
   sync: {
     title: 'Sync between devices',
     intro:
-      'A sync code lets the same vials follow you across your phone and computer. No email, no password — just this code.',
+      'A sync code lets the same vials — and your body-measurement log — follow you across your phone and computer. No email, no password: just this code.',
     warning:
-      'Write the code down and keep it safe. Anyone who has it can read your vials, and without it the synced copy cannot be recovered.',
+      'Write the code down and keep it safe. Anyone who has it can read your vials and your measurements, and without it the synced copy cannot be recovered.',
     create: 'Create a sync code',
     useExisting: 'Use an existing code',
     codeInputLabel: 'Enter your code',

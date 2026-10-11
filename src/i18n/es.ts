@@ -310,9 +310,9 @@ export const es: Strings = {
   sync: {
     title: 'Sincronizar entre dispositivos',
     intro:
-      'Un código de sincronización hace que los mismos viales te sigan en el móvil y el ordenador. Sin correo ni contraseña: solo este código.',
+      'Un código de sincronización hace que los mismos viales — y tu registro de medidas — te sigan en el móvil y el ordenador. Sin correo ni contraseña: solo este código.',
     warning:
-      'Apunta el código y guárdalo bien. Quien lo tenga puede ver tus viales, y sin él la copia sincronizada no se puede recuperar.',
+      'Apunta el código y guárdalo bien. Quien lo tenga puede ver tus viales y tus medidas, y sin él la copia sincronizada no se puede recuperar.',
     create: 'Crear código de sincronización',
     useExisting: 'Usar un código existente',
     codeInputLabel: 'Introduce tu código',

@@ -54,7 +54,7 @@ line names the code rather than a promise.
 | A backup exported only the person on screen | **Shipped** | `SavedVials` now takes `allVials` / `allMeasurements`, and the card says what a backup contains |
 | The explainer did not show newer features | **Shipped** | Scenes 9–11 added: IU + pens, step-up plans, and a six-line list of the rest. 12 scenes / 75.6 s / 28 keys × 3 languages |
 | Audio for the explainer | **Refused** | Asked and answered: it stays silent on purpose, so it works muted, in three languages, as a waiting-room loop |
-| Measurement sync | **Open** | `mergeMeasurements()` is written and tested and rides in backups, but sync still moves only the vials list. Turning it on changes what the server stores, so it is a deliberate decision |
+| Measurement sync | **Shipped** | `SyncPayload.measurements` is an *optional* field, merged with `mergeMeasurements` on the vials' rule (union by id, newest wins, removals as tombstones). Optional on both ends on purpose: an older record has no log, which merges as "nothing to add", never as a deletion. Verified end-to-end against a live server |
 | Verify the printed sheet by actually printing it | **Waiting on you** | `@media print` can only be confirmed at a printer. Rendering it to PDF here gave a 2-page sheet (protocol + labels, then the GLP-1 checklist) — as far as this machine goes |
 
 ## D · What was refused, and the reasoning
@@ -81,6 +81,5 @@ line names the code rather than a promise.
 | Item | What it would take |
 | --- | --- |
 | True background reminders (roadmap 4) | Bigger than it looks: the server would have to own the **schedule** to know when to push (a dose time is plan + the user's timezone, and today that logic is pure client-side in `lib/schedule.ts`). Plus a Web Push subscription store, VAPID keys and a `push` handler in `sw.js`. **Unverifiable here** anyway: it needs a real push service and a real device |
-| Measurement sync | One decision: does the server payload carry the log too? `mergeMeasurements()` is already written and tested |
 | `semaglutide` | One word from you: keep, or remove |
 | Printing on paper | A printer |

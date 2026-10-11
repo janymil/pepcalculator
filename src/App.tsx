@@ -70,6 +70,15 @@ import {
 function vialsSnapshot(vials: SavedVial[]): string {
   return JSON.stringify(vials);
 }
+
+/**
+ * The same idea for the measurement log, and the two are always compared
+ * together: the auto-push has to fire when *either* changes, otherwise adding a
+ * measurement would never leave the device.
+ */
+function syncSnapshot(vials: SavedVial[], measurements: Measurement[]): string {
+  return `${vialsSnapshot(vials)}|${JSON.stringify(measurements)}`;
+}
 import type { AnabolicForm, Glp1Form, HormoneForm, PenSettings, PeptideForm, SyringeSettings, ThemeName } from './types';
 
 export default function App() {
@@ -284,7 +293,7 @@ export default function App() {
 
     setSyncing(true);
     setSyncError(null);
-    void syncWithServer(syncServer, syncCode, savedVials).then((outcome) => {
+    void syncWithServer(syncServer, syncCode, savedVials, { measurements }).then((outcome) => {
       if (cancelled) return;
       setSyncing(false);
       if (outcome.ok) {
@@ -292,9 +301,11 @@ export default function App() {
         // merge: the background push sees the difference and re-uploads the
         // pruned list, so the server converges too.
         setSavedVials(purgeTombstones(outcome.vials));
+        // The measurement log comes back merged the same way the vials do.
+        setMeasurements(outcome.measurements);
         setSyncLast(outcome.updatedAt);
         setSyncConflicts(outcome.conflicts.length);
-        lastPushedRef.current = vialsSnapshot(outcome.vials);
+        lastPushedRef.current = syncSnapshot(outcome.vials, outcome.measurements);
       } else {
         setSyncError(outcome.reason);
       }
@@ -645,7 +656,7 @@ export default function App() {
   useEffect(() => {
     if (!syncCode || !syncServer) return;
 
-    const snapshot = vialsSnapshot(savedVials);
+    const snapshot = syncSnapshot(savedVials, measurements);
     if (snapshot === lastPushedRef.current) return;
 
     const timer = window.setTimeout(() => {
@@ -653,7 +664,7 @@ export default function App() {
       inFlightRef.current = true;
       setSyncing(true);
       setSyncError(null);
-      void pushVials(syncServer, syncCode, savedVials, { owners }).then((outcome) => {
+      void pushVials(syncServer, syncCode, savedVials, { owners, measurements }).then((outcome) => {
         inFlightRef.current = false;
         setSyncing(false);
         if (outcome.ok) {
@@ -668,7 +679,7 @@ export default function App() {
     return () => window.clearTimeout(timer);
     // Keyed on the data only; the refs above stop it from repeating itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedVials, owners, syncCode, syncServer]);
+  }, [savedVials, measurements, owners, syncCode, syncServer]);
 
   // The first-run card is only ever a welcome: it disappears once the user
   // loads an example, dismisses it, or saves their first vial.

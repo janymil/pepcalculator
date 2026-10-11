@@ -13,6 +13,12 @@
 
 import { mergeOwners, normalizeOwners, ownersFromVials, type Owner } from './owners';
 import {
+  looksLikeMeasurement,
+  mergeMeasurements,
+  normalizeMeasurement,
+  type Measurement,
+} from './measure';
+import {
   looksLikeSavedVial,
   mergeWithConflicts,
   normalizeSavedVial,
@@ -33,6 +39,17 @@ export interface SyncPayload {
   /** The people the vials belong to. Optional for payloads written pre-owners. */
   owners?: Owner[];
   vials: SavedVial[];
+  /**
+   * The body-measurement log, when the client sends one.
+   *
+   * Optional for the same reason `owners` is: a record written by an older build
+   * simply has none, and a merge treats "none" as "nothing to add" rather than
+   * "delete what the other device has". A device running an older build can still
+   * overwrite the field by pushing, which loses the log *server-side* for as long
+   * as it keeps pushing — the local copy is never touched, and the next push from
+   * a newer build puts it back.
+   */
+  measurements?: Measurement[];
 }
 
 export type SyncFailure = 'invalidCode' | 'network' | 'server' | 'badPayload' | 'unavailable';
@@ -42,6 +59,8 @@ export type SyncOutcome =
       ok: true;
       vials: SavedVial[];
       owners: Owner[];
+      /** The merged measurement log — empty when neither side has one. */
+      measurements: Measurement[];
       updatedAt: string;
       remoteFound: boolean;
       /**
@@ -55,6 +74,8 @@ export type SyncOutcome =
 /** Optional inputs for a sync request — the people travel with the vials. */
 export interface SyncRequestOptions {
   owners?: Owner[];
+  /** The measurement log, which travels the same way. */
+  measurements?: Measurement[];
   /** Injectable fetch, so the client stays testable. */
   fetchImpl?: typeof fetch;
 }
@@ -113,11 +134,16 @@ export async function hashSyncCode(code: string): Promise<string> {
 
 /* ---------- payload ---------- */
 
-export function serializePayload(vials: SavedVial[], owners?: Owner[]): string {
+export function serializePayload(
+  vials: SavedVial[],
+  owners?: Owner[],
+  measurements?: Measurement[],
+): string {
   const payload: SyncPayload = {
     version: SYNC_PAYLOAD_VERSION,
     ...(owners && owners.length > 0 ? { owners: normalizeOwners(owners) } : {}),
     vials,
+    ...(measurements && measurements.length > 0 ? { measurements } : {}),
   };
   return JSON.stringify(payload);
 }
@@ -134,6 +160,15 @@ export function parsePayload(text: string): SyncPayload | null {
 
   const vials = (data.vials as unknown[]).filter(looksLikeSavedVial).map(normalizeSavedVial);
 
+  // Same treatment for the log: only entries that look like one survive, so a
+  // hand-edited or older payload cannot inject nonsense into the trend.
+  const measurements = Array.isArray(data.measurements)
+    ? (data.measurements as unknown[])
+        .filter(looksLikeMeasurement)
+        .map(normalizeMeasurement)
+        .filter((entry): entry is Measurement => entry !== null)
+    : [];
+
   // Keep the person list in step with the vials: any owner a vial references is
   // represented, even if the payload's own `owners` list is missing or partial.
   const declared =
@@ -144,6 +179,7 @@ export function parsePayload(text: string): SyncPayload | null {
     version: typeof data.version === 'number' ? data.version : SYNC_PAYLOAD_VERSION,
     owners: mergeOwners(declared, implied),
     vials,
+    measurements,
   };
 }
 
@@ -178,7 +214,7 @@ export async function pushVials(
   localVials: SavedVial[],
   options: SyncRequestOptions = {},
 ): Promise<PushOutcome> {
-  const { owners, fetchImpl = fetch } = options;
+  const { owners, measurements, fetchImpl = fetch } = options;
   if (!isValidSyncCode(code)) return { ok: false, reason: 'invalidCode' };
   if (!baseUrl.trim()) return { ok: false, reason: 'network' };
 
@@ -189,7 +225,7 @@ export async function pushVials(
     const response = await fetchImpl(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload: serializePayload(localVials, owners) }),
+      body: JSON.stringify({ payload: serializePayload(localVials, owners, measurements) }),
     });
     if (!response.ok) return { ok: false, reason: 'server' };
 
@@ -214,7 +250,7 @@ export async function syncWithServer(
   localVials: SavedVial[],
   options: SyncRequestOptions = {},
 ): Promise<SyncOutcome> {
-  const { owners = [], fetchImpl = fetch } = options;
+  const { owners = [], measurements = [], fetchImpl = fetch } = options;
   if (!isValidSyncCode(code)) return { ok: false, reason: 'invalidCode' };
   if (!baseUrl.trim()) return { ok: false, reason: 'network' };
 
@@ -223,6 +259,7 @@ export async function syncWithServer(
 
   let merged = localVials;
   let mergedOwners = owners;
+  let mergedMeasurements = measurements;
   let remoteFound = false;
   let conflicts: VialConflict[] = [];
 
@@ -236,6 +273,9 @@ export async function syncWithServer(
       merged = result.vials;
       conflicts = result.conflicts;
       mergedOwners = mergeOwners(owners, parsed.owners ?? []);
+      // The log merges on the same rule as the vials: union by id, newest wins,
+      // and a removal arrives as a tombstone rather than as an absence.
+      mergedMeasurements = mergeMeasurements(measurements, parsed.measurements ?? []);
       remoteFound = true;
     } else if (response.status !== 404) {
       return { ok: false, reason: 'server' };
@@ -250,13 +290,18 @@ export async function syncWithServer(
     ownersFromVials(merged).map((id) => ({ id, name: '' })),
   );
 
-  const pushed = await pushVials(baseUrl, code, merged, { owners: mergedOwners, fetchImpl });
+  const pushed = await pushVials(baseUrl, code, merged, {
+    owners: mergedOwners,
+    measurements: mergedMeasurements,
+    fetchImpl,
+  });
   if (!pushed.ok) return pushed;
 
   return {
     ok: true,
     vials: merged,
     owners: mergedOwners,
+    measurements: mergedMeasurements,
     updatedAt: pushed.updatedAt,
     remoteFound,
     conflicts,

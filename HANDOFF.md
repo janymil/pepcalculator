@@ -45,7 +45,7 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **467 passing / 41 files** (includes the sync server) |
+| Tests | `npm test` | ✅ **473 passing / 41 files** (includes the sync server) |
 | Build | `npm run build` | ✅ ~420 kB JS / 128 kB gzip · ~54 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 12 scenes · 28 keys × 3 languages · 132 frames · timeline cap held |
 
@@ -157,8 +157,8 @@ stores dated circumferences (waist first) and weight, per owner, and reports the
 **first entry that recorded that field** — its own baseline, because that is the only baseline it can
 honestly know. It carries **no target and no verdict**: a smaller waist and a larger one are both just
 the signed difference. Stored under `pepcalc.v1.measurements`, tombstoned on removal (with Undo),
-wiped by "Clear all data", and carried in the JSON backup — **not** in sync, which by design only ever
-moves the vials list.
+wiped by "Clear all data", carried in the JSON backup, and — since this round — carried in the
+**sync payload** as well, so one code brings the log to a second device.
 
 **Every measurement point says where on the body it is, and how to take it.** The six points are not
 just labels: `points[field]` is a `PointCopy` (`label` + `how`), so the page answers the question
@@ -319,13 +319,20 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
     verdict, and the Reference card puts an honest sentence where the decay curve would go rather than
     inventing a dose to plot. Verified **by mutation**: drop the guard and the tests catch
     `"undefined undefined"` printed on the card.
-15. **The measurement log is local-only and backup-only — sync still moves vials and nothing else.**
-    `pepcalc.v1.measurements` is the one new storage key. It rides in `serializeBackup`/`parseBackup`
-    (an optional array on `BackupFile`, normalized on the way in, so a file written before it existed
-    simply has none) and it is wiped by "Clear all data" — but it is deliberately **not** in the sync
-    payload, because decision 6 is what keeps that merge simple enough to trust. If it is ever added
-    there, give it the same `updatedAt` + `deletedAt` treatment the vials have and use
-    `mergeMeasurements`, which is written and tested for exactly that.
+15. **The measurement log now travels in the sync payload too.** `pepcalc.v1.measurements` rides in
+    `serializeBackup`/`parseBackup` (an optional array on `BackupFile`, normalized on the way in, so a
+    file written before it existed simply has none), is wiped by "Clear all data", and — as of the
+    same round — is an **optional field on `SyncPayload`**, merged with `mergeMeasurements` on the
+    same rule as the vials: union by id, newest `updatedAt` wins, a removal travels as a `deletedAt`
+    tombstone. Two things made this safe rather than a schema change: the server stores an **opaque
+    string**, so nothing server-side moved; and the field is **optional on both ends** — a record or a
+    client from an older build simply has no log, which merges as "nothing to add" rather than as a
+    deletion, so no version of the app can erase a log it never saw. Verified end-to-end against a
+    real server (`PORT=8899`): the record it wrote contained the log, the waist figure and the weight,
+    and the server log showed the browser's own CORS preflight around the PUT.
+    Remember the extra step this adds to the auto-push: the change-token is now
+    `syncSnapshot(vials, measurements)` in `App.tsx` — snapshotting only the vials would mean a new
+    measurement never left the device.
 
 ---
 

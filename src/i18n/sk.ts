@@ -310,9 +310,9 @@ export const sk: Strings = {
   sync: {
     title: 'Synchronizácia medzi zariadeniami',
     intro:
-      'Synchronizačný kód umožní, aby vás tie isté fľaštičky sprevádzali na telefóne aj počítači. Bez e-mailu a hesla — stačí tento kód.',
+      'Synchronizačný kód umožní, aby vás tie isté fľaštičky — aj záznam meraní — sprevádzali na telefóne aj počítači. Bez e-mailu a hesla — stačí tento kód.',
     warning:
-      'Kód si zapíšte a dobre uschovajte. Kto ho má, môže vidieť vaše fľaštičky, a bez neho sa synchronizovaná kópia nedá obnoviť.',
+      'Kód si zapíšte a dobre uschovajte. Kto ho má, môže vidieť vaše fľaštičky aj merania, a bez neho sa synchronizovaná kópia nedá obnoviť.',
     create: 'Vytvoriť synchronizačný kód',
     useExisting: 'Použiť existujúci kód',
     codeInputLabel: 'Zadajte kód',
