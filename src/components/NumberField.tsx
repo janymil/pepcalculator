@@ -1,0 +1,63 @@
+import type { ReactNode } from 'react';
+
+interface NumberFieldProps {
+  id: string;
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  /** Static unit shown after the input, e.g. "mL". */
+  suffix?: string;
+  /** Optional control rendered at the right edge (e.g. a mg/mcg toggle). */
+  trailing?: ReactNode;
+  autoFocus?: boolean;
+}
+
+/**
+ * A labelled numeric input. `type="number"` is avoided in favour of
+ * `inputMode="decimal"` + text so we can accept a comma decimal separator
+ * (common in Slovakia) without the browser rejecting it.
+ */
+export function NumberField({
+  id,
+  label,
+  hint,
+  value,
+  onChange,
+  placeholder,
+  suffix,
+  trailing,
+  autoFocus,
+}: NumberFieldProps) {
+  return (
+    <div className="field">
+      <div className="field__head">
+        <label className="field__label" htmlFor={id}>
+          {label}
+        </label>
+        {hint ? (
+          <p className="field__hint" id={`${id}-hint`}>
+            {hint}
+          </p>
+        ) : null}
+      </div>
+      <div className="field__control">
+        <input
+          id={id}
+          className="field__input"
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          autoFocus={autoFocus}
+          placeholder={placeholder}
+          value={value}
+          aria-describedby={hint ? `${id}-hint` : undefined}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        {suffix ? <span className="field__suffix">{suffix}</span> : null}
+        {trailing}
+      </div>
+    </div>
+  );
+}
