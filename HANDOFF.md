@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **387 passing / 36 files** |
-| Build | `npm run build` | ✅ ~390 kB JS / 119 kB gzip · ~49 kB CSS |
+| Tests | `npm test` | ✅ **391 passing / 36 files** |
+| Build | `npm run build` | ✅ ~391 kB JS / 119 kB gzip · ~49 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames · timeline cap held |
 
 ## Run it
@@ -273,6 +273,16 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
     into a fixed palette, so the same peptide is the same colour in the day pills, the legend,
     the day list and the card — and it never shifts when the list changes. **Only today gets a
     coloured background**; other dose days are plain cells whose coloured pills say what is due.
+14. **No brand names — the reference addresses molecules only.** The GLP-1 class it knows is
+    `tirzepatide` and `retatrutide`; no marketing name appears in the data, the UI, the copy or the
+    video. Same call as "a brand is never assumed" and "dial resolution is an input, never a brand
+    table". A cited range is therefore also **optional** on a reference entry: `retatrutide` is stamped
+    `investigational` and cites **no** dose range at all, because there is no approved one to cite. The
+    three range fields are reachable only through `hasCitedRange()`, a **type guard**, so any caller
+    that needs a range has to ask for it — `formatRange()` returns `null`, `rangeHint()` returns no
+    verdict, and the Reference card puts an honest sentence where the decay curve would go rather than
+    inventing a dose to plot. Verified **by mutation**: drop the guard and the tests catch
+    `"undefined undefined"` printed on the card.
 
 ---
 
@@ -525,14 +535,16 @@ the cross-references stay stable.
   policy), and its quality **cannot be verified in this environment** (no audio output), so audition
   it on a real device before shipping.
 
-- **A GLP-1 companion is proposed, not built** — see `PROPOSAL-glp1-companion.md`. Short version: the
-  pen routine, the pre-use check and a **body-measurement log** (which does not exist in any form today)
-  are in character and recommended; training and nutrition content should ship as *questions to ask a
-  prescriber*, not as instructions, because "not medical advice, it only does the maths" is the app's
-  entire claim. The proposal names the phases, the files and the tests, and flags two things that are
-  wrong today rather than merely missing: there is **no `retatrutide` row** in `lib/reference.ts`, and
-  its `semaglutide` / `tirzepatide` rows describe **reconstituted vials** (mcg + water) when a
-  prescribed pen is a different route. Nothing in it is implemented.
+- **A GLP-1 companion is proposed, not built** — see `PROPOSAL-glp1-companion.md`. Scope is settled to
+  **molecules only, no brands**: `tirzepatide` and `retatrutide`. Short version: the pen routine, the
+  pre-use check and a **body-measurement log** (which does not exist in any form today) are in character
+  and recommended; training and nutrition content should ship as *questions to ask a prescriber*, not as
+  instructions, because "not medical advice, it only does the maths" is the app's entire claim. The
+  proposal names the phases, the files and the tests. **One correction from it has already landed** — the
+  `retatrutide` row (key decision 14). Still open in it: whether `semaglutide` stays in the reference (it
+  is a third molecule now that the class is scoped to two; it is kept because dropping the row would stop
+  `matchCompound` matching existing vials named after it, taking their half-life plot with it), and a
+  `route` field to separate the reconstituted-vial figures from a prescribed pen.
 
 ## How to extend safely
 

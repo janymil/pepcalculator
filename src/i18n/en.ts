@@ -432,6 +432,10 @@ export const en: Strings = {
     water: 'Common water',
     halfLifeUnit: 'h',
     halfLifeDaysUnit: 'days',
+    /** Badge on an entry that has no approved dose to cite (still in trials). */
+    investigational: 'Investigational',
+    /** Stands in for the decay chart when there is no cited range to plot. */
+    noRange: 'Still in trials — no approved dose, so there is no cited range to plot.',
     note: 'These are rounded, widely published community figures used for illustration. They are not medical advice and must not replace a doctor or pharmacist.',
     range: {
       label: 'Your dose',

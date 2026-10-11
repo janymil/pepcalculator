@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compoundById, matchCompound, rangeHint } from './reference';
+import { compoundById, formatRange, hasCitedRange, matchCompound, rangeHint } from './reference';
 
 describe('matchCompound', () => {
   it('matches on the id, whatever the punctuation or spacing', () => {
@@ -47,5 +47,33 @@ describe('rangeHint', () => {
   it('has no opinion without a dose', () => {
     expect(rangeHint(bpc, 0)).toBeNull();
     expect(rangeHint(bpc, Number.NaN)).toBeNull();
+  });
+});
+
+describe('hasCitedRange', () => {
+  it('is true for an entry with a documented range', () => {
+    const bpc = compoundById('bpc157') as NonNullable<ReturnType<typeof compoundById>>;
+    expect(hasCitedRange(bpc)).toBe(true);
+    expect(formatRange(bpc)).toBe('0.25–0.5 mg');
+  });
+
+  it('is false for an investigational entry, so nothing can invent one', () => {
+    // Retatrutide is in trials: there is no approved dose to cite. The entry
+    // therefore has no range at all — and every caller that needs one has to
+    // narrow through the guard before it can read the fields.
+    const reta = compoundById('retatrutide') as NonNullable<ReturnType<typeof compoundById>>;
+    expect(hasCitedRange(reta)).toBe(false);
+    expect(formatRange(reta)).toBeNull();
+    expect(reta.investigational).toBe(true);
+    // The facts the rest of the sheet needs are still there.
+    expect(reta.halfLifeHours).toBeGreaterThan(0);
+    expect(matchCompound('retatrutide')?.id).toBe('retatrutide');
+  });
+
+  it('never yields a dose verdict for an entry with no cited range', () => {
+    const reta = compoundById('retatrutide') as NonNullable<ReturnType<typeof compoundById>>;
+    expect(rangeHint(reta, 0.5)).toBeNull();
+    expect(rangeHint(reta, 1)).toBeNull();
+    expect(rangeHint(reta, 12)).toBeNull();
   });
 });

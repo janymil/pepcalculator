@@ -436,6 +436,8 @@ export const es: Strings = {
     water: 'Agua habitual',
     halfLifeUnit: 'h',
     halfLifeDaysUnit: 'días',
+    investigational: 'En investigación',
+    noRange: 'Todavía en ensayos — sin dosis aprobada, así que no hay rango que dibujar.',
     note: 'Son cifras redondeadas y ampliamente publicadas en la comunidad, usadas solo como ilustración. No son consejo médico ni sustituyen a un médico o farmacéutico.',
     range: {
       label: 'Tu dosis',

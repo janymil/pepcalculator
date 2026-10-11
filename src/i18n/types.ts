@@ -443,6 +443,10 @@ export interface Strings {
     halfLifeUnit: string;
     /** Unit for a half-life of a day or more, e.g. "days". */
     halfLifeDaysUnit: string;
+    /** Badge on an entry that has no approved dose to cite (still in trials). */
+    investigational: string;
+    /** Shown in place of the decay chart when there is no cited range. */
+    noRange: string;
     /** The strong reminder under the list that this is not advice. */
     note: string;
     /**

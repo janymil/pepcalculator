@@ -76,4 +76,12 @@ describe('ReferencePage (server render smoke test)', () => {
       expect(compound.halfLifeHours).toBeGreaterThan(0);
     }
   });
+
+  it('marks an investigational compound and draws no invented curve for it', () => {
+    expect(html).toContain('Retatrutide');
+    expect(html).toContain(DICTIONARIES.en.reference.investigational);
+    expect(html).toContain(DICTIONARIES.en.reference.noRange);
+    // The row must not print a range it does not have.
+    expect(html).not.toContain('undefined');
+  });
 });

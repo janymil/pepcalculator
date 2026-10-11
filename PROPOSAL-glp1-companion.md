@@ -1,10 +1,11 @@
 # Proposal — a "GLP-1 companion" for PepCalculator
 
-**Status:** proposal only. Nothing here is built, and this file changes no behaviour. It exists so the
-decision is made in one place instead of drifting into code.
+**Status:** proposal, plus one small correction already landed — see "Corrections made while writing
+this", below. The companion itself is **not** built, and this file changes no behaviour. It exists so
+the decision is made in one place instead of drifting into code.
 
-**The ask:** a special function for the GLP-1 class (tirzepatide, retatrutide, and the prescribed
-products such as Mounjaro and Wegovy) that tells the user
+**The ask:** a special function for the GLP-1 class — the molecules **tirzepatide** and
+**retatrutide**, with no brand names anywhere — that tells the user
 
 1. how to use the pen, if it is a pen,
 2. what to check before using it,
@@ -23,8 +24,8 @@ same thing — footer, print sheet, the Reference stamps, the closing scene of t
 advice; it only does the maths."** A calculator that is trusted because it stays in its lane should not
 quietly start prescribing training and diet for a prescription-only medicine. Items 1–3 keep that
 promise (procedure, data, and questions). Item 4 breaks it, and it is also the item with legal
-exposure: Mounjaro and Wegovy are prescription medicines in the EU/UK/US, and publishing usage and
-nutrition guidance next to them edges into medicinal-product advertising rules — with liability that
+exposure: these are prescription medicines in the EU/UK/US, and publishing usage and nutrition
+guidance next to them edges into medicinal-product advertising rules — with liability that
 lands on whoever wrote the sentence, not on the user.
 
 There is also a second reason, specific to this class: **"what should I eat / how should I train" is
@@ -32,6 +33,20 @@ exactly where a general tool becomes a bad coach.** The well-established content
 resistance training, hydration, small portions, fibre, alcohol) is genuinely helpful *and* it is
 already the prescriber's job to deliver it, individualised. The app's useful contribution is to make
 sure the conversation happens — not to replace it with generic numbers.
+
+---
+
+## Decisions taken
+
+- **Molecules only — no brand names anywhere.** Not in the UI, not in the reference data, not in this
+  document, not in the video. `lib/reference.ts` already says "a brand is never assumed" and the pen
+  workflow already refuses a brand table (dial resolution is an input, `DEFAULT_CLICKS_PER_ML`); this
+  makes the same call explicit for marketing names.
+- **The class is addressed as two molecules: `tirzepatide` and `retatrutide`.** Everything below is
+  written brand-free — "a dial-a-dose pen", "the prescribed route" — never a product, and never a
+  per-product step list.
+- **`retatrutide` is in the reference data, stamped investigational, with no cited range.** Done, with
+  the mechanics and the tests described under "Corrections made while writing this".
 
 ---
 
@@ -43,7 +58,7 @@ sure the conversation happens — not to replace it with generic numbers.
 | Titration (step-up) plans — how GLP-1s are actually started | `DosePhase[]` on `VialSchedule` (`lib/schedule.ts`) | **Exists** |
 | Check-before-you-draw card | `components/DrawCheck.tsx` — vial, site, when, how much; big type, Escape, focus handling | **Exists** — shows *what*, not *how* |
 | Injection-site rotation (6 sites, derived, no logging) | `lib/sites.ts`, surfaced on the Today card | **Exists** |
-| Reference rows for the class | `lib/reference.ts` — `semaglutide`, `tirzepatide` present; **no `retatrutide`** | **Partial** — and the rows describe *reconstituted vials* (mcg + water volumes), which is the compounded route, not a prescribed pen |
+| Reference rows for the class | `lib/reference.ts` — `tirzepatide` present; `retatrutide` **now present as investigational** (no cited range, on purpose); `semaglutide` present, pending the question below | **Partial** — the ranged rows describe *reconstituted vials* (mcg + water volumes), which is the compounded route, not a prescribed pen |
 | 28-day in-use warning | `lib/supply.ts` | **Exists** — but it is the reconstituted-peptide rule. A pen's in-use window is product-specific and must come from that product's leaflet |
 | **Body / weight / measurement tracking** | — | **Does not exist anywhere.** Verified: zero matches outside CSS `font-weight` |
 | Storage + backup + sync | `STORAGE_KEYS` in `config/defaults.ts` (`pepcalc.v1.*`) | Measurements would need a **new key** — the one case `HANDOFF.md` flags as migration-relevant (payloads must carry it, or an older client silently drops it) |
@@ -62,12 +77,13 @@ So of the four asks: **1 and 2 have a natural home that already exists**, **3 ne
 | 3. What to measure on the body | **Build** | A measurement log + trend for **waist first, then hip/neck/arm/thigh and weight**, with a "measure the same way each time" hint |
 | 4. Training and food | **Reshape** | Questions to ask the prescriber. Positive content only as non-numeric, attributed general principles, and only if the boundary change below is accepted |
 
-**Why a generic routine and not per-brand steps.** This is the same call the repo already made once:
+**Why a generic routine and not per-device steps.** This is the same call the repo already made once:
 `DEFAULT_CLICKS_PER_ML` is "always an input, never a brand table", because devices differ and brand
-tables rot. Mounjaro's pen dials **mg**, Wegovy's dials **mg**, and compounded pens dial
-clicks/units — a step list that pretends they are one device would be wrong for most users. So: a
-routine that is true of pens in general, one prominent line saying *your device's own leaflet is the
-authority*, and a first step of "read the leaflet that came with this pen".
+tables rot. Some pens dial the dose straight in **mg** on a numbered dial; others count **clicks**;
+a compounded pen may do either — a step list that pretends they are one device would be wrong for
+most users. So: a routine that is true of dial-a-dose pens in general, one prominent line saying
+*your device's own leaflet is the authority*, and a first step of "read the leaflet that came with
+this pen".
 
 ---
 
@@ -148,7 +164,7 @@ ship it **only** if:
 
 ## What I would not build, and why
 
-- **A brand → clicks/mg table** (Mounjaro = N clicks, Wegovy = M). It contradicts a documented decision
+- **A brand → clicks/mg table** (product X = N clicks). It contradicts a documented decision
   in this repo, it is wrong for compounded pens, it ages badly, and it is the version that reads as
   dosing advice for a prescription medicine.
 - **Per-brand in-use windows and storage numbers** (30 days, 6 weeks, 2–8 °C). They differ per product
@@ -159,7 +175,7 @@ ship it **only** if:
   invites people to treat it as a plan.
 - **Anything that looks like guidance for an investigational compound.** Retatrutide is not an approved
   product; a routine or a range for it would look authoritative where nothing is authorised. Its
-  reference row should say exactly that, and stop.
+  reference row now says exactly that and stops — see "Corrections made while writing this".
 - **Goal/target features** (target weight, "X to go"). Different product, different failure mode.
 
 ---
@@ -181,11 +197,13 @@ that people trust it to stay in its lane.
 
 ## Open decisions
 
-1. **Who is the audience?** Prescribed pen users (Mounjaro/Wegovy), the compounded-vial crowd, or both?
-   The app models the *vial* story for these compounds today and adds a pen workflow on top — worth
-   deciding whether the companion follows the pen, the vial, or either.
-2. **Do brand names appear anywhere in the UI?** Naming them descriptively is one thing; anything that
-   looks like affiliation, or per-brand instructions, is another.
+1. **Pen or vial?** Both molecules reach people two ways — a dial-a-dose pen, or a reconstituted vial —
+   and the app models both. The companion can follow the pen, the vial, or either: the routine and the
+   pre-use check differ (see above), the measurement log does not.
+2. **Does `semaglutide` stay in `lib/reference.ts`?** It is a third molecule where the class is now
+   scoped to two, but it is still there — removing the row silently un-matches every existing vial named
+   after it (`matchCompound` would stop finding it, taking its half-life plot with it), which is a
+   regression for whoever is already using it. It comes out only if you say so.
 3. **Phase 4 in or out?** Phases 1–3 can proceed without that answer.
 
 ## Effort, in this repo's currency
@@ -203,15 +221,18 @@ test written first.
 
 ---
 
-## Small corrections worth making regardless of this proposal
+## Corrections made while writing this (done, in this commit)
 
-Two things I would fix independent of the above, because they are wrong today rather than merely
-missing:
-
-- **Add `retatrutide` to `lib/reference.ts`** with an explicit "investigational — no approved dosing"
-  stamp, so its absence does not look like an oversight and its presence does not look like an
-  endorsement.
-- **Separate the two routes in the reference data.** The `semaglutide` and `tirzepatide` rows carry
-  reconstituted-vial figures (mcg + water volumes), which is the compounded route, not the prescribed
-  pen. A `route` field (`reconstituted vial` / `prescribed pen`) would stop the table implying the two
-  are interchangeable — and stop a pen user reading a vial range as their dose.
+- **`retatrutide` is in `lib/reference.ts`, stamped investigational and with no cited range.** The range
+  fields became optional and are now reachable only through a new `hasCitedRange()` type guard, so no
+  caller can print or plot a range that does not exist: `formatRange()` returns `null`, the Reference
+  card shows *"Still in trials — no approved dose, so there is no cited range to plot."* in the slot the
+  decay curve would occupy, and `rangeHint()` gives no dose verdict for it at any dose. The guard is
+  type-level, so it cannot be forgotten — and both tests were verified **by mutation**: remove the guard
+  and `formatRange` degrades to `"undefined undefined"`, which the unit test and the rendered-card test
+  each catch.
+- **Still open — the two routes.** The `semaglutide` and `tirzepatide` rows carry reconstituted-vial
+  figures (mcg + water volumes), which is the compounded route, not a prescribed pen. A `route` field
+  (`reconstituted vial` / `prescribed pen`) would stop the table implying the two are interchangeable —
+  and stop a pen user reading a vial range as their dose. Not built: with brands gone this is less
+  urgent, and it is a data-shape change worth making deliberately.

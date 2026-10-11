@@ -2453,6 +2453,20 @@ body {
   color: var(--accent-strong);
 }
 
+/* "Still in trials" badge — sits right after the compound name. */
+.ref__stamp {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
 .ref__facts {
   display: flex;
   flex-wrap: wrap;
@@ -2517,6 +2531,17 @@ body {
 
 .ref__note {
   margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+/* Takes the chart's slot when there is no cited range to plot. */
+.ref__norange {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   font-size: var(--fs-sm);
   color: var(--text-muted);
 }

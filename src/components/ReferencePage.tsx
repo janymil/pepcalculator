@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
-import { COMPOUNDS, formatRange, type CompoundClass, type CompoundReference } from '../lib/reference';
+import {
+  COMPOUNDS,
+  formatRange,
+  hasCitedRange,
+  type CompoundClass,
+  type RangedCompound,
+} from '../lib/reference';
 import type { SavedVial } from '../lib/vials';
 import { PkChart } from './PkChart';
 import { ProtocolPlot } from './ProtocolPlot';
@@ -18,8 +24,11 @@ type ReferenceSection = 'compounds' | 'converter' | 'plot';
 /**
  * The decay curve for a compound's *typical* dose range — the reference version
  * of the same chart the user can now plot for their own plan.
+ *
+ * Takes a `RangedCompound`, so an entry without a cited range (still in trials)
+ * cannot reach the chart at all: there is no dose to draw.
  */
-function DecayChart({ compound, ariaLabel }: { compound: CompoundReference; ariaLabel: string }) {
+function DecayChart({ compound, ariaLabel }: { compound: RangedCompound; ariaLabel: string }) {
   // A representative dose: the midpoint of the cited range, converted to mg.
   const midMg = (compound.typicalLowMg + compound.typicalHighMg) / 2;
   const doseMg = compound.unit === 'mcg' ? midMg / 1000 : midMg;
@@ -113,38 +122,54 @@ export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
         </div>
 
         <ul className="ref__list">
-          {rows.map((compound) => (
-            <li className="ref__row" key={compound.id}>
-              <div className="ref__head">
-                <h3 className="ref__name">{compound.name}</h3>
-                <span className="ref__range">
-                  {copy.typical}: <strong>{formatRange(compound)}</strong>
-                </span>
-              </div>
+          {rows.map((compound) => {
+            const range = formatRange(compound);
+            return (
+              <li className="ref__row" key={compound.id}>
+                <div className="ref__head">
+                  <h3 className="ref__name">
+                    {compound.name}
+                    {compound.investigational ? (
+                      <span className="ref__stamp">{copy.investigational}</span>
+                    ) : null}
+                  </h3>
+                  {range ? (
+                    <span className="ref__range">
+                      {copy.typical}: <strong>{range}</strong>
+                    </span>
+                  ) : null}
+                </div>
 
-              <dl className="ref__facts">
-                <div>
-                  <dt>{copy.cadence}</dt>
-                  <dd>{compound.cadence}</dd>
-                </div>
-                <div>
-                  <dt>{copy.halfLife}</dt>
-                  <dd>{halfLifeLabel(compound.halfLifeHours)}</dd>
-                </div>
-                {compound.commonWaterMl.length > 0 ? (
+                <dl className="ref__facts">
                   <div>
-                    <dt>{copy.water}</dt>
-                    <dd>{compound.commonWaterMl.join(' / ')} {strings.units.ml}</dd>
+                    <dt>{copy.cadence}</dt>
+                    <dd>{compound.cadence}</dd>
                   </div>
-                ) : null}
-              </dl>
+                  <div>
+                    <dt>{copy.halfLife}</dt>
+                    <dd>{halfLifeLabel(compound.halfLifeHours)}</dd>
+                  </div>
+                  {compound.commonWaterMl.length > 0 ? (
+                    <div>
+                      <dt>{copy.water}</dt>
+                      <dd>{compound.commonWaterMl.join(' / ')} {strings.units.ml}</dd>
+                    </div>
+                  ) : null}
+                </dl>
 
-              <DecayChart
-                compound={compound}
-                ariaLabel={`${copy.halfLife}: ${compound.name}`}
-              />
-            </li>
-          ))}
+                {hasCitedRange(compound) ? (
+                  <DecayChart
+                    compound={compound}
+                    ariaLabel={`${copy.halfLife}: ${compound.name}`}
+                  />
+                ) : (
+                  // No cited range: there is nothing honest to plot a curve from,
+                  // so the slot says so rather than inventing a dose to draw.
+                  <p className="ref__norange">{copy.noRange}</p>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <p className="ref__note">{copy.note}</p>

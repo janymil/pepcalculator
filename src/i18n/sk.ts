@@ -434,6 +434,8 @@ export const sk: Strings = {
     water: 'Bežná voda',
     halfLifeUnit: 'h',
     halfLifeDaysUnit: 'dní',
+    investigational: 'Skúmaná látka',
+    noRange: 'Zatiaľ v skúškach — bez schválenej dávky, preto nie je čo vykresliť.',
     note: 'Toto sú zaokrúhlené, bežne publikované údaje z komunity, slúžia len na ilustráciu. Nie sú lekárskou radou a nenahrádzajú lekára ani lekárnika.',
     range: {
       label: 'Vaša dávka',

@@ -14,20 +14,50 @@ export type CompoundClass = 'peptide' | 'anabolic';
 
 export interface CompoundReference {
   id: string;
-  /** Display name (a brand is never assumed). */
+  /** Display name — the molecule only. A brand is never assumed, and never named. */
   name: string;
   klass: CompoundClass;
-  /** Commonly cited starting range, in the compound's usual unit. */
-  typicalLowMg: number;
-  typicalHighMg: number;
+  /**
+   * Commonly cited starting range, in the compound's usual unit.
+   *
+   * Absent for an investigational compound: there is no approved dose to cite,
+   * and inventing one would be the single most dangerous thing this file could
+   * do. Anything that needs a range must narrow through `hasCitedRange` first.
+   */
+  typicalLowMg?: number;
+  typicalHighMg?: number;
   /** The unit those figures are expressed in. */
-  unit: 'mg' | 'mcg';
+  unit?: 'mg' | 'mcg';
   /** Bacteriostatic water volumes people commonly reconstitute with (mL). */
   commonWaterMl: number[];
   /** Rough elimination half-life in hours (for the PK chart). */
   halfLifeHours: number;
   /** Typical dosing cadence, as a short, factual note. */
   cadence: string;
+  /** Still in trials: no approved dose anywhere, and the UI labels it as such. */
+  investigational?: boolean;
+}
+
+/** A compound whose cited range is known — the three range fields are present. */
+export type RangedCompound = CompoundReference & {
+  typicalLowMg: number;
+  typicalHighMg: number;
+  unit: 'mg' | 'mcg';
+};
+
+/**
+ * Whether an entry cites a range at all.
+ *
+ * A type guard on purpose: every caller that *needs* a range (the decay chart,
+ * the formatter, the dose verdict) has to ask first, so no future entry can
+ * quietly inherit a range it does not have.
+ */
+export function hasCitedRange(compound: CompoundReference): compound is RangedCompound {
+  return (
+    typeof compound.typicalLowMg === 'number' &&
+    typeof compound.typicalHighMg === 'number' &&
+    (compound.unit === 'mg' || compound.unit === 'mcg')
+  );
 }
 
 /**
@@ -100,6 +130,21 @@ export const COMPOUNDS: readonly CompoundReference[] = [
     commonWaterMl: [1, 2],
     halfLifeHours: 120,
     cadence: '1× per week',
+  },
+  {
+    /**
+     * Investigational: no approved product and no approved dose. The half-life
+     * and the weekly cadence are the trial figures people cite; the range is
+     * left out on purpose, so the UI shows "no cited range" rather than a
+     * number that would read as a recommendation.
+     */
+    id: 'retatrutide',
+    name: 'Retatrutide',
+    klass: 'peptide',
+    commonWaterMl: [1, 2],
+    halfLifeHours: 144,
+    cadence: '1× per week (trials)',
+    investigational: true,
   },
   {
     id: 'melanotan2',
@@ -190,8 +235,13 @@ export function compoundById(id: string): CompoundReference | undefined {
   return COMPOUNDS.find((compound) => compound.id === id);
 }
 
-/** Formats a range with the right unit, e.g. "0.25–0.5 mg" or "100–300 mcg". */
-export function formatRange(compound: CompoundReference): string {
+/**
+ * Formats a range with the right unit, e.g. "0.25–0.5 mg" — or null when the
+ * entry cites none, so a caller can never print "undefined–undefined".
+ */
+export function formatRange(compound: CompoundReference): string | null {
+  if (!hasCitedRange(compound)) return null;
+
   const { typicalLowMg, typicalHighMg, unit } = compound;
   const value = typicalLowMg === typicalHighMg ? `${typicalLowMg}` : `${typicalLowMg}–${typicalHighMg}`;
   return `${value} ${unit}`;
@@ -238,6 +288,10 @@ export type RangeVerdict = 'wellBelow' | 'below' | 'within' | 'above';
  */
 export function rangeHint(compound: CompoundReference, doseMg: number): RangeVerdict | null {
   if (!isPositive(doseMg)) return null;
+
+  // No cited range means no opinion — an investigational compound gets no
+  // verdict however the dose reads.
+  if (!hasCitedRange(compound)) return null;
 
   const low = toBase(compound.typicalLowMg, compound.unit);
   const high = toBase(compound.typicalHighMg, compound.unit);
