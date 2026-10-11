@@ -7,6 +7,7 @@ import {
   type ModeId,
   type SyringeTypeId,
 } from '../lib/calc';
+import { isInvalidNumberInput } from '../lib/format';
 import type { AnabolicForm, PeptideForm, SyringeSettings } from '../types';
 import { NumberField } from './NumberField';
 import { SegmentedControl, type SegmentedOption } from './SegmentedControl';
@@ -63,6 +64,7 @@ export function CalculatorForm({
   onReset,
 }: CalculatorFormProps) {
   const { strings } = useI18n();
+  const invalidNumber = strings.validation.invalidNumber;
 
   const unitOptions: SegmentedOption<DoseUnit>[] = [
     { value: 'mg', label: strings.units.mg },
@@ -99,6 +101,8 @@ export function CalculatorForm({
               value={peptide.vialAmount}
               onChange={(vialAmount) => onPeptideChange({ vialAmount })}
               placeholder="5"
+              invalid={isInvalidNumberInput(peptide.vialAmount)}
+              error={invalidNumber}
               trailing={
                 <SegmentedControl
                   ariaLabel={strings.fields.vialAmount.label}
@@ -117,6 +121,8 @@ export function CalculatorForm({
               value={peptide.waterMl}
               onChange={(waterMl) => onPeptideChange({ waterMl })}
               placeholder="2"
+              invalid={isInvalidNumberInput(peptide.waterMl)}
+              error={invalidNumber}
               suffix={strings.units.ml}
             />
 
@@ -127,6 +133,8 @@ export function CalculatorForm({
               value={peptide.doseAmount}
               onChange={(doseAmount) => onPeptideChange({ doseAmount })}
               placeholder="250"
+              invalid={isInvalidNumberInput(peptide.doseAmount)}
+              error={invalidNumber}
               trailing={
                 <SegmentedControl
                   ariaLabel={strings.fields.dose.label}
@@ -147,6 +155,8 @@ export function CalculatorForm({
               value={anabolic.concentration}
               onChange={(concentration) => onAnabolicChange({ concentration })}
               placeholder="250"
+              invalid={isInvalidNumberInput(anabolic.concentration)}
+              error={invalidNumber}
               suffix={`mg / ${strings.units.ml}`}
             />
 
@@ -157,6 +167,8 @@ export function CalculatorForm({
               value={anabolic.doseAmount}
               onChange={(doseAmount) => onAnabolicChange({ doseAmount })}
               placeholder="250"
+              invalid={isInvalidNumberInput(anabolic.doseAmount)}
+              error={invalidNumber}
               trailing={
                 <SegmentedControl
                   ariaLabel={strings.fields.dose.label}
@@ -175,6 +187,8 @@ export function CalculatorForm({
               value={anabolic.vialMl}
               onChange={(vialMl) => onAnabolicChange({ vialMl })}
               placeholder="10"
+              invalid={isInvalidNumberInput(anabolic.vialMl)}
+              error={invalidNumber}
               suffix={strings.units.ml}
             />
           </>

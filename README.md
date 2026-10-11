@@ -45,6 +45,7 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Reference sheet** — a fifth page lists commonly cited **typical ranges, cadences and half-lives** for a set of peptides and anabolics, each with a small decay chart, every row stamped as educational only — never a target, never advice.
 - **Undo & safe clearing** — deleting a vial offers an **Undo** snackbar, and Settings has a guarded **Clear all data** action for the escape hatch the app used to lack.
 - **Five pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **Reference**, and **Settings** (sync + reminders + your data). The page switcher sits at the top.
+- **A modern, token-driven UI** — spacing/type/radius/elevation/motion tokens, a single accent colour with semantic states, a hand-rolled **SVG icon set** (no emoji), a **phone bottom tab bar**, gentle page motion, a count-up on the headline number and clean field-validity states.
 
 ---
 
@@ -109,11 +110,11 @@ src/
 │  ├─ types.ts           # the `Strings` contract
 │  ├─ index.ts           # language detection + interpolation
 │  └─ I18nContext.tsx    # `useI18n()` hook
-├─ components/           # Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel,
+├─ components/           # Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel, Icon,
 │                        # TodayDose, MobileSummaryBar, FirstRunCard, ReferencePage,
 │                        # Toast, DangerZone, SaveVialForm, SavedVials, VialCard,
 │                        # AgendaPage, SettingsPage, …
-├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts
+├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts, useCountUp.ts
 ├─ styles/global.css     # design tokens + all styling
 ├─ App.tsx               # state + wiring
 └─ main.tsx

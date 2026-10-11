@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **224 passing / 22 files** |
-| Build | `npm run build` | ✅ 68 modules, ~328 kB JS / 100 kB gzip |
+| Tests | `npm test` | ✅ **240 passing / 24 files** |
+| Build | `npm run build` | ✅ ~337 kB JS / 103 kB gzip · ~38 kB CSS |
 
 ## Run it
 
@@ -108,9 +108,9 @@ src/
 ├─ components/           Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel, SyringeVisual,
 │                        AlertList, SaveVialForm, SavedVials, VialCard, VialEditor, ScheduleForm,
 │                        DoseCalendar, AgendaPage, KindFilterControl, SettingsPage, SyncPanel,
-│                        RemindersPanel, SegmentedControl, NumberField, Footer,
+│                        RemindersPanel, SegmentedControl, NumberField, Footer, Icon,
 │                        TodayDose, MobileSummaryBar, FirstRunCard, ReferencePage, Toast, DangerZone
-├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (timer → notification)
+├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (timer → notification), useCountUp.ts
 ├─ styles/global.css     design tokens + ALL styling (data-theme / data-mode driven)
 ├─ App.tsx               state + wiring only
 └─ main.tsx
@@ -303,7 +303,7 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
 **saved anabolics** with kind filters and per-vial calendar colours, and the **tombstone purge**
 (90-day retention, swept on open and after every merge, with the trade-off documented).
 
-**Improvement pass (all green, 224 tests):**
+**Improvement pass (all green, 240 tests):**
 
 - **Today card** — the next scheduled dose + one-tap load, on the Calculator (`lib/today.ts`).
 - **First-run welcome** with loadable examples, and the disclaimer repeated at point of use.
@@ -315,6 +315,23 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
 - **Inverse mode** — a drawn volume back to a dose (`doseFromVolume` in `lib/calc.ts`).
 - **Persisted kind filter**, empty-state CTAs, `aria-live` result, dynamic `theme-color`,
   larger tap targets and readable calendar pills.
+
+**Design-system pass (modern, token-driven UI):**
+
+- **Tokens for everything** — spacing (`--space-*`), type (`--fs-*`), radius, elevation and
+  motion scales. Every `font-size` now comes from the scale (0.75rem floor for uppercase
+  micro-labels); `--text-faint` was darkened to pass WCAG AA.
+- **One accent, semantic colour only** — the accent is reserved for the key numbers and
+  primary actions; statuses keep `--danger/--warn/--info/--ok`. The meshy gradient background
+  was replaced by a single soft top glow, and cards are flat (border, not border + shadow).
+- **Hand-rolled SVG icons** (`components/Icon.tsx`) replace every emoji — still zero runtime deps.
+- **Phone bottom tab bar**: the five-tab switcher no longer overflows a narrow screen
+  (icon over label, safe-area aware), plus page-entrance motion, a count-up on the headline
+  number (`hooks/useCountUp.ts`, SSR-safe and reduced-motion aware) and field-level invalid states.
+- **Instrument-grade visuals**: the syringe now has minor/major graduations and a dashed target
+  marker; the reference decay chart gained gridlines, a baseline and dose markers.
+- **Scanability**: saved vials are collapsible cards with **search + sort** (`searchVials` /
+  `sortVials` in `lib/vials.ts`), and the per-vial palette is muted.
 
 1. **Conflict awareness** — merges are silent last-write-wins; consider surfacing
    "changed on another device".

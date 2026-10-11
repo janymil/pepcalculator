@@ -64,6 +64,17 @@ export function monthLabel(locale: string, year: number, month: number): string 
 }
 
 /**
+ * True when the raw text is non-empty but is not a usable positive number —
+ * used to flag an obviously-wrong entry ("abc", "0", "1,2,3") in the UI.
+ * An empty field is *not* invalid; that is simply "not filled in yet".
+ */
+export function isInvalidNumberInput(input: string): boolean {
+  const trimmed = input.trim();
+  if (trimmed === '') return false;
+  return !(parseNumber(trimmed) > 0);
+}
+
+/**
  * Formats an amount of money. Without a currency code it just shows the number
  * (useful when the user hasn't told us their currency); with one, it uses the
  * locale's symbol placement.

@@ -12,6 +12,10 @@ interface NumberFieldProps {
   /** Optional control rendered at the right edge (e.g. a mg/mcg toggle). */
   trailing?: ReactNode;
   autoFocus?: boolean;
+  /** Marks the field as containing an unusable value. */
+  invalid?: boolean;
+  /** Message shown under the field while it is invalid. */
+  error?: string;
 }
 
 /**
@@ -29,6 +33,8 @@ export function NumberField({
   suffix,
   trailing,
   autoFocus,
+  invalid,
+  error,
 }: NumberFieldProps) {
   return (
     <div className="field">
@@ -45,19 +51,23 @@ export function NumberField({
       <div className="field__control">
         <input
           id={id}
-          className="field__input"
+          className={`field__input${invalid ? ' is-invalid' : ''}`}
           type="text"
           inputMode="decimal"
           autoComplete="off"
           autoFocus={autoFocus}
           placeholder={placeholder}
           value={value}
-          aria-describedby={hint ? `${id}-hint` : undefined}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={
+            hint || (invalid && error) ? `${id}-hint` : undefined
+          }
           onChange={(event) => onChange(event.target.value)}
         />
         {suffix ? <span className="field__suffix">{suffix}</span> : null}
         {trailing}
       </div>
+      {invalid && error ? <p className="field__error">{error}</p> : null}
     </div>
   );
 }

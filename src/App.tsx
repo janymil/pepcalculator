@@ -482,7 +482,8 @@ export default function App() {
         <main className="app__main">
           <ViewTabs view={view} onChange={changeView} />
 
-          {view === 'calendar' ? (
+          <div className="view-enter" key={view}>
+            {view === 'calendar' ? (
             <AgendaPage
               vials={liveVialList}
               todayIso={todayIso}
@@ -566,6 +567,7 @@ export default function App() {
               ) : null}
             </>
           )}
+          </div>
         </main>
 
         <Footer />
