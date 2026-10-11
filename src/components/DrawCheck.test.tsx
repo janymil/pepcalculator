@@ -34,10 +34,10 @@ const dose: TodayDose = {
   vial,
 };
 
-function render(site?: string): string {
+function render(site?: string, also: TodayDose[] = []): string {
   return renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
-      <DrawCheck dose={dose} site={site} onClose={() => {}} />
+      <DrawCheck dose={dose} also={also} site={site} onClose={() => {}} />
     </I18nProvider>,
   );
 }
@@ -66,5 +66,27 @@ describe('DrawCheck', () => {
 
   it('offers a way out', () => {
     expect(render()).toContain('Done');
+  });
+
+  it('lists the rest of the sitting, so one trip covers every vial', () => {
+    const oil: TodayDose = {
+      ...dose,
+      vialId: 'v2',
+      name: 'Testosterone E',
+      kind: 'anabolic',
+      measure: 'volume',
+      volumeMl: 1,
+      drawValue: 1,
+    };
+
+    const html = render('Left abdomen', [oil]);
+
+    expect(html).toContain(DICTIONARIES.en.check.also);
+    expect(html).toContain('Testosterone E');
+    expect(html).toContain('1'); // mL for the oil
+  });
+
+  it('says nothing about a sitting of one', () => {
+    expect(render()).not.toContain(DICTIONARIES.en.check.also);
   });
 });

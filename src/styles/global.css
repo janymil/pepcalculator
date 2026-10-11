@@ -3352,6 +3352,50 @@ body {
   color: var(--text-muted);
 }
 
+/* ---------- the rest of the sitting (two compounds at one time) ---------- */
+.today-card__also {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.today-card__also-title {
+  margin: 0 0 6px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.today-card__also-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today-card__also-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-sm);
+}
+
+.today-card__also-name {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.today-card__also-draw {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* ---------- louder warning variants ---------- */
 
 /* Two vials, one name, different strengths: the mix-up this app exists to stop. */
@@ -3958,6 +4002,51 @@ body {
   font-size: var(--fs-sm);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* The other bottles due at this moment — read at arm's length like the rest. */
+.check__also {
+  align-self: stretch;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.check__also-title {
+  margin: 0 0 8px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.check__also-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check__also-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-md);
+}
+
+.check__also-name {
+  overflow-wrap: anywhere;
+}
+
+.check__also-draw {
+  font-size: var(--fs-lg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .check__done {

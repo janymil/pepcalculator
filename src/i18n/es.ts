@@ -135,6 +135,7 @@ export const es: Strings = {
     check: 'Comprobar la extracción',
     taken: 'Puesta',
     timeSeparator: ' · ',
+    also: 'También a esta hora',
   },
   summary: { draw: 'Extrae', nothing: 'Introduce tus datos' },
   inverse: {
@@ -294,6 +295,7 @@ export const es: Strings = {
     title: 'Comprueba antes de extraer',
     hint: 'Acerca el vial a la pantalla y comprueba que el nombre coincide.',
     vial: 'Vial',
+    also: 'También ahora',
     site: 'Zona',
     when: 'Cuándo',
     dose: 'Extrae hasta',

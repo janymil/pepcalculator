@@ -130,6 +130,11 @@ export interface Strings {
     /** Opens the full-screen pre-draw check card. */
     check: string;
     taken: string;
+    /**
+     * Heading over the other vials due at the same moment. A sitting can be two
+     * compounds, and the card has to name them rather than showing one line of it.
+     */
+    also: string;
     /** Joins a time to a day label, e.g. "09:00 · Today". */
     timeSeparator: string;
   };
@@ -318,6 +323,11 @@ export interface Strings {
     title: string;
     hint: string;
     vial: string;
+    /**
+     * Heading over the other vials in the same sitting. This card is read at
+     * arm's length, so it lists every bottle that has to be drawn now.
+     */
+    also: string;
     site: string;
     when: string;
     /** Headline label for how much to draw. */

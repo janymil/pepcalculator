@@ -135,6 +135,7 @@ export const en: Strings = {
     check: 'Check the draw',
     taken: 'Taken',
     timeSeparator: ' · ',
+    also: 'Also at this time',
   },
   summary: { draw: 'Draw', nothing: 'Enter your numbers' },
   inverse: {
@@ -294,6 +295,7 @@ export const en: Strings = {
     title: 'Check before you draw',
     hint: 'Hold the vial next to the screen and make sure the name matches.',
     vial: 'Vial',
+    also: 'Also now',
     site: 'Site',
     when: 'When',
     dose: 'Draw to',

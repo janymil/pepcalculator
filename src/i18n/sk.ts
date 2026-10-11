@@ -135,6 +135,7 @@ export const sk: Strings = {
     check: 'Skontrolovať natiahnutie',
     taken: 'Podané',
     timeSeparator: ' · ',
+    also: 'V tomto čase aj',
   },
   summary: { draw: 'Natiahnuť', nothing: 'Zadajte hodnoty' },
   inverse: {
@@ -294,6 +295,7 @@ export const sk: Strings = {
     title: 'Skontrolovať pred natiahnutím',
     hint: 'Podržte fľaštičku pri obrazovke a overte, že názov súhlasí.',
     vial: 'Fľaštička',
+    also: 'Teraz aj',
     site: 'Miesto',
     when: 'Kedy',
     dose: 'Natiahnuť po',

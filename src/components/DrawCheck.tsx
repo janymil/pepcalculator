@@ -8,6 +8,12 @@ import { Icon } from './Icon';
 interface DrawCheckProps {
   /** The dose about to be taken — everything shown comes from this. */
   dose: TodayDose;
+  /**
+   * The rest of the sitting: other vials that have to be drawn at the same
+   * moment. They are listed here rather than left on the page behind this dialog,
+   * because this card is the only thing on screen while the drawer is open.
+   */
+  also?: TodayDose[];
   /** Where to inject, when the rotation knows. */
   site?: string;
   onClose: () => void;
@@ -22,7 +28,7 @@ interface DrawCheckProps {
  * things that have to match — which vial, how much, and where — in type big
  * enough to read at arm's length, with Escape and a Done button to dismiss.
  */
-export function DrawCheck({ dose, site, onClose }: DrawCheckProps) {
+export function DrawCheck({ dose, also = [], site, onClose }: DrawCheckProps) {
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
   const copy = strings.check;
@@ -42,18 +48,25 @@ export function DrawCheck({ dose, site, onClose }: DrawCheckProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // The draw as it is read off the device: graduations, mL, or a pen dial.
+  const drawOf = (item: TodayDose): string =>
+    item.measure === 'clicks'
+      ? fmt.count(item.drawValue)
+      : item.measure === 'volume'
+        ? fmt.volume(item.drawValue)
+        : fmt.units(item.drawValue);
+
+  const unitOf = (item: TodayDose): string =>
+    item.measure === 'clicks'
+      ? strings.results.clicksWord
+      : item.measure === 'volume'
+        ? strings.units.ml
+        : strings.results.unitsWord;
+
   const byClicks = dose.measure === 'clicks';
   const byVolume = dose.measure === 'volume';
-  const value = byClicks
-    ? fmt.count(dose.drawValue)
-    : byVolume
-      ? fmt.volume(dose.drawValue)
-      : fmt.units(dose.drawValue);
-  const unitLabel = byClicks
-    ? strings.results.clicksWord
-    : byVolume
-      ? strings.units.ml
-      : strings.results.unitsWord;
+  const value = drawOf(dose);
+  const unitLabel = unitOf(dose);
 
   return (
     <div className="check" role="dialog" aria-modal="true" aria-label={copy.title}>
@@ -90,6 +103,22 @@ export function DrawCheck({ dose, site, onClose }: DrawCheckProps) {
             {fmt.volume(dose.volumeMl)} {strings.units.ml}
           </p>
         )}
+
+        {also.length > 0 ? (
+          <div className="check__also">
+            <p className="check__also-title">{copy.also}</p>
+            <ul className="check__also-list">
+              {also.map((item) => (
+                <li key={item.vialId}>
+                  <span className="check__also-name">{item.name || strings.vials.untitled}</span>
+                  <strong className="check__also-draw">
+                    {drawOf(item)} {unitOf(item)}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <button ref={closeRef} type="button" className="btn btn--accent check__done" onClick={onClose}>
           <Icon name="check" size={16} />

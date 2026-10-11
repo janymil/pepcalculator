@@ -5,7 +5,8 @@ import { addDays } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
 import { elapsedDoses } from '../lib/schedule';
 import { nextSite } from '../lib/sites';
-import { nextDoseToday, type TodayDose } from '../lib/today';
+import { nextSession } from '../lib/session';
+import type { TodayDose } from '../lib/today';
 import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { type SavedVial } from '../lib/vials';
 import { DrawCheck } from './DrawCheck';
@@ -26,8 +27,13 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
   const copy = strings.today;
   const [checking, setChecking] = useState(false);
 
-  const next: TodayDose | null = nextDoseToday(vials, todayIso, nowTime, 7);
-  if (!next) return null;
+  const session = nextSession(vials, todayIso, nowTime, 7);
+  if (!session) return null;
+
+  // The dose this card has always shown, plus the rest of the sitting: a stack can
+  // mean two compounds at the same moment, which is one trip to the drawer.
+  const next = session.dose;
+  const also = session.items.slice(1);
 
   const dayLabel =
     next.date === todayIso
@@ -39,8 +45,19 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
   const canMark = !next.vial.schedule;
 
   /** Three ways to read the same volume: graduations, mL, or a pen dial. */
-  const byVolume = next.measure === 'volume';
-  const byClicks = next.measure === 'clicks';
+  const drawOf = (dose: TodayDose): string =>
+    dose.measure === 'clicks'
+      ? fmt.count(dose.drawValue)
+      : dose.measure === 'volume'
+        ? fmt.volume(dose.drawValue)
+        : fmt.units(dose.drawValue);
+
+  const unitOf = (dose: TodayDose): string =>
+    dose.measure === 'clicks'
+      ? strings.results.clicksWord
+      : dose.measure === 'volume'
+        ? strings.units.ml
+        : strings.results.unitsWord;
 
   // Where to inject. Because "how many doses have happened?" is derived from the
   // plan, so is the site — the rotation needs no logging of its own.
@@ -70,21 +87,27 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
 
         <p className="today-card__draw">
           <span className="today-card__draw-label">{copy.next}</span>
-          <span className="today-card__draw-value">
-            {byClicks
-              ? fmt.count(next.drawValue)
-              : byVolume
-                ? fmt.volume(next.drawValue)
-                : fmt.units(next.drawValue)}
-          </span>
-          <span className="today-card__draw-unit">
-            {byClicks
-              ? strings.results.clicksWord
-              : byVolume
-                ? strings.units.ml
-                : strings.results.unitsWord}
-          </span>
+          <span className="today-card__draw-value">{drawOf(next)}</span>
+          <span className="today-card__draw-unit">{unitOf(next)}</span>
         </p>
+
+        {also.length > 0 ? (
+          <div className="today-card__also">
+            <p className="today-card__also-title">{copy.also}</p>
+            <ul className="today-card__also-list">
+              {also.map((item) => (
+                <li key={item.vialId}>
+                  <span className="today-card__also-name">
+                    {item.name || strings.vials.untitled}
+                  </span>
+                  <strong className="today-card__also-draw">
+                    {drawOf(item)} {unitOf(item)}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {site ? (
           <p className="today-card__site" title={strings.sites.hint}>
@@ -120,6 +143,7 @@ export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: T
       {checking ? (
         <DrawCheck
           dose={next}
+          also={also}
           site={site ? strings.sites.names[site] : undefined}
           onClose={() => setChecking(false)}
         />

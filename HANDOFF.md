@@ -182,6 +182,14 @@ answer → `SaveVialForm` (on the calculator) writes a vial → `SavedVials` loo
 `VialCard` = the rich card for scheduled vials. `VialCardLegacy` (inside `SavedVials.tsx`)
 = fallback for vials saved with no plan; it still exists on purpose.
 
+**A dose is drawn in a *sitting*, not a line.** `lib/session.ts` groups the doses that share a
+date **and a time** into a `DoseSession`, so the Today card can name the whole sitting and the
+pre-draw check card can list every bottle in it. This is roadmap item 7 ("draw two compounds in
+one session"), and it needed no new state: `groupSessions` reads the same `dosesOnDate` the
+calendar and reminders already use. One bottle can never appear twice in a group — a vial's own
+times are distinct slots, and two entries for one vial would read as "draw it twice", which the
+unit test pins down.
+
 ---
 
 ## The maths (never change these without updating tests)
@@ -536,10 +544,13 @@ Guide page:**
 
 ## Still open
 
-The numbered roadmap above is the **current** list: items **1, 5, 6, 8, 9, 10 and 11 shipped in
+The numbered roadmap above is the **current** list: items **1, 5, 6, 7, 8, 9, 10 and 11 shipped in
 the round described under "Open items" (see the entries for sync conflicts, IU, pens + titration,
 the protocol plot, readability mode, the draw check and the converter) — the numbers are kept so
-the cross-references stay stable.
+the cross-references stay stable. **7** (multi-compound sessions) shipped later, as `lib/session.ts`
+plus the "also at this time" block on the Today card and the `also` list on the check card. Still
+unbuilt from the numbered list: **2** (server hardening), **3** (deploy), **4** (true background
+reminders) and **12** (QR pairing), each for the reason given below.
 
 - **QR pairing** — deliberately **not shipped** in this round. It needs a full QR encoder
   (versions, error correction, masking, Reed–Solomon) and there is **no decoder available in this
