@@ -7,24 +7,36 @@ continue without re-reading the whole history.
 
 ## What this is
 
-A single-page web app that turns a **desired dose** into the **exact amount to draw on a
-syringe** — for reconstituted **peptides** and ready-to-use **anabolic oils**. Offline-first:
-no accounts, everything works from the browser. An optional tiny Node server adds
-**recovery-code sync** between devices.
+An **installable, offline-first web app** (five pages: Calculator · My vials · Calendar · Reference · Settings)
+that turns a **desired dose** into the **exact amount to draw on a syringe** — for reconstituted
+**peptides** and ready-to-use **anabolic oils**. No accounts, everything runs in the browser and
+keeps working with no network. An optional tiny Node server adds **recovery-code sync** between
+devices.
 
 ⚠️ **It is not medical advice** — a disclaimer is required and must stay in the UI.
 
 ---
 
-## ⚠️ Do this first
+## Repo & first run
 
-**This project is NOT under version control.** There is no `.git` directory yet.
+Under version control, with a **private** remote:
+
+- **GitHub (private):** https://github.com/janymil/pepcalculator
+- **Remote:** `origin` → `https://github.com/janymil/pepcalculator.git`
+- **Branch:** `main`, tracking `origin/main` — run `git log --oneline -5` for the latest commits
 
 ```bash
-git init && git add -A && git commit -m "Initial commit"
+git clone https://github.com/janymil/pepcalculator.git   # private: needs your GitHub access
+cd pepcalculator
+npm install
 ```
 
-`.gitignore` already covers `node_modules`, `dist`, `server/data`, `.env` (keeps `.env.example`).
+`.gitignore` covers `node_modules`, `dist`, `server/data`, `.env` (keeps `.env.example`) and `*.log`.
+**`.env` is deliberately NOT in the repo** — copy `.env.example` and set `VITE_SYNC_SERVER` if you
+want sync to reach a real server. No user-specific data (vials, settings) is committed either;
+those live in the browser.
+
+After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Source Control panel).
 
 ---
 
@@ -118,10 +130,11 @@ server/
 └─ data/sync.sqlite      created on first run — gitignored, this IS everyone's data
 ```
 
-**Four pages** (see `lib/views.ts`): `ViewTabs` switches between **Calculator** (`ModeTabs` →
+**Five pages** (see `lib/views.ts`): `ViewTabs` switches between **Calculator** (`ModeTabs` →
 `CalculatorForm` + `ResultPanel` + `SaveVialForm`), **My vials** (`SavedVials`: list, kind filter,
-backup), **Calendar** (`AgendaPage`, every plan by day and hour) and **Settings** (`SettingsPage`:
-sync + reminders). The page is mirrored in the URL hash (`#calendar`), so the back button and a
+backup), **Calendar** (`AgendaPage`, every plan by day and hour), **Reference** (`ReferencePage`:
+static compound data + half-life charts) and **Settings** (`SettingsPage`: sync + reminders + your
+data). The page is mirrored in the URL hash (`#calendar`), so the back button and a
 PWA relaunch both work.
 
 **In-app flow:** `App.tsx` owns all state → passes props down → `ResultPanel` renders the
@@ -228,8 +241,8 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
     while the app is alive (open or backgrounded, including an installed PWA on Android).
     A fully closed app would need a push server, which this offline-first app deliberately
     doesn't have — the Reminders panel says so in plain words.
-11. **Four pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar`
-    + `settings`, and `App.tsx` mirrors the active one in the URL hash (`#calendar`) so
+11. **Five pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar`
+    + `reference` + `settings`, and `App.tsx` mirrors the active one in the URL hash (`#calendar`) so
     back/forward and a PWA relaunch behave. Views are also kept in `localStorage` for the case
     where the hash is absent. `AgendaPage` renders entirely from `lib/agenda.ts` — no date maths
     in the JSX.
@@ -284,11 +297,11 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 
 ## Open items / roadmap (priority order)
 
-**Done:** **`git init` + first commit**, **PWA + service worker** (installable, offline shell,
-dose reminders), the **Calendar page / global agenda**, the **page split**
-(Calculator · My vials · Calendar · Reference · Settings), **saved anabolics** with kind filters and
-per-vial calendar colours, and the **tombstone purge** (90-day retention, swept on open and
-after every merge, with the trade-off documented).
+**Done:** **git + GitHub** (private repo `janymil/pepcalculator`, `origin` on `main`), **PWA +
+service worker** (installable, offline shell, dose reminders), the **Calendar page / global
+agenda**, the **page split** (Calculator · My vials · Calendar · Reference · Settings),
+**saved anabolics** with kind filters and per-vial calendar colours, and the **tombstone purge**
+(90-day retention, swept on open and after every merge, with the trade-off documented).
 
 **Improvement pass (all green, 224 tests):**
 
@@ -353,6 +366,10 @@ after every merge, with the trade-off documented).
 
 ```bash
 npm run typecheck && npm test && npm run build   # all three must pass
+git status                                       # then commit + push, so the next session starts clean
 ```
+
+Also keep this file current: if you change the commands, the page list, the test count or the
+roadmap, update the tables above in the same commit — a new session reads this before anything else.
 
 

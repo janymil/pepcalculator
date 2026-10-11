@@ -3,7 +3,7 @@
 > 🆕 **Picking this up in a new session? Read [`HANDOFF.md`](HANDOFF.md) first** — it is a
 > one-file brief with the architecture, decisions, gotchas and roadmap.
 
-An offline-first, single-page web app that turns the **dose you want** into the **exact amount to draw on a syringe** — for reconstituted peptides and ready-to-use anabolic oils.
+An **installable, offline-first** web app (five pages: Calculator · My vials · Calendar · Reference · Settings) that turns the **dose you want** into the **exact amount to draw on a syringe** — for reconstituted peptides and ready-to-use anabolic oils. It works with no network and installs to your home screen.
 
 > ⚕️ **Not medical advice.** The app only does the maths. It does not replace a doctor or pharmacist.
 
@@ -51,6 +51,8 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 ## Getting started
 
 ```bash
+git clone https://github.com/janymil/pepcalculator.git   # private repo — needs your GitHub access
+cd pepcalculator
 npm install
 npm run dev        # app on http://localhost:8137
 npm run server     # optional: recovery-code sync on http://localhost:8787
