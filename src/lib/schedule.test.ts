@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   DURATION_PRESETS,
+  INTERVAL_PRESETS,
   countDoseDays,
   doseDaysInMonth,
   dosesPerWeek,
   durationPresetId,
   elapsedDoses,
+  intervalOf,
+  intervalPresetId,
   isDoseDay,
   isPlanFinished,
   nextDose,
@@ -297,5 +300,78 @@ describe('dosesPerWeek', () => {
 
   it('is zero when no times are set', () => {
     expect(dosesPerWeek(makeSchedule({ times: [] }))).toBe(0);
+  });
+});
+
+describe('interval schedules (EOD, E3D, weekly)', () => {
+  const everyOtherDay = makeSchedule({ repeat: 'interval', intervalDays: 2 });
+
+  it('takes a dose every other day from the start date', () => {
+    // MONDAY is the start, so doses fall on Monday, Wednesday, Friday…
+    expect(isDoseDay(everyOtherDay, '2024-01-01')).toBe(true);
+    expect(isDoseDay(everyOtherDay, '2024-01-02')).toBe(false);
+    expect(isDoseDay(everyOtherDay, '2024-01-03')).toBe(true);
+    expect(isDoseDay(everyOtherDay, '2024-01-05')).toBe(true);
+  });
+
+  it('still honours the plan window', () => {
+    // A two-week plan from Monday ends on the Sunday of the second week.
+    expect(isDoseDay(everyOtherDay, '2023-12-31')).toBe(false);
+    expect(isDoseDay(everyOtherDay, '2024-01-15')).toBe(false);
+  });
+
+  it('counts the right number of doses and days', () => {
+    // Two weeks of every other day: 7 dose days, one dose each.
+    expect(totalPlannedDoses(everyOtherDay)).toBe(7);
+  });
+
+  it('averages the weekly rate instead of counting both window ends', () => {
+    // Every other day is 3.5 a week; every third day is 7/3.
+    expect(dosesPerWeek(everyOtherDay)).toBeCloseTo(3.5, 6);
+    expect(dosesPerWeek(makeSchedule({ repeat: 'interval', intervalDays: 3 }))).toBeCloseTo(7 / 3, 6);
+    expect(dosesPerWeek(makeSchedule({ repeat: 'interval', intervalDays: 7 }))).toBeCloseTo(1, 6);
+    // Twice on a dose day doubles it.
+    expect(
+      dosesPerWeek(makeSchedule({ repeat: 'interval', intervalDays: 2, times: ['08:00', '20:00'] })),
+    ).toBeCloseTo(7, 6);
+  });
+
+  it('adds up the doses already due', () => {
+    expect(elapsedDoses(everyOtherDay, MONDAY, '23:00')).toBe(1);
+    expect(elapsedDoses(everyOtherDay, '2024-01-03', '23:00')).toBe(2);
+    expect(elapsedDoses(everyOtherDay, '2024-01-02', '23:00')).toBe(1);
+  });
+
+  it('points the next dose at the next interval day', () => {
+    // On a non-dose day, the next dose is the following day.
+    expect(nextDose(everyOtherDay, '2024-01-02', '09:00')).toEqual({
+      date: '2024-01-03',
+      time: '09:00',
+    });
+  });
+
+  it('reads the preset back out of a schedule', () => {
+    expect(INTERVAL_PRESETS.map((preset) => preset.days)).toEqual([2, 3, 4, 7, 14]);
+    expect(intervalPresetId(makeSchedule({ repeat: 'interval', intervalDays: 2 }))).toBe('eod');
+    expect(intervalPresetId(makeSchedule({ repeat: 'interval', intervalDays: 7 }))).toBe('weekly');
+    expect(intervalPresetId(makeSchedule({ repeat: 'interval', intervalDays: 5 }))).toBeNull();
+    expect(intervalOf(makeSchedule({ repeat: 'interval', intervalDays: 2 }))).toBe(2);
+  });
+
+  it('falls back to daily rather than hiding the plan when the gap is unusable', () => {
+    const broken = makeSchedule({ repeat: 'interval', intervalDays: 0 });
+    expect(intervalOf(broken)).toBe(0);
+    expect(isDoseDay(broken, '2024-01-02')).toBe(true);
+
+    const tooLong = makeSchedule({ repeat: 'interval', intervalDays: 999 });
+    expect(intervalOf(tooLong)).toBe(0);
+    expect(isDoseDay(tooLong, '2024-01-02')).toBe(true);
+  });
+
+  it('lets a twice-a-day interval plan still take both times', () => {
+    const twice = makeSchedule({ repeat: 'interval', intervalDays: 3, times: ['08:00', '20:00'] });
+    expect(isDoseDay(twice, '2024-01-01')).toBe(true);
+    expect(timesOnDay(twice, '2024-01-01')).toEqual(['08:00', '20:00']);
+    expect(timesOnDay(twice, '2024-01-02')).toEqual([]);
   });
 });

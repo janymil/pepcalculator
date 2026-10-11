@@ -3,7 +3,10 @@ import { useI18n } from '../i18n/I18nContext';
 import { weekdayShort } from '../lib/format';
 import {
   DURATION_PRESETS,
+  INTERVAL_PRESETS,
   TIMES_PER_DAY_PRESETS,
+  intervalPresetId,
+  type IntervalPresetId,
   type VialSchedule,
 } from '../lib/schedule';
 import { SegmentedControl, type SegmentedOption } from './SegmentedControl';
@@ -33,7 +36,28 @@ export function ScheduleForm({ value, onChange }: ScheduleFormProps) {
   const repeatOptions: SegmentedOption<VialSchedule['repeat']>[] = [
     { value: 'daily', label: strings.schedule.repeatDaily },
     { value: 'weekdays', label: strings.schedule.repeatWeekdays },
+    { value: 'interval', label: strings.schedule.repeatInterval },
   ];
+
+  const intervalLabels: Record<IntervalPresetId, string> = {
+    eod: strings.schedule.intervalEod,
+    e3d: strings.schedule.intervalE3d,
+    e4d: strings.schedule.intervalE4d,
+    weekly: strings.schedule.intervalWeekly,
+    biweekly: strings.schedule.intervalBiweekly,
+  };
+
+  const intervalOptions: SegmentedOption<string>[] = INTERVAL_PRESETS.map((preset) => ({
+    value: preset.id,
+    label: intervalLabels[preset.id],
+  }));
+
+  const currentIntervalId = intervalPresetId(value) ?? 'eod';
+
+  const setInterval = (id: string) => {
+    const preset = INTERVAL_PRESETS.find((entry) => entry.id === id) ?? INTERVAL_PRESETS[0];
+    onChange({ ...value, intervalDays: preset.days });
+  };
 
   const durationLabels: Record<string, string> = {
     '4w': strings.schedule.duration4w,
@@ -120,9 +144,30 @@ export function ScheduleForm({ value, onChange }: ScheduleFormProps) {
           size="sm"
           options={repeatOptions}
           value={value.repeat}
-          onChange={(repeat) => onChange({ ...value, repeat })}
+          onChange={(repeat) =>
+            onChange({
+              ...value,
+              repeat,
+              // Switching into interval mode needs a usable gap, otherwise the
+              // plan would quietly behave like a daily one.
+              intervalDays:
+                repeat === 'interval' ? (value.intervalDays ?? INTERVAL_PRESETS[0].days) : value.intervalDays,
+            })
+          }
         />
       </div>
+
+      {value.repeat === 'interval' ? (
+        <div className="field">
+          <span className="field__label">{strings.schedule.interval}</span>
+          <SegmentedControl
+            ariaLabel={strings.schedule.interval}
+            options={intervalOptions}
+            value={currentIntervalId}
+            onChange={setInterval}
+          />
+        </div>
+      ) : null}
 
       {value.repeat === 'weekdays' ? (
         <div className="field">

@@ -157,6 +157,15 @@ export interface Strings {
     repeat: string;
     repeatDaily: string;
     repeatWeekdays: string;
+    /** A dose every N days (EOD, E3D, weekly…). */
+    repeatInterval: string;
+    /** Label for the gap between doses. */
+    interval: string;
+    intervalEod: string;
+    intervalE3d: string;
+    intervalE4d: string;
+    intervalWeekly: string;
+    intervalBiweekly: string;
     weekdays: string;
     duration: string;
     duration4w: string;
