@@ -14,9 +14,10 @@
 import { mergeOwners, normalizeOwners, ownersFromVials, type Owner } from './owners';
 import {
   looksLikeSavedVial,
-  mergeVials,
+  mergeWithConflicts,
   normalizeSavedVial,
   type SavedVial,
+  type VialConflict,
 } from './vials';
 
 export const SYNC_CODE_PREFIX = 'PC';
@@ -37,7 +38,18 @@ export interface SyncPayload {
 export type SyncFailure = 'invalidCode' | 'network' | 'server' | 'badPayload' | 'unavailable';
 
 export type SyncOutcome =
-  | { ok: true; vials: SavedVial[]; owners: Owner[]; updatedAt: string; remoteFound: boolean }
+  | {
+      ok: true;
+      vials: SavedVial[];
+      owners: Owner[];
+      updatedAt: string;
+      remoteFound: boolean;
+      /**
+       * Vials that had genuinely different content on both sides. The newer copy
+       * was kept, but the caller can now say so instead of silently losing an edit.
+       */
+      conflicts: VialConflict[];
+    }
   | { ok: false; reason: SyncFailure };
 
 /** Optional inputs for a sync request — the people travel with the vials. */
@@ -212,6 +224,7 @@ export async function syncWithServer(
   let merged = localVials;
   let mergedOwners = owners;
   let remoteFound = false;
+  let conflicts: VialConflict[] = [];
 
   try {
     const response = await fetchImpl(url, { method: 'GET' });
@@ -219,7 +232,9 @@ export async function syncWithServer(
       const body = (await response.json()) as { payload?: unknown };
       const parsed = typeof body.payload === 'string' ? parsePayload(body.payload) : null;
       if (!parsed) return { ok: false, reason: 'badPayload' };
-      merged = mergeVials(localVials, parsed.vials);
+      const result = mergeWithConflicts(localVials, parsed.vials);
+      merged = result.vials;
+      conflicts = result.conflicts;
       mergedOwners = mergeOwners(owners, parsed.owners ?? []);
       remoteFound = true;
     } else if (response.status !== 404) {
@@ -238,6 +253,13 @@ export async function syncWithServer(
   const pushed = await pushVials(baseUrl, code, merged, { owners: mergedOwners, fetchImpl });
   if (!pushed.ok) return pushed;
 
-  return { ok: true, vials: merged, owners: mergedOwners, updatedAt: pushed.updatedAt, remoteFound };
+  return {
+    ok: true,
+    vials: merged,
+    owners: mergedOwners,
+    updatedAt: pushed.updatedAt,
+    remoteFound,
+    conflicts,
+  };
 }
 

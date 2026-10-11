@@ -1,3 +1,4 @@
+import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import type { NotificationPermissionState } from '../lib/pwa';
 import type { Owner } from '../lib/owners';
@@ -19,6 +20,8 @@ interface SettingsPageProps {
   onSetServerUrl: (url: string) => void;
   onSyncNow: () => void;
   onForget: () => void;
+  /** Vials that were edited on two devices since the last sync. */
+  syncConflicts: number;
   // --- dose reminders ---
   remindersEnabled: boolean;
   permission: NotificationPermissionState;
@@ -52,6 +55,7 @@ export function SettingsPage({
   onSetServerUrl,
   onSyncNow,
   onForget,
+  syncConflicts,
   remindersEnabled,
   permission,
   nextReminder,
@@ -88,6 +92,16 @@ export function SettingsPage({
         onSyncNow={onSyncNow}
         onForget={onForget}
       />
+
+      {/*
+       * Merging is last-write-wins, so when both devices edited the same vial one
+       * of those edits was discarded. Say so, rather than letting it vanish.
+       */}
+      {syncConflicts > 0 ? (
+        <p className="sync__conflict">
+          {interpolate(strings.sync.conflicts, { count: syncConflicts })}
+        </p>
+      ) : null}
 
       <RemindersPanel
         enabled={remindersEnabled}

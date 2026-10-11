@@ -302,6 +302,8 @@ export const sk: Strings = {
     errorServer: 'Server vrátil chybu.',
     errorBadPayload: 'Uložené údaje sa nepodarilo prečítať.',
     errorUnavailable: 'Synchronizácia vyžaduje zabezpečené (https) pripojenie.',
+    conflicts:
+      '{count} fľaštičiek sa zmenilo na inom zariadení. Zachovala sa vždy naposledy upravená verzia.',
   },
   reminders: {
     title: 'Pripomienky dávok',

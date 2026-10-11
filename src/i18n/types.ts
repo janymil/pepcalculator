@@ -281,6 +281,10 @@ export interface Strings {
     errorServer: string;
     errorBadPayload: string;
     errorUnavailable: string;
+    /**
+     * Both devices edited the same vial; the newer copy won. `{count}`.
+     */
+    conflicts: string;
   };
   reminders: {
     title: string;

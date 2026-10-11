@@ -302,6 +302,8 @@ export const es: Strings = {
     errorServer: 'El servidor devolvió un error.',
     errorBadPayload: 'No se pudieron leer los datos guardados.',
     errorUnavailable: 'La sincronización necesita una conexión segura (https).',
+    conflicts:
+      '{count} viales se cambiaron en otro dispositivo. Se mantuvo la copia editada más recientemente.',
   },
   reminders: {
     title: 'Recordatorios de dosis',

@@ -114,6 +114,8 @@ export default function App() {
   );
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<SyncFailure | null>(null);
+  /** How many vials both devices had edited since they last agreed. */
+  const [syncConflicts, setSyncConflicts] = useState(0);
 
   // One small undo toast at a time (delete a vial, clear everything).
   const [toast, setToast] = useState<{ id: number; message: string; undo: () => void } | null>(null);
@@ -268,6 +270,7 @@ export default function App() {
         // pruned list, so the server converges too.
         setSavedVials(purgeTombstones(outcome.vials));
         setSyncLast(outcome.updatedAt);
+        setSyncConflicts(outcome.conflicts.length);
         lastPushedRef.current = vialsSnapshot(outcome.vials);
       } else {
         setSyncError(outcome.reason);
@@ -651,6 +654,7 @@ export default function App() {
               onSetServerUrl={setSyncServer}
               onSyncNow={() => void runSync()}
               onForget={handleForgetSync}
+              syncConflicts={syncConflicts}
               remindersEnabled={remindersEnabled}
               permission={reminders.permission}
               nextReminder={reminders.next}

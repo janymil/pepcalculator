@@ -16,6 +16,7 @@ const html = renderToString(
       onSetServerUrl={() => {}}
       onSyncNow={() => {}}
       onForget={() => {}}
+      syncConflicts={0}
       remindersEnabled={false}
       permission="default"
       nextReminder={null}

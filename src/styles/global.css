@@ -3276,3 +3276,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- sync conflict notice ---------- */
+.sync__conflict {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-left: 3px solid var(--warn);
+}
+

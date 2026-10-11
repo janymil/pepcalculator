@@ -10,6 +10,7 @@ import {
   liveVials,
   looksLikeSavedVial,
   mergeVials,
+  mergeWithConflicts,
   normalizeSavedVial,
   purgeTombstones,
   searchVials,
@@ -357,6 +358,61 @@ describe('searchVials / sortVials', () => {
     const later = makeVial({ id: 'later', name: 'Later', reconstitutedOn: '2026-10-10' });
     const ids = sortVials([oil, later, soon], 'expiry', today).map((v) => v.id);
     expect(ids).toEqual(['soon', 'later', 'c']);
+  });
+});
+
+describe('mergeWithConflicts (surfacing what last-write-wins discards)', () => {
+  it('reports nothing when the two sides agree', () => {
+    const kept = makeVial({ updatedAt: '2026-01-02T10:00:00.000Z' });
+    const result = mergeWithConflicts([kept], [{ ...kept, updatedAt: '2026-01-03T10:00:00.000Z' }]);
+
+    expect(result.conflicts).toEqual([]);
+    // The newer stamp is still kept, it just is not news.
+    expect(result.vials[0].updatedAt).toBe('2026-01-03T10:00:00.000Z');
+  });
+
+  it('names the vial both devices changed differently, and who won', () => {
+    const result = mergeWithConflicts(
+      [makeVial({ id: 'v1', name: 'BPC-157', doseAmount: 250, updatedAt: '2026-01-02T10:00:00.000Z' })],
+      [makeVial({ id: 'v1', name: 'BPC-157', doseAmount: 400, updatedAt: '2026-01-03T10:00:00.000Z' })],
+    );
+
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.conflicts[0]).toEqual({
+      id: 'v1',
+      name: 'BPC-157',
+      keptAt: '2026-01-03T10:00:00.000Z',
+      discardedAt: '2026-01-02T10:00:00.000Z',
+    });
+    // The newest edit is the one that survived.
+    expect(result.vials[0].doseAmount).toBe(400);
+  });
+
+  it('keeps the local copy when it is the newer one, and still says so', () => {
+    const result = mergeWithConflicts(
+      [makeVial({ id: 'v1', doseAmount: 400, updatedAt: '2026-01-05T10:00:00.000Z' })],
+      [makeVial({ id: 'v1', doseAmount: 250, updatedAt: '2026-01-03T10:00:00.000Z' })],
+    );
+
+    expect(result.vials[0].doseAmount).toBe(400);
+    expect(result.conflicts[0].keptAt).toBe('2026-01-05T10:00:00.000Z');
+  });
+
+  it('counts a deletion racing an edit, because that is the dangerous one', () => {
+    const result = mergeWithConflicts(
+      [makeVial({ id: 'v1', updatedAt: '2026-01-02T10:00:00.000Z' })],
+      [makeVial({ id: 'v1', updatedAt: '2026-01-03T10:00:00.000Z', deletedAt: '2026-01-03T10:00:00.000Z' })],
+    );
+
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.vials[0].deletedAt).toBe('2026-01-03T10:00:00.000Z');
+  });
+
+  it('adds a vial only one side knows about, without calling it a conflict', () => {
+    const result = mergeWithConflicts([makeVial({ id: 'mine' })], [makeVial({ id: 'theirs' })]);
+
+    expect(result.vials.map((vial) => vial.id).sort()).toEqual(['mine', 'theirs']);
+    expect(result.conflicts).toEqual([]);
   });
 });
 

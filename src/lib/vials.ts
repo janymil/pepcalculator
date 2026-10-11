@@ -308,23 +308,83 @@ export function normalizeSavedVial(value: unknown): SavedVial {
   };
 }
 
+/** A vial that changed on two devices since they last agreed. */
+export interface VialConflict {
+  id: string;
+  /** The name as kept, so a message can name it. */
+  name: string;
+  /** `updatedAt` of the copy that was kept. */
+  keptAt: string;
+  /** `updatedAt` of the copy that was discarded. */
+  discardedAt: string;
+}
+
+/** Everything that makes a vial *the same vial*, ignoring when it changed. */
+function sameVialContent(a: SavedVial, b: SavedVial): boolean {
+  const { updatedAt: _aUp, ...restA } = a;
+  const { updatedAt: _bUp, ...restB } = b;
+  return JSON.stringify(restA) === JSON.stringify(restB);
+}
+
 /**
- * Merges two sets of vials, keyed by id: unknown ids are added, and when both
- * sides hold the same vial the newer `updatedAt` wins. Tombstones take part in
- * the same comparison, which is how a deletion propagates. Nothing is ever
- * removed, so it is safe to run on every sync.
+ * Merges two sets of vials by id and **reports where both sides disagreed**.
+ *
+ * The merge itself is unchanged (union by id, newest `updatedAt` wins, including
+ * tombstones) — that is what makes it safe to run on every sync. What this adds
+ * is honesty: when both devices changed the same vial to *different* things, one
+ * of those edits is about to disappear, and the user is told instead of the app
+ * quietly picking a winner.
+ *
+ * A tombstone arriving over a live edit counts as a conflict too, because
+ * "deleted on the phone, edited on the laptop" is exactly the case worth
+ * surfacing.
  */
-export function mergeVials(current: SavedVial[], incoming: SavedVial[]): SavedVial[] {
+export function mergeWithConflicts(
+  current: SavedVial[],
+  incoming: SavedVial[],
+): { vials: SavedVial[]; conflicts: VialConflict[] } {
   const byId = new Map(current.map((vial) => [vial.id, vial]));
+  const conflicts: VialConflict[] = [];
+
   for (const vial of incoming) {
     const existing = byId.get(vial.id);
     if (!existing) {
       byId.set(vial.id, vial);
       continue;
     }
-    if ((vial.updatedAt ?? '') >= (existing.updatedAt ?? '')) byId.set(vial.id, vial);
+
+    // The same content, just a newer stamp: nothing was lost, so say nothing.
+    if (sameVialContent(existing, vial)) {
+      if ((vial.updatedAt ?? '') >= (existing.updatedAt ?? '')) byId.set(vial.id, vial);
+      continue;
+    }
+
+    const incomingWins = (vial.updatedAt ?? '') >= (existing.updatedAt ?? '');
+    const winner = incomingWins ? vial : existing;
+    const loser = incomingWins ? existing : vial;
+    byId.set(vial.id, winner);
+
+    conflicts.push({
+      id: vial.id,
+      name: winner.name || loser.name,
+      keptAt: winner.updatedAt ?? '',
+      discardedAt: loser.updatedAt ?? '',
+    });
   }
-  return [...byId.values()];
+
+  return { vials: [...byId.values()], conflicts };
+}
+
+/**
+ * Merges two sets of vials, keyed by id: unknown ids are added, and when both
+ * sides hold the same vial the newer `updatedAt` wins. Tombstones take part in
+ * the same comparison, which is how a deletion propagates. Nothing is ever
+ * removed, so it is safe to run on every sync.
+ *
+ * Use `mergeWithConflicts` when the caller wants to know what was overwritten.
+ */
+export function mergeVials(current: SavedVial[], incoming: SavedVial[]): SavedVial[] {
+  return mergeWithConflicts(current, incoming).vials;
 }
 
 /** The vials a user should actually see — tombstones excluded. */

@@ -302,6 +302,8 @@ export const en: Strings = {
     errorServer: 'The sync server returned an error.',
     errorBadPayload: 'The stored data could not be read.',
     errorUnavailable: 'Syncing needs a secure (https) connection.',
+    conflicts:
+      '{count} vials were changed on another device. The most recently edited copy of each was kept.',
   },
   reminders: {
     title: 'Dose reminders',
