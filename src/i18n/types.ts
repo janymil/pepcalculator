@@ -252,6 +252,13 @@ export interface Strings {
     errorWrongPassphrase: string;
     errorNoCrypto: string;
   };
+  /** The always-available converter at the foot of the Reference sheet. */
+  tools: {
+    title: string;
+    subtitle: string;
+    mass: string;
+    draw: string;
+  };
   sync: {
     title: string;
     intro: string;

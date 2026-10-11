@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { buildCurve, concentrationAt, peakOf } from '../lib/pk';
 import { COMPOUNDS, formatRange, type CompoundClass, type CompoundReference } from '../lib/reference';
+import { UnitConverter } from './UnitConverter';
 
 /** How many simulation hours the tiny decay chart shows. */
 const CHART_HOURS = 72;
@@ -149,6 +150,8 @@ export function ReferencePage() {
       </ul>
 
       <p className="ref__note">{copy.note}</p>
+
+      <UnitConverter />
     </section>
   );
 }

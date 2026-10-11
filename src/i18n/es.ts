@@ -274,6 +274,12 @@ export const es: Strings = {
     errorWrongPassphrase: 'Esa contraseña no abre esta copia.',
     errorNoCrypto: 'El cifrado necesita una conexión segura (https).',
   },
+  tools: {
+    title: 'Conversor',
+    subtitle: 'Comprueba una etiqueta o una jeringa sin calcularlo de cabeza.',
+    mass: 'Masa',
+    draw: 'Extracción',
+  },
   sync: {
     title: 'Sincronizar entre dispositivos',
     intro:

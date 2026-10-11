@@ -274,6 +274,12 @@ export const en: Strings = {
     errorWrongPassphrase: 'That passphrase does not open this backup.',
     errorNoCrypto: 'Encryption needs a secure (https) connection.',
   },
+  tools: {
+    title: 'Converter',
+    subtitle: 'Check a label or a syringe without working it out in your head.',
+    mass: 'Mass',
+    draw: 'Draw',
+  },
   sync: {
     title: 'Sync between devices',
     intro:

@@ -274,6 +274,12 @@ export const sk: Strings = {
     errorWrongPassphrase: 'Toto heslo zálohu neotvorí.',
     errorNoCrypto: 'Šifrovanie vyžaduje zabezpečené spojenie (https).',
   },
+  tools: {
+    title: 'Prepočet',
+    subtitle: 'Overte si štítok alebo striekačku bez počítania v hlave.',
+    mass: 'Hmotnosť',
+    draw: 'Natiahnuť',
+  },
   sync: {
     title: 'Synchronizácia medzi zariadeniami',
     intro:
