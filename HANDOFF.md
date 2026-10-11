@@ -47,7 +47,7 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
 | Tests | `npm test` | ✅ **387 passing / 36 files** |
 | Build | `npm run build` | ✅ ~390 kB JS / 119 kB gzip · ~49 kB CSS |
-| Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames |
+| Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames · timeline cap held |
 
 ## Run it
 
@@ -372,6 +372,20 @@ Guide page:**
   exist only as a file in the repo, which is not a place a user looks. The app's language drives the
   video's language, `?embed=1` strips the explainer's own chrome, and a link keeps the standalone
   version one click away for sharing or recording.
+- **The video raced through its scenes once it was framed** (reported straight after shipping the
+  Guide page, which is what made it visible). The cause was in the animation, not the frame: the
+  frame loop advanced the timeline by the **uncapped** `now - lastFrame`, and a browser is free to
+  stop calling `requestAnimationFrame` for a while — a background tab, or an **offscreen iframe**,
+  which is precisely what the Guide page creates. Each gap was charged to the timeline in one step,
+  so the video skipped forward through whole scenes instead of dropping a frame. The fix is the
+  standard one for rAF timelines: **cap the step at `MAX_STEP` (100 ms)**, **re-arm the clock when
+  playback starts** so a resume never carries the paused time, and **pause on
+  `visibilitychange`** and resume where it was. There is also a **1× / 0.5×** speed button now —
+  the scenes are dense and a phone makes them small — and export always forces 1× so the file
+  matches its label. `demo/check.mjs` gained the regression tests: 60 frames of 16.7 ms must
+  advance the timeline ~1000 ms, and a 5 s stall by no more than `MAX_STEP`. **Restoring the old
+  unclamped line makes the check fail with "a 5 s stall jumped the timeline forward by 5000 ms",
+  which is how this was confirmed** — a browser was never needed to see it.
 
 **Shipped earlier (326 tests, 31 files) — supply, sites, intervals:**
 

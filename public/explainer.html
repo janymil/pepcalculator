@@ -99,6 +99,7 @@
     <div class="bar">
       <button id="play" class="primary">Play</button>
       <button id="restart">Restart</button>
+      <button id="speed" title="Playback speed">1×</button>
       <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Timeline" />
       <span id="clock" class="note" style="min-width: 78px; text-align: right">0:00 / 0:00</span>
       <div class="sep"></div>
@@ -831,6 +832,7 @@
 
       const playBtn = document.getElementById('play');
       const restartBtn = document.getElementById('restart');
+      const speedBtn = document.getElementById('speed');
       const scrub = document.getElementById('scrub');
       const clock = document.getElementById('clock');
       const exportBtn = document.getElementById('export');
@@ -839,6 +841,19 @@
       let playing = false;
       let lastFrame = 0;
       let onFinished = null;
+      let speed = 1;
+      let resumeWhenVisible = false;
+
+      /*
+       * The biggest jump a single frame may contribute. A browser is free to stop
+       * calling requestAnimationFrame — a background tab, or an offscreen iframe,
+       * which is exactly what this page is inside the app's Guide tab. Wall-clock
+       * time keeps running during that gap, so an unclamped `now - lastFrame`
+       * hands the animation the whole gap at once and the timeline skips
+       * forward through whole scenes. Dropping a frame is fine; jumping four
+       * seconds of a 38-second video is not.
+       */
+      const MAX_STEP = 100;
 
       function fmtTime(ms) {
         const secs = Math.round(ms / 1000);
@@ -904,11 +919,11 @@
 
       function frame(now) {
         if (!lastFrame) lastFrame = now;
-        const dt = now - lastFrame;
+        const dt = Math.min(now - lastFrame, MAX_STEP);
         lastFrame = now;
 
         if (playing) {
-          elapsed += dt;
+          elapsed += dt * speed;
           if (elapsed >= TOTAL) {
             elapsed = TOTAL;
             playing = false;
@@ -928,9 +943,29 @@
 
       function setPlaying(next) {
         playing = next;
+        // Re-arm the frame clock: the first frame after a resume contributes 0 ms,
+        // never the time spent paused or throttled.
+        lastFrame = 0;
         playBtn.textContent = next ? 'Pause' : 'Play';
         playBtn.classList.toggle('primary', !next);
       }
+
+      /*
+       * A hidden document draws nothing, so it must not be charged for the time it
+       * was away either. If the page is hidden while playing, pause; pick the
+       * animation back up where it was when the page comes back.
+       */
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          resumeWhenVisible = playing;
+          if (playing) setPlaying(false);
+          return;
+        }
+        if (resumeWhenVisible) {
+          resumeWhenVisible = false;
+          setPlaying(true);
+        }
+      });
 
       playBtn.addEventListener('click', () => {
         if (elapsed >= TOTAL) elapsed = 0;
@@ -940,6 +975,18 @@
       restartBtn.addEventListener('click', () => {
         elapsed = 0;
         setPlaying(false);
+      });
+
+      /*
+       * Half speed for the dense scenes. 38 seconds is short, but the first two
+       * scenes carry the whole draw-the-dose idea, and a phone screen makes the
+       * copy smaller than the desktop it was animated on. The clock and the
+       * scrubber keep showing real timeline milliseconds — only playback is slowed.
+       */
+      speedBtn.addEventListener('click', () => {
+        speed = speed === 1 ? 0.5 : 1;
+        speedBtn.textContent = speed === 1 ? '1×' : '0.5×';
+        speedBtn.classList.toggle('active', speed !== 1);
       });
 
       scrub.addEventListener('input', () => {
@@ -977,6 +1024,10 @@
 
         exportBtn.disabled = true;
         exportBtn.textContent = 'Recording…';
+        // Always record at 1x, so the file matches what the button promises (~38 s).
+        speed = 1;
+        speedBtn.textContent = '1×';
+        speedBtn.classList.remove('active');
         elapsed = 0;
         setPlaying(true);
 

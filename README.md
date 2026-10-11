@@ -110,8 +110,8 @@ the **Guide** page frames it. No build step, no assets — just open it:
 start public\explainer.html
 ```
 
-It can record itself to a video file (**Export video (.webm)**), and it takes deep links for
-stills and covers (`?lang=sk`, `?at=15200`). Full details in
+It can record itself to a video file (**Export video (.webm)**), plays at 1× or 0.5×, and takes deep
+links for stills and covers (`?lang=sk`, `?at=15200`). Full details in
 [demo/README.md](./demo/README.md); the narration script is in
 [demo/storyboard.md](./demo/storyboard.md).
 

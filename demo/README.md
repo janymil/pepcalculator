@@ -36,6 +36,7 @@ Three ways, best first:
 | --- | --- |
 | Play / Pause | Play the animation |
 | Restart | Back to the first frame |
+| 1× / 0.5× | Playback speed. Half speed holds each scene twice as long — the scenes are dense and a phone screen is small. The clock and the slider keep showing real timeline milliseconds, and **export always records at 1×** |
 | Timeline slider | Scrub to any moment |
 | EN / SK / ES | Switch the on-screen copy |
 | Export video (.webm) | Record the whole animation to a file |
@@ -59,6 +60,14 @@ app's **Guide** page uses; it only hides the chrome around the stage, so the vid
 - Each scene is `{ dur, draw(ctx, t) }`, where `t` runs 0→1. Because drawing is a pure
   function of time, scrubbing is free and the same renderer both plays on screen and gets
   recorded.
+- **The frame clock is capped.** `frame(now)` advances the timeline by the real gap between
+  frames, but never by more than `MAX_STEP` (100 ms), and it re-arms whenever playback
+  starts. A browser may stop calling `requestAnimationFrame` for a while — a background tab,
+  or an **offscreen iframe, which is exactly what this page is inside the app's Guide tab** —
+  and wall-clock time keeps running through that gap. Uncapped, the whole gap was handed to
+  the timeline in one step, so the video skipped forward through entire scenes instead of
+  dropping a frame. A hidden page now pauses and resumes where it was. This is checked (see
+  below), because it is invisible on a desktop and obvious on a phone.
 
 ## Checking it
 
@@ -67,7 +76,9 @@ node demo\check.mjs
 ```
 
 Runs the explainer against a stub canvas: draws **every scene at 11 progress points**, renders
-a mid-timeline frame, and verifies every `tr('…')` key exists in all three languages. Exits
+a mid-timeline frame, verifies every `tr('…')` key exists in all three languages, and
+**simulates the frame loop** — one second of 60 fps frames must advance the timeline ~1000 ms,
+and a 5-second stall of the frame loop must advance it by no more than `MAX_STEP`. Exits
 non-zero on failure.
 
 ## Adding or changing a scene

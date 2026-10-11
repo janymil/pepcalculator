@@ -59,6 +59,9 @@ function makeElement(id) {
 globalThis.document = {
   getElementById: makeElement,
   createElement: () => ({ click() {} }),
+  addEventListener() {},
+  hidden: false,
+  documentElement: { classList: { toggle() {}, add() {}, remove() {} } },
 };
 globalThis.location = { search: '' };
 globalThis.requestAnimationFrame = () => 0;
@@ -95,9 +98,54 @@ const probe = `
   });
   if (missing.length) failures.push('missing copy: ' + missing.join(', '));
 
+  /*
+   * Timeline accounting. elapsed IS the whole animation, so the two ways it can
+   * go wrong are worth pinning down here rather than noticing them on a phone:
+   *
+   *   1. a normal frame rate must advance it at real time, and
+   *   2. a stalled frame loop (a throttled offscreen iframe is the normal case,
+   *      since the app frames this page) must NOT hand it the whole gap at once.
+   */
+  elapsed = 0;
+  setPlaying(true);
+  let simNow = 0;
+  frame(simNow);
+  for (let i = 0; i < 60; i++) {
+    simNow += 16.7;
+    frame(simNow);
+  }
+  const afterOneSecond = elapsed;
+  if (Math.abs(afterOneSecond - 1000) > 40) {
+    failures.push(
+      '60 frames of 16.7 ms advanced the timeline by ' +
+        Math.round(afterOneSecond) +
+        ' ms instead of ~1000 ms',
+    );
+  }
+
+  const beforeStall = elapsed;
+  simNow += 5000;
+  frame(simNow);
+  const jumped = elapsed - beforeStall;
+  if (jumped > MAX_STEP) {
+    failures.push(
+      'a 5 s stall jumped the timeline forward by ' +
+        Math.round(jumped) +
+        ' ms (max ' + MAX_STEP + ') — scenes would flash past',
+    );
+  }
+  setPlaying(false);
+
   console.log('scenes:      ' + SCENES.length + ' (' + (total / 1000).toFixed(1) + 's)');
   console.log('copy keys:   ' + used.size + ' used x ' + langs.length + ' languages');
   console.log('frames:      ' + SCENES.length * 11 + ' drawn');
+  console.log(
+    'timeline:    1 s at 60 fps -> ' +
+      Math.round(afterOneSecond) +
+      ' ms; a 5 s stall -> +' +
+      Math.round(jumped) +
+      ' ms',
+  );
   return failures;
 `;
 
