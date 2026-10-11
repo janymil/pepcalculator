@@ -70,7 +70,51 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 
 ---
 
+## Where to find things
+
+Several features are easy to miss because they only appear once they have something to work with
+(a saved vial, a planned dose). This is the map:
+
+| What you want | Where it is |
+| --- | --- |
+| The dose calculation | **Calculator** — the page the app opens on |
+| HGH / HCG, GLP-1 pens | **Calculator** → the workflow tabs at the top (4 workflows) |
+| "What do I draw next?" + the arm's-length **check card** | **Calculator** → the **Today card** (appears when a planned dose is due within a week) |
+| Save a vial, and its dose plan | **Calculator** → *Save this vial* (below the result) |
+| **Step-up (titration) plans** | **My vials** → *Edit* a vial → tick **Step the dose up** in the plan editor |
+| Supply outlook: run-out dates, expiry, reorder count | **My vials** — the *Supply* panel at the top, and a line on each card |
+| **Print a protocol + vial labels** | **My vials** → **Print protocol & labels** (top-right) |
+| Backup, restore, encrypt a backup | **My vials** → the *Backup* card at the bottom |
+| Calendar of every plan, "coming up" | **Calendar** |
+| Compound ranges, the **converter**, **your protocol plot** | **Reference** → the *Compounds / Converter / Your protocol* tabs |
+| Sync (recovery code, conflict notice) | **Settings** → *Sync* |
+| Dose reminders | **Settings** → *Reminders* |
+| **Larger text + non-colour vial markers** | **Settings** → *Display* |
+
+If a feature seems to be missing, it is usually waiting for data: the supply outlook needs a vial
+with a plan, the Today card needs a dose due this week, and the protocol plot needs a saved vial
+named after a compound in the Reference list.
+
+---
+
 ## Getting started
+
+### The 38-second explainer
+
+`demo/explainer.html` is a self-contained, hand-drawn animation (English / Slovak / Spanish,
+9 scenes) that shows what the app does. No build step, no assets — just open it:
+
+```
+start demo\explainer.html
+```
+
+It can record itself to a video file (**Export video (.webm)**), and it takes deep links for
+stills and covers (`?lang=sk`, `?at=15200`). Full details in
+[demo/README.md](./demo/README.md); the narration script is in
+[demo/storyboard.md](./demo/storyboard.md).
+
+> Note: GitHub shows `.html` files as source, so use the **Raw** button and save it, or clone and
+> open it locally — it will not render inside the GitHub file view.
 
 ```bash
 git clone https://github.com/janymil/pepcalculator.git   # private repo — needs your GitHub access

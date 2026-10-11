@@ -262,6 +262,13 @@ export function SavedVials({
   /** Whole days since the last backup, or null when there has never been one. */
   const backupAge = lastBackup ? daysBetween(lastBackup.slice(0, 10), todayIso) : null;
 
+  /**
+   * There is nothing to print until at least one vial has a plan — the sheet
+   * would come out saying so. Better to disable the button than to send the user
+   * to the printer for a blank page.
+   */
+  const canPrint = vials.some((vial) => vial.schedule !== undefined);
+
   const handleSaveEdit = (updated: SavedVial) => {
     onUpdate(updated);
     setEditingId(null);
@@ -340,9 +347,27 @@ export function SavedVials({
 
   return (
     <section className="card" aria-labelledby="vials-title">
-      <h2 className="card__title" id="vials-title">
-        {strings.vials.title}
-      </h2>
+      <div className="vials__head">
+        <h2 className="card__title" id="vials-title">
+          {strings.vials.title}
+        </h2>
+        {/*
+         * Printing used to be a ghost button at the very bottom of this page,
+         * inside the *backup* card — the last place anyone would look for a
+         * protocol, and the easiest thing on the page to miss. It is a
+         * first-class action, so it sits in the header with a label that says
+         * exactly what comes out of the printer.
+         */}
+        <button
+          type="button"
+          className="btn btn--sm btn--accent vials__print"
+          disabled={!canPrint}
+          onClick={() => window.print()}
+        >
+          <Icon name="print" size={16} />
+          {strings.print.action}
+        </button>
+      </div>
 
       <SupplyPanel summary={supply} />
 
@@ -471,9 +496,6 @@ export function SavedVials({
               onChange={handleRestore}
             />
           </label>
-          <button type="button" className="btn btn--sm btn--ghost" onClick={() => window.print()}>
-            {strings.print.action}
-          </button>
         </div>
         {notice ? <p className="backup__notice">{notice}</p> : null}
       </div>

@@ -54,6 +54,22 @@ describe('ReferencePage (server render smoke test)', () => {
     expect(html).toContain(DICTIONARIES.en.reference.note);
   });
 
+  it('offers the converter and the plot as tabs, not as buried sections', () => {
+    // These used to sit below the whole compound list, where they were never
+    // found. They must be reachable from the top of the page.
+    const text = DICTIONARIES.en.reference;
+    expect(html).toContain('ref__tabs--sections');
+    expect(html).toContain(`aria-pressed="true">${text.tabCompounds}`);
+    expect(html).toContain(text.tabConverter);
+    expect(html).toContain(text.tabPlot);
+  });
+
+  it('shows only the open section, so the page is not a long scroll', () => {
+    // The compounds tab is open by default, so neither tool is rendered yet.
+    expect(html).not.toContain('converter__title');
+    expect(html).not.toContain('plot__title');
+  });
+
   it('is backed by real data for every listed compound', () => {
     for (const compound of COMPOUNDS) {
       expect(compound.name.length).toBeGreaterThan(0);

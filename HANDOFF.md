@@ -45,8 +45,9 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **381 passing / 35 files** |
-| Build | `npm run build` | ✅ ~388 kB JS / 118 kB gzip · ~46 kB CSS |
+| Tests | `npm test` | ✅ **383 passing / 35 files** |
+| Build | `npm run build` | ✅ ~389 kB JS / 118 kB gzip · ~46 kB CSS |
+| Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames |
 
 ## Run it
 
@@ -337,6 +338,21 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
   where — and nothing else.
 - **Readability mode** — opt-in larger type, stronger borders, and a **non-colour marker**: a
   stripe pattern on every vial dot whose angle comes from the vial id (`vialPatternAngle`).
+- **Discoverability pass** (same round, after the user reported that features could not be found
+  in the running app) — this is a **recurring failure mode of this build**, so read it before
+  adding any new surface:
+  - **Print** was a `btn--ghost` at the very bottom of the Vials page, *inside the Backup card* —
+    the last place anyone looks for a protocol, and the easiest thing on the page to miss. It is
+    now a labelled accent button with a printer icon in the **page header** (`vials__head`),
+    disabled until at least one vial has a plan.
+  - **The converter and the protocol plot** sat below the entire compound list, a page-height
+    scroll away. The Reference sheet now has a **section switcher at the top** (Compounds /
+    Converter / Your protocol) and renders only the open one.
+  - Both are covered by tests (`ReferencePage.test.tsx` asserts the tabs exist and that the tools
+    are not rendered twice), and the README gained a **"Where to find things"** table for the user.
+  - **Watch for this pattern:** anything that appears only conditionally (Today card, supply panel,
+    conflict notice) or that lives at the bottom of a page **will not be found**. Prefer the page
+    header, and say what the button does in its label.
 
 **Shipped earlier (326 tests, 31 files) — supply, sites, intervals:**
 

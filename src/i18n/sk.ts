@@ -416,6 +416,9 @@ export const sk: Strings = {
     title: 'Prehľad',
     subtitle:
       'Bežne uvádzané rozsahy a polčasy len na orientáciu — nikdy nie ako cieľ.',
+    tabCompounds: 'Látky',
+    tabConverter: 'Prepočet',
+    tabPlot: 'Váš protokol',
     typical: 'Typický rozsah',
     cadence: 'Zvyčajne sa berie',
     halfLife: 'Polčas',
@@ -458,7 +461,7 @@ export const sk: Strings = {
     },
   },
   print: {
-    action: 'Vytlačiť protokol',
+    action: 'Vytlačiť protokol a štítky',
     title: 'Protokol',
     forPerson: 'Pripravené pre {name}',
     generated: 'Vytvorené {date}',

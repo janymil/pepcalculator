@@ -418,6 +418,9 @@ export const es: Strings = {
     title: 'Referencia',
     subtitle:
       'Rangos y semividas citados habitualmente, solo como orientación: nunca como objetivo.',
+    tabCompounds: 'Compuestos',
+    tabConverter: 'Conversor',
+    tabPlot: 'Tu protocolo',
     typical: 'Rango típico',
     cadence: 'Se suele tomar',
     halfLife: 'Semivida',
@@ -460,7 +463,7 @@ export const es: Strings = {
     },
   },
   print: {
-    action: 'Imprimir protocolo',
+    action: 'Imprimir protocolo y etiquetas',
     title: 'Protocolo',
     forPerson: 'Preparado para {name}',
     generated: 'Generado el {date}',

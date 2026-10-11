@@ -12,6 +12,9 @@ interface ReferencePageProps {
   todayIso: string;
 }
 
+/** Which part of the sheet is open. */
+type ReferenceSection = 'compounds' | 'converter' | 'plot';
+
 /**
  * The decay curve for a compound's *typical* dose range — the reference version
  * of the same chart the user can now plot for their own plan.
@@ -39,6 +42,12 @@ export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
   const { strings } = useI18n();
   const copy = strings.reference;
   const [klass, setKlass] = useState<CompoundClass>('peptide');
+  /**
+   * Which part of the sheet is open. The converter and the plot used to sit
+   * below the entire compound list, where nobody found them — a page-height
+   * scroll away and easy to mistake for the end of the page.
+   */
+  const [section, setSection] = useState<ReferenceSection>('compounds');
 
   const rows = COMPOUNDS.filter((compound) => compound.klass === klass);
 
@@ -46,6 +55,12 @@ export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
     hours < 24
       ? `${hours} ${copy.halfLifeUnit}`
       : `${Math.round(hours / 24)} ${copy.halfLifeDaysUnit}`;
+
+  const sections: { id: ReferenceSection; label: string }[] = [
+    { id: 'compounds', label: copy.tabCompounds },
+    { id: 'converter', label: copy.tabConverter },
+    { id: 'plot', label: copy.tabPlot },
+  ];
 
   return (
     <section className="settings" aria-labelledby="reference-title">
@@ -56,67 +71,85 @@ export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
         <p className="page-subtitle">{copy.subtitle}</p>
       </div>
 
-      <p className="ref__disclaimer">{strings.disclaimer.pointOfUse}</p>
-
-      <div className="ref__tabs">
-        <button
-          type="button"
-          className={`btn btn--sm${klass === 'peptide' ? ' btn--accent' : ''}`}
-          aria-pressed={klass === 'peptide'}
-          onClick={() => setKlass('peptide')}
-        >
-          {strings.kinds.peptide}
-        </button>
-        <button
-          type="button"
-          className={`btn btn--sm${klass === 'anabolic' ? ' btn--accent' : ''}`}
-          aria-pressed={klass === 'anabolic'}
-          onClick={() => setKlass('anabolic')}
-        >
-          {strings.kinds.anabolic}
-        </button>
+      <div className="ref__tabs ref__tabs--sections">
+        {sections.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            className={`btn btn--sm${section === entry.id ? ' btn--accent' : ''}`}
+            aria-pressed={section === entry.id}
+            onClick={() => setSection(entry.id)}
+          >
+            {entry.label}
+          </button>
+        ))}
       </div>
 
-      <ul className="ref__list">
-        {rows.map((compound) => (
-          <li className="ref__row" key={compound.id}>
-            <div className="ref__head">
-              <h3 className="ref__name">{compound.name}</h3>
-              <span className="ref__range">
-                {copy.typical}: <strong>{formatRange(compound)}</strong>
-              </span>
-            </div>
+      <p className="ref__disclaimer">{strings.disclaimer.pointOfUse}</p>
 
-            <dl className="ref__facts">
-              <div>
-                <dt>{copy.cadence}</dt>
-                <dd>{compound.cadence}</dd>
+      {section === 'converter' ? <UnitConverter /> : null}
+      {section === 'plot' ? <ProtocolPlot vials={vials} todayIso={todayIso} /> : null}
+
+        {section === 'compounds' ? (
+          <>
+
+        <div className="ref__tabs">
+          <button
+            type="button"
+            className={`btn btn--sm${klass === 'peptide' ? ' btn--accent' : ''}`}
+            aria-pressed={klass === 'peptide'}
+            onClick={() => setKlass('peptide')}
+          >
+            {strings.kinds.peptide}
+          </button>
+          <button
+            type="button"
+            className={`btn btn--sm${klass === 'anabolic' ? ' btn--accent' : ''}`}
+            aria-pressed={klass === 'anabolic'}
+            onClick={() => setKlass('anabolic')}
+          >
+            {strings.kinds.anabolic}
+          </button>
+        </div>
+
+        <ul className="ref__list">
+          {rows.map((compound) => (
+            <li className="ref__row" key={compound.id}>
+              <div className="ref__head">
+                <h3 className="ref__name">{compound.name}</h3>
+                <span className="ref__range">
+                  {copy.typical}: <strong>{formatRange(compound)}</strong>
+                </span>
               </div>
-              <div>
-                <dt>{copy.halfLife}</dt>
-                <dd>{halfLifeLabel(compound.halfLifeHours)}</dd>
-              </div>
-              {compound.commonWaterMl.length > 0 ? (
+
+              <dl className="ref__facts">
                 <div>
-                  <dt>{copy.water}</dt>
-                  <dd>{compound.commonWaterMl.join(' / ')} {strings.units.ml}</dd>
+                  <dt>{copy.cadence}</dt>
+                  <dd>{compound.cadence}</dd>
                 </div>
-              ) : null}
-            </dl>
+                <div>
+                  <dt>{copy.halfLife}</dt>
+                  <dd>{halfLifeLabel(compound.halfLifeHours)}</dd>
+                </div>
+                {compound.commonWaterMl.length > 0 ? (
+                  <div>
+                    <dt>{copy.water}</dt>
+                    <dd>{compound.commonWaterMl.join(' / ')} {strings.units.ml}</dd>
+                  </div>
+                ) : null}
+              </dl>
 
-            <DecayChart
-              compound={compound}
-              ariaLabel={`${copy.halfLife}: ${compound.name}`}
-            />
-          </li>
-        ))}
-      </ul>
+              <DecayChart
+                compound={compound}
+                ariaLabel={`${copy.halfLife}: ${compound.name}`}
+              />
+            </li>
+          ))}
+        </ul>
 
-      <p className="ref__note">{copy.note}</p>
-
-      <ProtocolPlot vials={vials} todayIso={todayIso} />
-
-      <UnitConverter />
+        <p className="ref__note">{copy.note}</p>
+        </>
+      ) : null}
     </section>
   );
 }

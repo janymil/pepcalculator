@@ -413,6 +413,9 @@ export const en: Strings = {
   reference: {
     title: 'Reference',
     subtitle: 'Commonly cited starting ranges and half-lives for orientation only — never a target.',
+    tabCompounds: 'Compounds',
+    tabConverter: 'Converter',
+    tabPlot: 'Your protocol',
     typical: 'Typical range',
     cadence: 'Usually taken',
     halfLife: 'Half-life',
@@ -455,7 +458,7 @@ export const en: Strings = {
     },
   },
   print: {
-    action: 'Print protocol',
+    action: 'Print protocol & labels',
     title: 'Protocol',
     forPerson: 'Prepared for {name}',
     generated: 'Generated {date}',

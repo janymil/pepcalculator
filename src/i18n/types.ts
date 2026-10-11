@@ -416,6 +416,10 @@ export interface Strings {
     title: string;
     /** One-line explanation under the page title. */
     subtitle: string;
+    /** Section switcher at the top of the sheet. */
+    tabCompounds: string;
+    tabConverter: string;
+    tabPlot: string;
     /** Row label for the cited typical range of a compound. */
     typical: string;
     /** Row label for how often it is usually taken. */

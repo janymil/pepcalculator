@@ -1986,6 +1986,25 @@ body {
 }
 
 /* ---------- vials page: kind filter, colour dot and kind badge ---------- */
+/*
+ * The Vials header: the page title on the left, the print action on the right.
+ * Printing is a first-class action, so it lives here rather than in a ghost
+ * button at the bottom of the page.
+ */
+.vials__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vials__print {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .vials__toolbar {
   display: flex;
   justify-content: flex-start;
@@ -2379,6 +2398,16 @@ body {
 .ref__tabs {
   display: flex;
   gap: 8px;
+}
+
+/*
+ * The section switcher (Compounds / Converter / Your protocol) sits above the
+ * disclaimer, so the converter and the plot are one click away instead of a
+ * page-height scroll below the compound list.
+ */
+.ref__tabs--sections {
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
 }
 
 .ref__list {
