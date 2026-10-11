@@ -46,6 +46,7 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Undo & safe clearing** — deleting a vial offers an **Undo** snackbar, and Settings has a guarded **Clear all data** action for the escape hatch the app used to lack.
 - **Five pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **Reference**, and **Settings** (sync + reminders + your data). The page switcher sits at the top.
 - **A modern, token-driven UI** — spacing/type/radius/elevation/motion tokens, a single accent colour with semantic states, a hand-rolled **SVG icon set** (no emoji), a **phone bottom tab bar**, gentle page motion, a count-up on the headline number and clean field-validity states.
+- **Separate stacks per person** — a **Whose stack** switcher keeps your vials apart from your partner's or a family member's. Every page, the calendar and the saved-vial list belong to exactly **one** person (there is deliberately no "show everyone"), and the people travel with your data in backups and sync. Rename or remove them under **Settings → People**.
 
 ---
 
@@ -95,6 +96,7 @@ src/
 │  ├─ reminders.ts       # pure: the next dose across all saved plans
 │  ├─ agenda.ts          # pure: ALL plans by day & hour (the Calendar page)
 │  ├─ today.ts           # pure: which doses fall today / what is next (the Today card)
+│  ├─ owners.ts          # pure: "whose stack" — people registry + per-person filtering
 │  ├─ pk.ts              # pure: one-compartment half-life decay for the reference chart
 │  ├─ cost.ts            # pure: cost per dose + plan cost from an optional vial price
 │  ├─ reference.ts       # static compound reference data (ranges, half-lives) — not advice
@@ -111,9 +113,9 @@ src/
 │  ├─ index.ts           # language detection + interpolation
 │  └─ I18nContext.tsx    # `useI18n()` hook
 ├─ components/           # Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel, Icon,
-│                        # TodayDose, MobileSummaryBar, FirstRunCard, ReferencePage,
-│                        # Toast, DangerZone, SaveVialForm, SavedVials, VialCard,
-│                        # AgendaPage, SettingsPage, …
+│                        # OwnerTabs, PeoplePanel, TodayDose, MobileSummaryBar, FirstRunCard,
+│                        # ReferencePage, Toast, DangerZone, SaveVialForm, SavedVials,
+│                        # VialCard, AgendaPage, SettingsPage, …
 ├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts, useCountUp.ts
 ├─ styles/global.css     # design tokens + all styling
 ├─ App.tsx               # state + wiring

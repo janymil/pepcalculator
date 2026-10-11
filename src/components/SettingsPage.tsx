@@ -1,8 +1,10 @@
 import { useI18n } from '../i18n/I18nContext';
 import type { NotificationPermissionState } from '../lib/pwa';
+import type { Owner } from '../lib/owners';
 import type { UpcomingDose } from '../lib/reminders';
 import type { SyncFailure } from '../lib/sync';
 import { DangerZone } from './DangerZone';
+import { PeoplePanel } from './PeoplePanel';
 import { RemindersPanel } from './RemindersPanel';
 import { SyncPanel } from './SyncPanel';
 
@@ -28,6 +30,11 @@ interface SettingsPageProps {
   // --- danger zone ---
   hasVials: boolean;
   onClearAll: () => void;
+  // --- people (whose stack) ---
+  owners: Owner[];
+  vialCounts: Record<string, number>;
+  onRenameOwner: (id: string, name: string) => void;
+  onRemoveOwner: (id: string) => void;
 }
 
 /**
@@ -54,6 +61,10 @@ export function SettingsPage({
   onRequestPermission,
   hasVials,
   onClearAll,
+  owners,
+  vialCounts,
+  onRenameOwner,
+  onRemoveOwner,
 }: SettingsPageProps) {
   const { strings } = useI18n();
 
@@ -86,6 +97,13 @@ export function SettingsPage({
         installed={installed}
         onToggle={onToggleReminders}
         onRequestPermission={onRequestPermission}
+      />
+
+      <PeoplePanel
+        owners={owners}
+        vialCounts={vialCounts}
+        onRename={onRenameOwner}
+        onRemove={onRemoveOwner}
       />
 
       <DangerZone hasData={hasVials} onClearAll={onClearAll} />

@@ -48,4 +48,6 @@ export const STORAGE_KEYS = {
   view: 'pepcalc.v1.view',
   firstRunDone: 'pepcalc.v1.firstRunDone',
   kindFilter: 'pepcalc.v1.kindFilter',
+  owners: 'pepcalc.v1.owners',
+  activeOwner: 'pepcalc.v1.activeOwner',
 } as const;

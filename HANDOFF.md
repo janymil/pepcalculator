@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **240 passing / 24 files** |
-| Build | `npm run build` | ✅ ~337 kB JS / 103 kB gzip · ~38 kB CSS |
+| Tests | `npm test` | ✅ **260 passing / 26 files** |
+| Build | `npm run build` | ✅ ~342 kB JS / 104 kB gzip · ~40 kB CSS |
 
 ## Run it
 
@@ -96,6 +96,7 @@ src/
 │  ├─ reminders.ts       pure: next dose across all plans (used by notifications)
 │  ├─ agenda.ts          pure: ALL plans by day & hour (the Calendar page)
 │  ├─ today.ts           pure: today's doses + the next dose (the Today card)
+│  ├─ owners.ts          pure: "whose stack" — people registry + strict per-person filtering
 │  ├─ pk.ts              pure: one-compartment half-life decay (reference chart)
 │  ├─ cost.ts            pure: cost per dose + plan cost (optional vial price)
 │  ├─ reference.ts       static compound reference data — educational only, not advice
@@ -109,7 +110,8 @@ src/
 │                        AlertList, SaveVialForm, SavedVials, VialCard, VialEditor, ScheduleForm,
 │                        DoseCalendar, AgendaPage, KindFilterControl, SettingsPage, SyncPanel,
 │                        RemindersPanel, SegmentedControl, NumberField, Footer, Icon,
-│                        TodayDose, MobileSummaryBar, FirstRunCard, ReferencePage, Toast, DangerZone
+│                        OwnerTabs, PeoplePanel, TodayDose, MobileSummaryBar, FirstRunCard,
+│                        ReferencePage, Toast, DangerZone
 ├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (timer → notification), useCountUp.ts
 ├─ styles/global.css     design tokens + ALL styling (data-theme / data-mode driven)
 ├─ App.tsx               state + wiring only
@@ -332,6 +334,20 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
   marker; the reference decay chart gained gridlines, a baseline and dose markers.
 - **Scanability**: saved vials are collapsible cards with **search + sort** (`searchVials` /
   `sortVials` in `lib/vials.ts`), and the per-vial palette is muted.
+
+**People — one stack per person (never mixed):**
+
+- A second axis beside the vial kind: an **owner** (`lib/owners.ts`) answers "*whose* stack is
+  this?" — you, your partner, a family member. `ownerId` sits on each saved vial; pre-owner
+  vials default to the first person.
+- **`OwnerTabs`** at the top switches who you are looking at. It is **strictly single-select —
+  there is deliberately no "all"**, so vials, the calendar, the Today card and "save this vial"
+  are always scoped to exactly one person (the kind filter then narrows *within* that person).
+- People travel with the data: `serializeBackup`/`parseBackup` and the sync payload carry the
+  owner list, and every owner a vial references is implied on merge, so stacks survive a
+  restore or a second device.
+- **`PeoplePanel`** (Settings) renames people, shows their live vial count, and only allows
+  removing someone who holds no vials (the last person can't be removed).
 
 1. **Conflict awareness** — merges are silent last-write-wins; consider surfacing
    "changed on another device".

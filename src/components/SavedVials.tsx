@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from '../config/defaults';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { backupFileName, parseBackup, serializeBackup } from '../lib/backup';
 import { fmt, formatDate } from '../lib/format';
+import type { Owner } from '../lib/owners';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
 import {
   filterVialsByKind,
@@ -33,12 +34,14 @@ const INITIAL_SCHEDULE: VialSchedule = {
 };
 
 interface SavedVialsProps {
-  /** Live vials (all kinds) — tombstones are already filtered out. */
+  /** Live vials (all kinds) for the selected person — tombstones filtered out. */
   vials: SavedVial[];
+  /** The people, so a backup keeps the stacks separate. */
+  owners: Owner[];
   todayIso: string;
   nowTime: string;
   onUpdate: (vial: SavedVial) => void;
-  onRestore: (vials: SavedVial[]) => void;
+  onRestore: (vials: SavedVial[], owners: Owner[]) => void;
   onLoad: (vial: SavedVial) => void;
   onAddDose: (id: string) => void;
   onRemoveDose: (id: string) => void;
@@ -182,6 +185,7 @@ function VialCardLegacy({
  */
 export function SavedVials({
   vials,
+  owners,
   todayIso,
   nowTime,
   onUpdate,
@@ -208,7 +212,7 @@ export function SavedVials({
 
   /** Downloads every saved vial as a JSON file. */
   const handleBackup = () => {
-    const blob = new Blob([serializeBackup(vials, new Date().toISOString())], {
+    const blob = new Blob([serializeBackup(vials, new Date().toISOString(), owners)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -229,7 +233,7 @@ export function SavedVials({
     void file.text().then((text) => {
       const result = parseBackup(text);
       if (result.ok) {
-        onRestore(result.vials);
+        onRestore(result.vials, result.owners);
         setNotice(interpolate(strings.backup.restored, { count: result.vials.length }));
         return;
       }

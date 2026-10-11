@@ -6,6 +6,7 @@ import { FirstRunCard, type ExampleSet } from './components/FirstRunCard';
 import { Header } from './components/Header';
 import { MobileSummaryBar } from './components/MobileSummaryBar';
 import { ModeTabs } from './components/ModeTabs';
+import { OwnerTabs } from './components/OwnerTabs';
 import { ReferencePage } from './components/ReferencePage';
 import { ResultPanel } from './components/ResultPanel';
 import { SaveVialForm } from './components/SaveVialForm';
@@ -34,6 +35,17 @@ import type { VialSchedule } from './lib/schedule';
 import { isStandalone } from './lib/pwa';
 import { syncWithServer, pushVials, type SyncFailure } from './lib/sync';
 import { hashForView, viewFromHash, type ViewId } from './lib/views';
+import {
+  DEFAULT_OWNER_ID,
+  countVialsForOwner,
+  createOwnerId,
+  defaultOwners,
+  filterByOwner,
+  mergeOwners,
+  resolveOwnerId,
+  vialOwnerId,
+  type Owner,
+} from './lib/owners';
 import {
   canSaveVial,
   clearAllVials,
@@ -81,6 +93,12 @@ export default function App() {
   );
   const [view, setView] = useLocalStorage<ViewId>(STORAGE_KEYS.view, 'calculator');
   const [firstRunDone, setFirstRunDone] = useLocalStorage<boolean>(STORAGE_KEYS.firstRunDone, false);
+  // Whose stack the app is showing. Exactly one person at a time — never mixed.
+  const [owners, setOwners] = useLocalStorage<Owner[]>(STORAGE_KEYS.owners, defaultOwners());
+  const [activeOwnerId, setActiveOwnerId] = useLocalStorage<string>(
+    STORAGE_KEYS.activeOwner,
+    DEFAULT_OWNER_ID,
+  );
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<SyncFailure | null>(null);
 
@@ -110,6 +128,21 @@ export default function App() {
 
   // Tombstoned vials stay in state (so deletions can sync) but never reach the UI.
   const liveVialList = useMemo(() => liveVials(savedVials), [savedVials]);
+
+  // ---- whose stack is on screen -------------------------------------------
+  // The selected person, resolved so it can never point at someone removed.
+  const ownerId = resolveOwnerId(owners, activeOwnerId);
+  /** Every view (vials, calendar, today) renders from this, never from the mix. */
+  const scopedVials = useMemo(() => filterByOwner(liveVialList, ownerId), [liveVialList, ownerId]);
+  /** Live vial counts per person — shown in Settings, and guards removal. */
+  const vialCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const vial of liveVialList) {
+      const key = vialOwnerId(vial);
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [liveVialList]);
 
   const strings = DICTIONARIES[lang];
 
@@ -281,6 +314,8 @@ export default function App() {
     const base = {
       id: createVialId(),
       name,
+      // New vials join the stack of the person currently being viewed.
+      ownerId,
       reconstitutedOn: startedOn,
       dosesTaken: 0,
       syringeType: syringe.type,
@@ -404,23 +439,49 @@ export default function App() {
     );
   };
 
-  const handleRestoreVials = (restored: SavedVial[]) => {
+  const handleRestoreVials = (restored: SavedVial[], restoredOwners: Owner[]) => {
     // Restoring is an explicit "bring these back": revive anything tombstoned
     // and stamp them as the newest copies so they win the merge.
     const now = new Date().toISOString();
     const revived = restored.map((vial) => ({ ...vial, deletedAt: undefined, updatedAt: now }));
     setSavedVials((previous) => purgeTombstones(mergeVials(previous, revived)));
+    // The people travel with the vials, so their stacks stay separate.
+    setOwners((previous) => mergeOwners(previous, restoredOwners));
+  };
+
+  const handleSelectOwner = (id: string) => setActiveOwnerId(id);
+
+  /** Adds a person and switches to them, so the next vial lands in their stack. */
+  const handleAddOwner = (name: string) => {
+    const id = createOwnerId();
+    setOwners((previous) => [...previous, { id, name }]);
+    setActiveOwnerId(id);
+  };
+
+  const handleRenameOwner = (id: string, name: string) =>
+    setOwners((previous) =>
+      previous.map((owner) => (owner.id === id ? { ...owner, name } : owner)),
+    );
+
+  /** Removes an empty person. Someone who still holds vials cannot be removed. */
+  const handleRemoveOwner = (id: string) => {
+    if (countVialsForOwner(savedVials, id) > 0) return;
+    setOwners((previous) => {
+      const next = previous.filter((owner) => owner.id !== id);
+      return next.length > 0 ? next : defaultOwners();
+    });
   };
 
   const runSync = async () => {
     if (!syncCode) return;
     setSyncing(true);
     setSyncError(null);
-    const outcome = await syncWithServer(syncServer, syncCode, savedVials);
+    const outcome = await syncWithServer(syncServer, syncCode, savedVials, { owners });
     setSyncing(false);
     if (outcome.ok) {
       // Same as the on-open sync: prune, then let the background push re-upload.
       setSavedVials(purgeTombstones(outcome.vials));
+      setOwners((previous) => mergeOwners(previous, outcome.owners));
       setSyncLast(outcome.updatedAt);
       lastPushedRef.current = vialsSnapshot(outcome.vials);
     } else {
@@ -450,7 +511,7 @@ export default function App() {
       inFlightRef.current = true;
       setSyncing(true);
       setSyncError(null);
-      void pushVials(syncServer, syncCode, savedVials).then((outcome) => {
+      void pushVials(syncServer, syncCode, savedVials, { owners }).then((outcome) => {
         inFlightRef.current = false;
         setSyncing(false);
         if (outcome.ok) {
@@ -465,7 +526,7 @@ export default function App() {
     return () => window.clearTimeout(timer);
     // Keyed on the data only; the refs above stop it from repeating itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedVials, syncCode, syncServer]);
+  }, [savedVials, owners, syncCode, syncServer]);
 
   // The first-run card is only ever a welcome: it disappears once the user
   // loads an example, dismisses it, or saves their first vial.
@@ -480,19 +541,27 @@ export default function App() {
         />
 
         <main className="app__main">
+          <OwnerTabs
+            owners={owners}
+            activeId={ownerId}
+            onSelect={handleSelectOwner}
+            onAdd={handleAddOwner}
+          />
+
           <ViewTabs view={view} onChange={changeView} />
 
           <div className="view-enter" key={view}>
             {view === 'calendar' ? (
             <AgendaPage
-              vials={liveVialList}
+              vials={scopedVials}
               todayIso={todayIso}
               nowTime={nowTime}
               onGoToCalculator={() => changeView('calculator')}
             />
           ) : view === 'vials' ? (
             <SavedVials
-              vials={liveVialList}
+              vials={scopedVials}
+              owners={owners}
               todayIso={todayIso}
               nowTime={nowTime}
               onUpdate={handleUpdateVial}
@@ -523,6 +592,10 @@ export default function App() {
               onRequestPermission={reminders.requestPermission}
               hasVials={liveVialList.length > 0}
               onClearAll={handleClearAll}
+              owners={owners}
+              vialCounts={vialCounts}
+              onRenameOwner={handleRenameOwner}
+              onRemoveOwner={handleRemoveOwner}
             />
           ) : view === 'reference' ? (
             <ReferencePage />
@@ -533,7 +606,7 @@ export default function App() {
               ) : null}
 
               <TodayDoseCard
-                vials={liveVialList}
+                vials={scopedVials}
                 todayIso={todayIso}
                 nowTime={nowTime}
                 onLoad={handleLoadVial}

@@ -25,6 +25,10 @@ const html = renderToString(
       onRequestPermission={() => {}}
       hasVials={false}
       onClearAll={() => {}}
+      owners={[{ id: 'me', name: '' }]}
+      vialCounts={{ me: 0 }}
+      onRenameOwner={() => {}}
+      onRemoveOwner={() => {}}
     />
   </I18nProvider>,
 );

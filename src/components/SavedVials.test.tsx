@@ -65,6 +65,7 @@ function render(vials: SavedVial[]): string {
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
       <SavedVials
         vials={vials}
+        owners={[{ id: 'me', name: '' }]}
         todayIso={MONDAY}
         nowTime="07:00"
         onUpdate={() => {}}
