@@ -3,6 +3,7 @@ import { AgendaPage } from './components/AgendaPage';
 import { CalculatorForm } from './components/CalculatorForm';
 import { Footer } from './components/Footer';
 import { FirstRunCard, type ExampleSet } from './components/FirstRunCard';
+import { GuidePage } from './components/GuidePage';
 import { Header } from './components/Header';
 import { MobileSummaryBar } from './components/MobileSummaryBar';
 import { ModeTabs } from './components/ModeTabs';
@@ -680,6 +681,8 @@ export default function App() {
             />
           ) : view === 'reference' ? (
             <ReferencePage vials={savedVials} todayIso={todayIso} />
+          ) : view === 'guide' ? (
+            <GuidePage />
           ) : (
             <>
               {showFirstRun ? (

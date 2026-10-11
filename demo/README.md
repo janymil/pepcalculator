@@ -1,12 +1,16 @@
 # Hand-drawn explainer
 
-`explainer.html` is a self-contained, hand-drawn ("kreslené") animation that shows what
+`public/explainer.html` is a self-contained, hand-drawn ("kreslené") animation that shows what
 PepCalculator does: **~38 seconds, 9 scenes, in English, Slovak and Spanish**.
+
+It lives in `public/` because Vite copies that folder to the site root, so the app serves the
+file at `/explainer.html` and its **Guide** page frames it. `demo/` holds the tooling —
+the checker and the storyboard — and points at it there.
 
 One file, **no dependencies, no build step, no assets** — open it in a browser:
 
 ```
-start demo\explainer.html
+start public\explainer.html
 ```
 
 Everything on screen is drawn with canvas code (`strokeSketch`, `drawText`), which is why the
@@ -42,8 +46,10 @@ Three ways, best first:
 | --- | --- |
 | `explainer.html?lang=sk` | Start in Slovak |
 | `explainer.html?at=15200` | Jump to 15.2 s and hold that frame |
+| `explainer.html?embed=1` | Tidy mode for framing: no heading, no note, transparent background, and its own language is left to the app |
 
-`?at=` is how a cover/thumbnail can be generated without a video editor.
+`?at=` is how a cover/thumbnail can be generated without a video editor. `?embed=1` is what the
+app's **Guide** page uses; it only hides the chrome around the stage, so the video is identical.
 
 ## How it works
 

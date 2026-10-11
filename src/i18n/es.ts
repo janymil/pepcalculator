@@ -362,7 +362,16 @@ export const es: Strings = {
     vials: 'Mis viales',
     calendar: 'Calendario',
     reference: 'Referencia',
+    guide: 'Guía',
     settings: 'Ajustes',
+  },
+  /** The "How to use" page: the animated explainer, embedded. */
+  guide: {
+    title: 'Cómo usar la app',
+    subtitle: 'Un recorrido dibujado a mano de 38 segundos — en inglés, eslovaco y español.',
+    open: 'Abrir el vídeo por separado',
+    saveHint:
+      '¿Quieres el archivo? Pulsa Export video (.webm) bajo el vídeo para grabarlo y conviértelo a MP4 si lo necesitas.',
   },
   kinds: {
     /** HGH, HCG y similares: etiquetados y dosificados en UI. */

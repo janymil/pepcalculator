@@ -2,6 +2,7 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { MODES } from './config/modes';
+import { VIEWS } from './lib/views';
 
 /**
  * Full-tree smoke test.
@@ -43,12 +44,13 @@ describe('App (server render smoke test)', () => {
     expect(html).not.toContain('reference-title');
   });
 
-  it('renders the five-page switcher', () => {
-    expect(html.match(/views__tab/g)).toHaveLength(5);
+  it('renders a tab for every page in the registry', () => {
+    expect(html.match(/views__tab/g)).toHaveLength(VIEWS.length);
     expect(html).toContain('Calculator');
     expect(html).toContain('My vials');
     expect(html).toContain('Calendar');
     expect(html).toContain('Reference');
+    expect(html).toContain('Guide');
     expect(html).toContain('Settings');
   });
 

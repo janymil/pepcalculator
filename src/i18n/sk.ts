@@ -360,7 +360,16 @@ export const sk: Strings = {
     vials: 'Moje fľaštičky',
     calendar: 'Kalendár',
     reference: 'Prehľad',
+    guide: 'Návod',
     settings: 'Nastavenia',
+  },
+  /** The "How to use" page: the animated explainer, embedded. */
+  guide: {
+    title: 'Ako používať aplikáciu',
+    subtitle: '38-sekundová kreslená ukážka — v angličtine, slovenčine a španielčine.',
+    open: 'Otvoriť video samostatne',
+    saveHint:
+      'Chcete súbor? Pod videom stlačte Export video (.webm) a nahrá sa; ak potrebujete MP4, skonvertujte ho.',
   },
   kinds: {
     /** HGH, HCG a podobne: označené a dávkované v IU. */

@@ -352,7 +352,18 @@ export interface Strings {
     vials: string;
     calendar: string;
     reference: string;
+    /** Kept short: the phone tab bar has to fit six of these. */
+    guide: string;
     settings: string;
+  };
+  /** The "How to use" page: the animated explainer, embedded. */
+  guide: {
+    title: string;
+    subtitle: string;
+    /** Opens the explainer standalone, outside the app shell. */
+    open: string;
+    /** How to save the video as a file. */
+    saveHint: string;
   };
   kinds: {
     /** Accessible name for the kind filter. */

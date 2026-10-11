@@ -360,7 +360,17 @@ export const en: Strings = {
     vials: 'My vials',
     calendar: 'Calendar',
     reference: 'Reference',
+    guide: 'Guide',
     settings: 'Settings',
+  },
+  /** The "How to use" page: the animated explainer, embedded. */
+  guide: {
+    title: 'How to use the app',
+    subtitle: 'A 38-second, hand-drawn walkthrough — in English, Slovak and Spanish.',
+    /** Opens the explainer standalone, outside the app shell. */
+    open: 'Open the video on its own',
+    saveHint:
+      'Want the file? Press Export video (.webm) under the video to record it, then convert it to MP4 if you need one.',
   },
   kinds: {
     /** HGH, HCG and similar: labelled and dosed in IU. */

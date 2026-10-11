@@ -7,9 +7,16 @@
  * left. Pure and dependency-free — no router library.
  */
 
-export type ViewId = 'calculator' | 'vials' | 'calendar' | 'reference' | 'settings';
+export type ViewId = 'calculator' | 'vials' | 'calendar' | 'reference' | 'guide' | 'settings';
 
-export const VIEWS: readonly ViewId[] = ['calculator', 'vials', 'calendar', 'reference', 'settings'];
+export const VIEWS: readonly ViewId[] = [
+  'calculator',
+  'vials',
+  'calendar',
+  'reference',
+  'guide',
+  'settings',
+];
 
 export function isViewId(value: unknown): value is ViewId {
   return VIEWS.includes(value as ViewId);

@@ -7,6 +7,7 @@ const VIEW_ICONS: Record<ViewId, IconName> = {
   vials: 'flask',
   calendar: 'calendar',
   reference: 'book',
+  guide: 'info',
   settings: 'settings',
 };
 

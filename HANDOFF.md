@@ -7,7 +7,7 @@ continue without re-reading the whole history.
 
 ## What this is
 
-An **installable, offline-first web app** (five pages: Calculator · My vials · Calendar · Reference · Settings)
+An **installable, offline-first web app** (six pages: Calculator · My vials · Calendar · Reference · Guide · Settings)
 that turns a **desired dose** into the **exact amount to draw on a syringe** — for reconstituted
 **peptides** and ready-to-use **anabolic oils**. No accounts, everything runs in the browser and
 keeps working with no network. An optional tiny Node server adds **recovery-code sync** between
@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **383 passing / 35 files** |
-| Build | `npm run build` | ✅ ~389 kB JS / 118 kB gzip · ~46 kB CSS |
+| Tests | `npm test` | ✅ **387 passing / 36 files** |
+| Build | `npm run build` | ✅ ~390 kB JS / 119 kB gzip · ~49 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames |
 
 ## Run it
@@ -135,12 +135,23 @@ server/
 └─ data/sync.sqlite      created on first run — gitignored, this IS everyone's data
 ```
 
-**Five pages** (see `lib/views.ts`): `ViewTabs` switches between **Calculator** (`ModeTabs` →
+**Six pages** (see `lib/views.ts`): `ViewTabs` switches between **Calculator** (`ModeTabs` →
 `CalculatorForm` + `ResultPanel` + `SaveVialForm`), **My vials** (`SavedVials`: list, kind filter,
 backup), **Calendar** (`AgendaPage`, every plan by day and hour), **Reference** (`ReferencePage`:
-static compound data + half-life charts) and **Settings** (`SettingsPage`: sync + reminders + your
-data). The page is mirrored in the URL hash (`#calendar`), so the back button and a
+static compound data + half-life charts), **Guide** (`GuidePage`: frames `public/explainer.html`,
+the animated explainer — see the note below) and **Settings** (`SettingsPage`: sync + reminders +
+your data). The page is mirrored in the URL hash (`#calendar`), so the back button and a
 PWA relaunch both work.
+
+**The Guide page is a frame, not a port.** `public/explainer.html` is a self-contained canvas
+animation (no dependencies, ~1000 lines, its own three languages). Rather than reimplement it in
+React — which would mean two versions of the same video, and the standalone file is what the
+export button records — `GuidePage` renders an `<iframe src="/explainer.html?embed=1&lang=…">`.
+`?embed=1` hides the explainer's own heading and note (the host page owns those), the `lang` comes
+from the app's language switcher, and `key={lang}` remounts the frame so the video restarts in the
+new language. Two consequences worth remembering: the file must stay in `public/` (that is what
+Vite copies to the site root, and `sw.js` pre-caches `/explainer.html` so the tab works offline),
+and `demo/check.mjs` reads it from there.
 
 **In-app flow:** `App.tsx` owns all state → passes props down → `ResultPanel` renders the
 answer → `SaveVialForm` (on the calculator) writes a vial → `SavedVials` looks after them.
@@ -246,11 +257,12 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
     while the app is alive (open or backgrounded, including an installed PWA on Android).
     A fully closed app would need a push server, which this offline-first app deliberately
     doesn't have — the Reminders panel says so in plain words.
-11. **Five pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar`
-    + `reference` + `settings`, and `App.tsx` mirrors the active one in the URL hash (`#calendar`) so
-    back/forward and a PWA relaunch behave. Views are also kept in `localStorage` for the case
-    where the hash is absent. `AgendaPage` renders entirely from `lib/agenda.ts` — no date maths
-    in the JSX.
+11. **Six pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar`
+    + `reference` + `guide` + `settings`, and `App.tsx` mirrors the active one in the URL hash
+    (`#calendar`) so back/forward and a PWA relaunch behave. Views are also kept in `localStorage`
+    for the case where the hash is absent. `AgendaPage` renders entirely from `lib/agenda.ts` — no
+    date maths in the JSX. Below 880px the same `ViewTabs` becomes a fixed bottom bar; six tabs is
+    its practical limit (the longest two labels ellipsise at 390px, and every tab keeps its icon).
 12. **Anabolics are first-class saved vials.** `SavedVial.kind` (`'peptide' | 'anabolic'`,
     absent on old records → `vialKind()` returns `'peptide'`) lets oils be saved from anabolic
     mode, appear in the calendar and be filtered. `vialStatus()` branches: peptides use
@@ -304,11 +316,12 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 
 **Done:** **git + GitHub** (private repo `janymil/pepcalculator`, `origin` on `main`), **PWA +
 service worker** (installable, offline shell, dose reminders), the **Calendar page / global
-agenda**, the **page split** (Calculator · My vials · Calendar · Reference · Settings),
+agenda**, the **page split** (Calculator · My vials · Calendar · Reference · Guide · Settings),
 **saved anabolics** with kind filters and per-vial calendar colours, and the **tombstone purge**
 (90-day retention, swept on open and after every merge, with the trade-off documented).
 
-**Shipped since (381 tests, 35 files) — four workflows, and everything that hung off them:**
+**Shipped since (387 tests, 36 files) — four workflows, everything that hung off them, and a
+Guide page:**
 
 - **IU as a first-class unit** (`lib/calc.ts`) — `DoseUnit` gained `'IU'`, and the engine now
   works in the **base unit of each family** (mg for mass, IU for activity) and **refuses to mix
@@ -353,6 +366,12 @@ agenda**, the **page split** (Calculator · My vials · Calendar · Reference ·
   - **Watch for this pattern:** anything that appears only conditionally (Today card, supply panel,
     conflict notice) or that lives at the bottom of a page **will not be found**. Prefer the page
     header, and say what the button does in its label.
+- **The explainer is now reachable from inside the app** — a **Guide** page (`components/GuidePage.tsx`)
+  frames `public/explainer.html` (moved there from `demo/` so Vite serves it and the service worker
+  can pre-cache it). It follows the same discovery rule the pass above learned: the video used to
+  exist only as a file in the repo, which is not a place a user looks. The app's language drives the
+  video's language, `?embed=1` strips the explainer's own chrome, and a link keeps the standalone
+  version one click away for sharing or recording.
 
 **Shipped earlier (326 tests, 31 files) — supply, sites, intervals:**
 
@@ -476,7 +495,9 @@ the cross-references stay stable.
   deliberately language-free.
 - **New page**: add its id to `ViewId` + `VIEWS` in `lib/views.ts`, add the `views` copy to the
   dictionaries, add its icon to `components/ViewTabs.tsx`, and render it in `App.tsx`. The tab
-  strip and the hash routing follow automatically.
+  strip and the hash routing follow automatically. **Keep the tab label short** — the phone bottom
+  bar holds six of them at 390px before the longest labels start to ellipsise (`Guide`, not
+  "How to use the app"; the page head carries the full wording).
 - **New reference compound**: append an entry to `COMPOUNDS` in `lib/reference.ts` (name, class,
   typical range, water volumes, half-life, cadence). The Reference page and its decay chart
   render from that list — no component changes needed.

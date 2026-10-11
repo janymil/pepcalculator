@@ -11,7 +11,7 @@
    Bump CACHE_VERSION whenever the shell list below changes.
    ========================================================================== */
 
-const CACHE_VERSION = 'pepcalc-shell-v1';
+const CACHE_VERSION = 'pepcalc-shell-v2';
 
 /** Files that make the app render with no network at all. */
 const SHELL = [
@@ -23,6 +23,8 @@ const SHELL = [
   '/icons/icon-512.png',
   '/icons/maskable-512.png',
   '/icons/apple-touch-icon.png',
+  // The "How to use" tab frames this, so it has to work offline like the rest.
+  '/explainer.html',
 ];
 
 self.addEventListener('install', (event) => {

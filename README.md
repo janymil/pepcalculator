@@ -3,7 +3,7 @@
 > 🆕 **Picking this up in a new session? Read [`HANDOFF.md`](HANDOFF.md) first** — it is a
 > one-file brief with the architecture, decisions, gotchas and roadmap.
 
-An **installable, offline-first** web app (five pages: Calculator · My vials · Calendar · Reference · Settings) that turns the **dose you want** into the **exact amount to draw on a syringe** — for reconstituted peptides and ready-to-use anabolic oils. It works with no network and installs to your home screen.
+An **installable, offline-first** web app (six pages: Calculator · My vials · Calendar · Reference · Guide · Settings) that turns the **dose you want** into the **exact amount to draw on a syringe** — for reconstituted peptides and ready-to-use anabolic oils. It works with no network and installs to your home screen.
 
 > ⚕️ **Not medical advice.** The app only does the maths. It does not replace a doctor or pharmacist.
 
@@ -64,7 +64,7 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Cost per dose** — add an optional price (and currency) to a vial and the app shows the **cost per dose** and the **cost of finishing the whole plan**.
 - **Reference sheet** — a fifth page lists commonly cited **typical ranges, cadences and half-lives** for a set of peptides and anabolics, each with a small decay chart, every row stamped as educational only — never a target, never advice.
 - **Undo & safe clearing** — deleting a vial offers an **Undo** snackbar, and Settings has a guarded **Clear all data** action for the escape hatch the app used to lack.
-- **Five pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **Reference**, and **Settings** (sync + reminders + your data). The page switcher sits at the top.
+- **Six pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **Reference**, **Guide** (the video), and **Settings** (sync + reminders + your data). The page switcher sits at the top.
 - **A modern, token-driven UI** — spacing/type/radius/elevation/motion tokens, a single accent colour with semantic states, a hand-rolled **SVG icon set** (no emoji), a **phone bottom tab bar**, gentle page motion, a count-up on the headline number and clean field-validity states.
 - **Separate stacks per person** — a **Whose stack** switcher keeps your vials apart from your partner's or a family member's. Every page, the calendar and the saved-vial list belong to exactly **one** person (there is deliberately no "show everyone"), and the people travel with your data in backups and sync. Rename or remove them under **Settings → People**.
 
@@ -90,6 +90,7 @@ Several features are easy to miss because they only appear once they have someth
 | Sync (recovery code, conflict notice) | **Settings** → *Sync* |
 | Dose reminders | **Settings** → *Reminders* |
 | **Larger text + non-colour vial markers** | **Settings** → *Display* |
+| **The 38-second explainer video** | **Guide** (its own page) — or `public/explainer.html` standalone |
 
 If a feature seems to be missing, it is usually waiting for data: the supply outlook needs a vial
 with a plan, the Today card needs a dose due this week, and the protocol plot needs a saved vial
@@ -101,11 +102,12 @@ named after a compound in the Reference list.
 
 ### The 38-second explainer
 
-`demo/explainer.html` is a self-contained, hand-drawn animation (English / Slovak / Spanish,
-9 scenes) that shows what the app does. No build step, no assets — just open it:
+`public/explainer.html` is a self-contained, hand-drawn animation (English / Slovak / Spanish,
+9 scenes) that shows what the app does. It lives in `public/` because the app serves it itself —
+the **Guide** page frames it. No build step, no assets — just open it:
 
 ```
-start demo\explainer.html
+start public\explainer.html
 ```
 
 It can record itself to a video file (**Export video (.webm)**), and it takes deep links for

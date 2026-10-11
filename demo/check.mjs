@@ -15,7 +15,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const html = readFileSync(join(dir, 'explainer.html'), 'utf8');
+// The explainer lives in `public/` because the app serves it at `/explainer.html`
+// for the "How to use" tab. One copy, so it can never drift from what users see.
+const html = readFileSync(join(dir, '..', 'public', 'explainer.html'), 'utf8');
 const match = html.match(/<script>([\s\S]*)<\/script>/);
 if (!match) {
   console.error('FAIL: no <script> block found in explainer.html');

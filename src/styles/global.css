@@ -3306,6 +3306,53 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- how to use (embedded explainer) ---------- */
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+ * The explainer draws a 16:9 stage plus its own control bar underneath. The app's
+ * content column is width-capped, so the stage tops out around 570px and the bar
+ * needs ~90px more — 700px of frame always fits it, with a little slack for the
+ * wrapped bar on a narrow screen.
+ */
+.guide__frame {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.guide__video {
+  display: block;
+  width: 100%;
+  height: min(80vh, 700px);
+  border: 0;
+}
+
+.guide__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.guide__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.guide__hint {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
 /* ---------- converter ---------- */
 .converter {
   display: flex;
