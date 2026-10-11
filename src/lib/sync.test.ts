@@ -86,6 +86,23 @@ describe('sync payload', () => {
     const text = JSON.stringify({ version: 1, vials: [makeVial(), { broken: true }] } as SyncPayload);
     expect(parsePayload(text)?.vials).toHaveLength(1);
   });
+
+  it('carries the people alongside the vials', () => {
+    const parsed = parsePayload(
+      serializePayload([makeVial({ ownerId: 'wife' })], [{ id: 'wife', name: 'Kim' }]),
+    );
+    expect(parsed?.owners).toEqual([{ id: 'wife', name: 'Kim' }]);
+    expect(parsed?.vials[0].ownerId).toBe('wife');
+  });
+
+  it('implies a person for a payload written before owners existed', () => {
+    const text = JSON.stringify({ version: 1, vials: [makeVial({ ownerId: 'kid' })] });
+    expect(parsePayload(text)?.owners).toEqual([{ id: 'kid', name: '' }]);
+  });
+
+  it('treats an owner-less vial as the default person', () => {
+    expect(parsePayload(serializePayload([makeVial()]))?.owners).toEqual([{ id: 'me', name: '' }]);
+  });
 });
 
 describe('syncWithServer', () => {
@@ -107,7 +124,7 @@ describe('syncWithServer', () => {
       return reply(200, {});
     }) as unknown as typeof fetch;
 
-    expect(await syncWithServer(baseUrl, 'nope', [], fakeFetch)).toEqual({
+    expect(await syncWithServer(baseUrl, 'nope', [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'invalidCode',
     });
@@ -116,7 +133,7 @@ describe('syncWithServer', () => {
 
   it('needs a server url', async () => {
     const fakeFetch = (async () => reply(200, {})) as unknown as typeof fetch;
-    expect(await syncWithServer('   ', CODE, [], fakeFetch)).toEqual({
+    expect(await syncWithServer('   ', CODE, [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'network',
     });
@@ -131,7 +148,7 @@ describe('syncWithServer', () => {
       return reply(200, { updatedAt: '2026-10-10T10:00:00.000Z' });
     }) as unknown as typeof fetch;
 
-    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], fakeFetch);
+    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], { fetchImpl: fakeFetch });
 
     expect(methods).toEqual(['GET', 'PUT']);
     expect(outcome.ok).toBe(true);
@@ -151,7 +168,7 @@ describe('syncWithServer', () => {
       return reply(200, { updatedAt: '2026-10-10T10:00:00.000Z' });
     }) as unknown as typeof fetch;
 
-    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], fakeFetch);
+    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], { fetchImpl: fakeFetch });
 
     expect(outcome.ok).toBe(true);
     if (outcome.ok) {
@@ -160,12 +177,33 @@ describe('syncWithServer', () => {
     }
   });
 
+  it('brings the other device\'s people across', async () => {
+    const remote = makeVial({ id: 'v2', ownerId: 'wife' });
+    const fakeFetch = (async (_url: string, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'GET') {
+        return reply(200, { payload: serializePayload([remote], [{ id: 'wife', name: 'Kim' }]) });
+      }
+      return reply(200, { updatedAt: '2026-10-10T10:00:00.000Z' });
+    }) as unknown as typeof fetch;
+
+    const outcome = await syncWithServer(baseUrl, CODE, [makeVial()], {
+      owners: [{ id: 'me', name: '' }],
+      fetchImpl: fakeFetch,
+    });
+
+    expect(outcome.ok).toBe(true);
+    if (outcome.ok) {
+      expect(new Set(outcome.owners.map((owner) => owner.id))).toEqual(new Set(['me', 'wife']));
+      expect(outcome.owners.find((owner) => owner.id === 'wife')?.name).toBe('Kim');
+    }
+  });
+
   it('reports a network failure', async () => {
     const fakeFetch = (async () => {
       throw new Error('offline');
     }) as unknown as typeof fetch;
 
-    expect(await syncWithServer(baseUrl, CODE, [], fakeFetch)).toEqual({
+    expect(await syncWithServer(baseUrl, CODE, [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'network',
     });
@@ -173,7 +211,7 @@ describe('syncWithServer', () => {
 
   it('reports a server failure', async () => {
     const fakeFetch = (async () => reply(500, {})) as unknown as typeof fetch;
-    expect(await syncWithServer(baseUrl, CODE, [], fakeFetch)).toEqual({
+    expect(await syncWithServer(baseUrl, CODE, [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'server',
     });
@@ -185,7 +223,7 @@ describe('syncWithServer', () => {
       return reply(200, {});
     }) as unknown as typeof fetch;
 
-    expect(await syncWithServer(baseUrl, CODE, [], fakeFetch)).toEqual({
+    expect(await syncWithServer(baseUrl, CODE, [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'badPayload',
     });
@@ -199,7 +237,7 @@ describe('syncWithServer', () => {
 
     try {
       const fakeFetch = (async () => reply(200, {})) as unknown as typeof fetch;
-      expect(await syncWithServer(baseUrl, CODE, [], fakeFetch)).toEqual({
+      expect(await syncWithServer(baseUrl, CODE, [], { fetchImpl: fakeFetch })).toEqual({
         ok: false,
         reason: 'unavailable',
       });
@@ -227,7 +265,7 @@ describe('pushVials (used by the background auto-push)', () => {
       return reply(200, { updatedAt: '2026-10-10T10:00:00.000Z' });
     }) as unknown as typeof fetch;
 
-    const outcome = await pushVials(baseUrl, CODE, [makeVial()], fakeFetch);
+    const outcome = await pushVials(baseUrl, CODE, [makeVial()], { fetchImpl: fakeFetch });
 
     expect(methods).toEqual(['PUT']);
     expect(outcome).toEqual({ ok: true, updatedAt: '2026-10-10T10:00:00.000Z' });
@@ -235,7 +273,7 @@ describe('pushVials (used by the background auto-push)', () => {
 
   it('reports a server failure', async () => {
     const fakeFetch = (async () => reply(500, {})) as unknown as typeof fetch;
-    expect(await pushVials(baseUrl, CODE, [], fakeFetch)).toEqual({
+    expect(await pushVials(baseUrl, CODE, [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'server',
     });
@@ -246,7 +284,7 @@ describe('pushVials (used by the background auto-push)', () => {
       throw new Error('offline');
     }) as unknown as typeof fetch;
 
-    expect(await pushVials(baseUrl, CODE, [], fakeFetch)).toEqual({
+    expect(await pushVials(baseUrl, CODE, [], { fetchImpl: fakeFetch })).toEqual({
       ok: false,
       reason: 'network',
     });

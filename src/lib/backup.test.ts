@@ -104,6 +104,36 @@ describe('parseBackup', () => {
       expect(result.vials[0].syringeCapacityMl).toBe(1);
     }
   });
+
+  it('carries the people list so stacks survive a restore', () => {
+    const json = serializeBackup([makeVial({ ownerId: 'wife' })], '2026-10-10T08:00:00.000Z', [
+      { id: 'me', name: '' },
+      { id: 'wife', name: 'Kim' },
+    ]);
+    const result = parseBackup(json);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.owners).toEqual([
+        { id: 'me', name: '' },
+        { id: 'wife', name: 'Kim' },
+      ]);
+      expect(result.vials[0].ownerId).toBe('wife');
+    }
+  });
+
+  it('derives a person for every vial in a backup that predates owners', () => {
+    const json = JSON.stringify({
+      app: BACKUP_APP_ID,
+      vials: [makeVial({ ownerId: 'kid' }), makeVial({ id: 'v2' })],
+    });
+    const result = parseBackup(json);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(new Set(result.owners.map((owner) => owner.id))).toEqual(new Set(['kid', 'me']));
+    }
+  });
 });
 
 describe('backupFileName', () => {

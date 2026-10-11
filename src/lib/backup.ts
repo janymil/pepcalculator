@@ -10,6 +10,7 @@
  * is deterministic and testable.
  */
 
+import { mergeOwners, normalizeOwners, ownersFromVials, type Owner } from './owners';
 import { looksLikeSavedVial, liveVials, normalizeSavedVial, type SavedVial } from './vials';
 
 export const BACKUP_APP_ID = 'pepcalculator';
@@ -19,24 +20,32 @@ export interface BackupFile {
   app: typeof BACKUP_APP_ID;
   version: number;
   exportedAt: string;
+  /** The people the vials belong to. Optional on files written before owners. */
+  owners?: Owner[];
   vials: SavedVial[];
 }
 
 export type BackupError = 'invalidJson' | 'notABackup' | 'noVials';
 
 export type BackupParseResult =
-  | { ok: true; vials: SavedVial[] }
+  | { ok: true; vials: SavedVial[]; owners: Owner[] }
   | { ok: false; reason: BackupError };
 
 /**
  * Serialises the saved vials into a pretty-printed JSON backup. Soft-deleted
  * vials are left out — a backup should be a copy of what the user actually has.
+ * The people list travels with them so stacks stay separated after a restore.
  */
-export function serializeBackup(vials: SavedVial[], exportedAt: string): string {
+export function serializeBackup(
+  vials: SavedVial[],
+  exportedAt: string,
+  owners: Owner[] = [],
+): string {
   const payload: BackupFile = {
     app: BACKUP_APP_ID,
     version: BACKUP_VERSION,
     exportedAt,
+    owners: owners.length > 0 ? normalizeOwners(owners) : undefined,
     vials: liveVials(vials),
   };
   return JSON.stringify(payload, null, 2);
@@ -61,7 +70,15 @@ export function parseBackup(text: string): BackupParseResult {
   const vials = candidate.vials.filter(looksLikeSavedVial).map(normalizeSavedVial);
   if (vials.length === 0) return { ok: false, reason: 'noVials' };
 
-  return { ok: true, vials };
+  // Older files have no `owners`; derive any missing people from the vials so
+  // every restored vial has somewhere to live.
+  const declared =
+    Array.isArray(candidate.owners) && candidate.owners.length > 0
+      ? normalizeOwners(candidate.owners)
+      : [];
+  const implied = ownersFromVials(vials).map((id) => ({ id, name: '' }));
+
+  return { ok: true, vials, owners: mergeOwners(declared, implied) };
 }
 
 /** Filename for a download, e.g. `pepcalculator-backup-2026-10-10.json`. */

@@ -11,6 +11,7 @@
  * backup exists as a safety net.
  */
 
+import { mergeOwners, normalizeOwners, ownersFromVials, type Owner } from './owners';
 import {
   looksLikeSavedVial,
   mergeVials,
@@ -28,14 +29,23 @@ const HASH_SALT = 'pepcalculator-sync-v1';
 
 export interface SyncPayload {
   version: number;
+  /** The people the vials belong to. Optional for payloads written pre-owners. */
+  owners?: Owner[];
   vials: SavedVial[];
 }
 
 export type SyncFailure = 'invalidCode' | 'network' | 'server' | 'badPayload' | 'unavailable';
 
 export type SyncOutcome =
-  | { ok: true; vials: SavedVial[]; updatedAt: string; remoteFound: boolean }
+  | { ok: true; vials: SavedVial[]; owners: Owner[]; updatedAt: string; remoteFound: boolean }
   | { ok: false; reason: SyncFailure };
+
+/** Optional inputs for a sync request — the people travel with the vials. */
+export interface SyncRequestOptions {
+  owners?: Owner[];
+  /** Injectable fetch, so the client stays testable. */
+  fetchImpl?: typeof fetch;
+}
 
 /* ---------- code ---------- */
 
@@ -91,8 +101,12 @@ export async function hashSyncCode(code: string): Promise<string> {
 
 /* ---------- payload ---------- */
 
-export function serializePayload(vials: SavedVial[]): string {
-  const payload: SyncPayload = { version: SYNC_PAYLOAD_VERSION, vials };
+export function serializePayload(vials: SavedVial[], owners?: Owner[]): string {
+  const payload: SyncPayload = {
+    version: SYNC_PAYLOAD_VERSION,
+    ...(owners && owners.length > 0 ? { owners: normalizeOwners(owners) } : {}),
+    vials,
+  };
   return JSON.stringify(payload);
 }
 
@@ -106,9 +120,18 @@ export function parsePayload(text: string): SyncPayload | null {
   }
   if (!Array.isArray(data?.vials)) return null;
 
+  const vials = (data.vials as unknown[]).filter(looksLikeSavedVial).map(normalizeSavedVial);
+
+  // Keep the person list in step with the vials: any owner a vial references is
+  // represented, even if the payload's own `owners` list is missing or partial.
+  const declared =
+    Array.isArray(data.owners) && data.owners.length > 0 ? normalizeOwners(data.owners) : [];
+  const implied = ownersFromVials(vials).map((id) => ({ id, name: '' }));
+
   return {
     version: typeof data.version === 'number' ? data.version : SYNC_PAYLOAD_VERSION,
-    vials: (data.vials as unknown[]).filter(looksLikeSavedVial).map(normalizeSavedVial),
+    owners: mergeOwners(declared, implied),
+    vials,
   };
 }
 
@@ -141,8 +164,9 @@ export async function pushVials(
   baseUrl: string,
   code: string,
   localVials: SavedVial[],
-  fetchImpl: typeof fetch = fetch,
+  options: SyncRequestOptions = {},
 ): Promise<PushOutcome> {
+  const { owners, fetchImpl = fetch } = options;
   if (!isValidSyncCode(code)) return { ok: false, reason: 'invalidCode' };
   if (!baseUrl.trim()) return { ok: false, reason: 'network' };
 
@@ -153,7 +177,7 @@ export async function pushVials(
     const response = await fetchImpl(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload: serializePayload(localVials) }),
+      body: JSON.stringify({ payload: serializePayload(localVials, owners) }),
     });
     if (!response.ok) return { ok: false, reason: 'server' };
 
@@ -176,8 +200,9 @@ export async function syncWithServer(
   baseUrl: string,
   code: string,
   localVials: SavedVial[],
-  fetchImpl: typeof fetch = fetch,
+  options: SyncRequestOptions = {},
 ): Promise<SyncOutcome> {
+  const { owners = [], fetchImpl = fetch } = options;
   if (!isValidSyncCode(code)) return { ok: false, reason: 'invalidCode' };
   if (!baseUrl.trim()) return { ok: false, reason: 'network' };
 
@@ -185,6 +210,7 @@ export async function syncWithServer(
   if (url === null) return { ok: false, reason: 'unavailable' };
 
   let merged = localVials;
+  let mergedOwners = owners;
   let remoteFound = false;
 
   try {
@@ -194,6 +220,7 @@ export async function syncWithServer(
       const parsed = typeof body.payload === 'string' ? parsePayload(body.payload) : null;
       if (!parsed) return { ok: false, reason: 'badPayload' };
       merged = mergeVials(localVials, parsed.vials);
+      mergedOwners = mergeOwners(owners, parsed.owners ?? []);
       remoteFound = true;
     } else if (response.status !== 404) {
       return { ok: false, reason: 'server' };
@@ -202,9 +229,15 @@ export async function syncWithServer(
     return { ok: false, reason: 'network' };
   }
 
-  const pushed = await pushVials(baseUrl, code, merged, fetchImpl);
+  // A vial from another device may reference a person we don't have yet.
+  mergedOwners = mergeOwners(
+    mergedOwners,
+    ownersFromVials(merged).map((id) => ({ id, name: '' })),
+  );
+
+  const pushed = await pushVials(baseUrl, code, merged, { owners: mergedOwners, fetchImpl });
   if (!pushed.ok) return pushed;
 
-  return { ok: true, vials: merged, updatedAt: pushed.updatedAt, remoteFound };
+  return { ok: true, vials: merged, owners: mergedOwners, updatedAt: pushed.updatedAt, remoteFound };
 }
 

@@ -29,6 +29,11 @@ export type KindFilter = 'all' | VialKind;
 export interface SavedVial {
   id: string;
   name: string;
+  /**
+   * Which person's stack this vial belongs to (see `lib/owners.ts`). Absent on
+   * records saved before owners existed, and then treated as the default person.
+   */
+  ownerId?: string;
   /** ISO date (`yyyy-mm-dd`) the powder was mixed. */
   reconstitutedOn: string;
   /** Amount of powder that was in the vial. */
@@ -223,6 +228,7 @@ export function normalizeSavedVial(value: unknown): SavedVial {
     vialMl: typeof vial.vialMl === 'number' ? vial.vialMl : undefined,
     price: typeof vial.price === 'number' && vial.price > 0 ? vial.price : undefined,
     currency: typeof vial.currency === 'string' && vial.currency ? vial.currency : undefined,
+    ownerId: typeof vial.ownerId === 'string' && vial.ownerId.trim() !== '' ? vial.ownerId : undefined,
   };
 }
 
