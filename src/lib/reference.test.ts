@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { compoundById, formatRange, hasCitedRange, matchCompound, rangeHint } from './reference';
+import {
+  compoundById,
+  formatRange,
+  hasCitedRange,
+  matchCompound,
+  rangeAppliesTo,
+  rangeHint,
+} from './reference';
+
+/** A compound that is definitely in the list, without a non-null assertion. */
+const ref = (id: string): NonNullable<ReturnType<typeof compoundById>> =>
+  compoundById(id) as NonNullable<ReturnType<typeof compoundById>>;
 
 describe('matchCompound', () => {
   it('matches on the id, whatever the punctuation or spacing', () => {
@@ -21,6 +32,34 @@ describe('matchCompound', () => {
     expect(matchCompound('')).toBeUndefined();
     expect(matchCompound('mg')).toBeUndefined();
     expect(matchCompound('something else')).toBeUndefined();
+  });
+});
+
+describe('compound routes', () => {
+  /** The molecules that reach people both as a compounded vial and as a pen. */
+  const bothRoutes = ['semaglutide', 'tirzepatide', 'retatrutide'];
+
+  it('declares the route for every molecule that reaches people two ways', () => {
+    for (const id of bothRoutes) {
+      expect(ref(id).route, id).toBe('vial');
+    }
+  });
+
+  it('leaves the route unset where there is only one route to confuse', () => {
+    // BPC-157 is drawn from a vial and always will be, so a route field there
+    // would be noise rather than protection.
+    expect(ref('bpc157').route).toBeUndefined();
+  });
+
+  it('refuses to compare a vial range against a pen dose', () => {
+    expect(rangeAppliesTo(ref('tirzepatide'), 'clicks')).toBe(false);
+    // The same figures do describe a syringe draw from a reconstituted vial.
+    expect(rangeAppliesTo(ref('tirzepatide'), 'insulin')).toBe(true);
+    expect(rangeAppliesTo(ref('tirzepatide'), 'volume')).toBe(true);
+  });
+
+  it('lets a range with no declared route apply to any draw', () => {
+    expect(rangeAppliesTo(ref('bpc157'), 'clicks')).toBe(true);
   });
 });
 

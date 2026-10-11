@@ -275,6 +275,7 @@ export const sk: Strings = {
     errorEncrypted: 'Táto záloha je zašifrovaná. Zadajte heslo, ktoré ste použili.',
     errorWrongPassphrase: 'Toto heslo zálohu neotvorí.',
     errorNoCrypto: 'Šifrovanie vyžaduje zabezpečené spojenie (https).',
+    scope: 'Záloha obsahuje všetky osoby v tomto zariadení a celý záznam meraní.',
   },
   plot: {
     title: 'Váš protokol',
@@ -381,6 +382,7 @@ export const sk: Strings = {
   glp1: {
     title: 'Starostlivosť o GLP-1',
     subtitle: 'Bezpečné používanie, sledovanie zmeny a otázky, ktoré stojí za to položiť.',
+    openPage: 'Ako ho bezpečne použiť',
     note: 'Táto stránka je postup a aritmetika. Nie je lekárskou radou a nenahrádza vášho lekára ani príbalový leták k lieku.',
     routine: {
       title: 'Ako to používať',
@@ -553,6 +555,12 @@ export const sk: Strings = {
       wellBelow: 'Hlboko pod bežne uvádzaným rozsahom',
       above: 'Nad bežne uvádzaným rozsahom',
     },
+    route: {
+      vial: 'Roztok z liekovky',
+      pen: 'Predpísané pero',
+      vialIsNotPen:
+        'Uvedené rozmedzie platí pre roztok z liekovky, nie pre pero, preto sa tu neporovnáva.',
+    },
   },
   supply: {
     title: 'Zásoba',
@@ -592,6 +600,8 @@ export const sk: Strings = {
     period: 'Obdobie',
     vials: 'Fľaštičky',
     labels: 'Etikety na fľaštičky',
+    glp1Title: 'GLP-1 — pred každým použitím',
+    glp1Hint: 'Odškrtnite ich vždy. Celé znenie je v aplikácii na stránke GLP-1.',
     labelRatio: '{amount} v {water} mL',
     empty: 'Zatiaľ žiadne uložené plány na tlač.',
   },

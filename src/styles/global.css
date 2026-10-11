@@ -3373,6 +3373,12 @@ body {
   border-left-color: var(--accent-strong);
 }
 
+/* The GLP-1 care link: outside the collapsed detail, so it is always found. */
+.vial__glp1 {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
 /* ---------- printable protocol sheet ---------- */
 /*
  * Hidden on screen. `window.print()` hides the whole app shell and reveals this
@@ -3483,6 +3489,63 @@ body {
     margin-top: 8mm;
     font-size: 8pt;
     color: #444;
+  }
+
+  /* ---- GLP-1 checklist: the fridge copy ---- */
+  .print-sheet__glp1 {
+    /* A page break before it, so the checklist is not split down the middle. */
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-sheet__glp1-note {
+    margin: 0 0 4mm;
+    font-size: 8pt;
+    color: #444;
+  }
+
+  .print-sheet__cols {
+    display: flex;
+    gap: 8mm;
+  }
+
+  .print-sheet__col {
+    flex: 1 1 0;
+  }
+
+  .print-sheet__h3 {
+    margin: 0 0 2mm;
+    font-size: 11pt;
+  }
+
+  .print-sheet__steps,
+  .print-sheet__checks {
+    margin: 0 0 6mm;
+    padding: 0;
+    list-style: none;
+    font-size: 9.5pt;
+  }
+
+  .print-sheet__steps li,
+  .print-sheet__checks li {
+    display: flex;
+    gap: 2mm;
+    margin-bottom: 2mm;
+    break-inside: avoid;
+  }
+
+  .print-sheet__num {
+    min-width: 4mm;
+    font-weight: 700;
+  }
+
+  /* A real box to tick with a pen — a glyph would not print reliably. */
+  .print-sheet__box {
+    flex: 0 0 auto;
+    width: 3.2mm;
+    height: 3.2mm;
+    margin-top: 0.6mm;
+    border: 0.4mm solid #000;
   }
 }
 

@@ -275,6 +275,7 @@ export const es: Strings = {
     errorEncrypted: 'Esa copia está cifrada. Introduce la contraseña que usaste.',
     errorWrongPassphrase: 'Esa contraseña no abre esta copia.',
     errorNoCrypto: 'El cifrado necesita una conexión segura (https).',
+    scope: 'La copia de seguridad contiene todas las personas de este dispositivo y todo el registro de medidas.',
   },
   plot: {
     title: 'Tu protocolo',
@@ -383,6 +384,7 @@ export const es: Strings = {
   glp1: {
     title: 'Cuidados del GLP-1',
     subtitle: 'Usarlo con seguridad, seguir el cambio y las preguntas que vale la pena hacer.',
+    openPage: 'Cómo usarlo con seguridad',
     note: 'Esta página es procedimiento y aritmética. No es consejo médico y nunca sustituye a tu médico ni al prospecto que viene con tu medicamento.',
     routine: {
       title: 'Cómo usarlo',
@@ -555,6 +557,12 @@ export const es: Strings = {
       wellBelow: 'Muy por debajo del rango habitual',
       above: 'Por encima del rango habitual',
     },
+    route: {
+      vial: 'Vial reconstituido',
+      pen: 'Pluma recetada',
+      vialIsNotPen:
+        'El rango citado corresponde a un vial reconstituido, no a una pluma, así que aquí no se compara.',
+    },
   },
   supply: {
     title: 'Existencias',
@@ -594,6 +602,8 @@ export const es: Strings = {
     period: 'Periodo',
     vials: 'Viales',
     labels: 'Etiquetas de vial',
+    glp1Title: 'GLP-1 — antes de cada uso',
+    glp1Hint: 'Márcalas siempre. El texto completo está en la app, en la página GLP-1.',
     labelRatio: '{amount} en {water} mL',
     empty: 'Aún no hay planes guardados para imprimir.',
   },

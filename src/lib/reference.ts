@@ -8,9 +8,20 @@
  * to this data.
  */
 
-import { isPositive, toBase } from './calc';
+import { isPositive, toBase, type MeasureSystem } from './calc';
 
 export type CompoundClass = 'peptide' | 'anabolic';
+
+/**
+ * How a compound reaches people.
+ *
+ * A **reconstituted vial** and a **prescribed pen** are not interchangeable: the
+ * figures differ, the device differs and the arithmetic differs. A range that
+ * belongs to one route must never be read as the other, which is why a row that
+ * cites vial figures says so and the UI refuses to compare a vial range against
+ * a pen dose.
+ */
+export type CompoundRoute = 'vial' | 'pen';
 
 export interface CompoundReference {
   id: string;
@@ -36,6 +47,14 @@ export interface CompoundReference {
   cadence: string;
   /** Still in trials: no approved dose anywhere, and the UI labels it as such. */
   investigational?: boolean;
+  /**
+   * Which route the range, water volumes and cadence above describe.
+   *
+   * Absent means "the only route this compound has" — an ordinary peptide or
+   * oil, where there is nothing to confuse. It is set on the molecules that
+   * reach people both as a compounded vial and as a dial-a-dose pen.
+   */
+  route?: CompoundRoute;
 }
 
 /** A compound whose cited range is known — the three range fields are present. */
@@ -58,6 +77,23 @@ export function hasCitedRange(compound: CompoundReference): compound is RangedCo
     typeof compound.typicalHighMg === 'number' &&
     (compound.unit === 'mg' || compound.unit === 'mcg')
   );
+}
+
+/**
+ * Whether a cited range may be compared against a dose drawn this way.
+ *
+ * A compounded vial's figures and a prescribed pen's dose are different
+ * quantities, so the comparison is **refused** rather than shown with a caveat.
+ * This lives here, not in the card, so every caller gets the same answer — the
+ * entire point of the field is that nobody reads a vial range as their pen dose.
+ */
+export function rangeAppliesTo(
+  compound: CompoundReference,
+  measure: MeasureSystem,
+): boolean {
+  // No declared route: the compound only has one, so nothing can be confused.
+  if (!compound.route) return true;
+  return compound.route === 'pen' ? measure === 'clicks' : measure !== 'clicks';
 }
 
 /**
@@ -113,6 +149,8 @@ export const COMPOUNDS: readonly CompoundReference[] = [
     id: 'semaglutide',
     name: 'Semaglutide',
     klass: 'peptide',
+    /** These figures are a reconstituted vial's, not a prescribed pen's. */
+    route: 'vial',
     typicalLowMg: 250,
     typicalHighMg: 1000,
     unit: 'mcg',
@@ -124,6 +162,8 @@ export const COMPOUNDS: readonly CompoundReference[] = [
     id: 'tirzepatide',
     name: 'Tirzepatide',
     klass: 'peptide',
+    /** These figures are a reconstituted vial's, not a prescribed pen's. */
+    route: 'vial',
     typicalLowMg: 2500,
     typicalHighMg: 5000,
     unit: 'mcg',
@@ -141,6 +181,8 @@ export const COMPOUNDS: readonly CompoundReference[] = [
     id: 'retatrutide',
     name: 'Retatrutide',
     klass: 'peptide',
+    /** Trial supplies are reconstituted vials; there is no approved pen. */
+    route: 'vial',
     commonWaterMl: [1, 2],
     halfLifeHours: 144,
     cadence: '1× per week (trials)',

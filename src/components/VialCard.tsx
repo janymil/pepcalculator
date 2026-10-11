@@ -19,7 +19,7 @@ import {
   type DoseSlot,
 } from '../lib/schedule';
 import type { VialSupply } from '../lib/supply';
-import { formatRange, matchCompound, rangeHint, type RangeVerdict } from '../lib/reference';
+import { formatRange, matchCompound, rangeAppliesTo, rangeHint, type RangeVerdict } from '../lib/reference';
 import { kindMeasure, vialKind, vialStatus, type SavedVial } from '../lib/vials';
 import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
@@ -42,6 +42,11 @@ export interface VialCardProps {
    * concentration — the single most dangerous mix-up, so the card says so.
    */
   ratioMismatch?: boolean;
+  /**
+   * Opens the GLP-1 care page. Offered only on a GLP-1 vial, because that is
+   * where someone about to use one should land.
+   */
+  onOpenGlp1?: () => void;
 }
 
 /**
@@ -63,6 +68,7 @@ export function VialCard({
   onDelete,
   supply,
   ratioMismatch,
+  onOpenGlp1,
 }: VialCardProps) {
   const { strings } = useI18n();
   // The card is a scannable summary by default; the detail expands on demand.
@@ -132,7 +138,13 @@ export function VialCard({
    * a line of its own.
    */
   const compound = matchCompound(vial.name);
-  const verdict = compound ? rangeHint(compound, status.doseBase) : null;
+  /*
+   * A range describes a route. When the row carries a reconstituted vial's
+   * figures and this vial is a pen, comparing them would be meaningless — so the
+   * verdict is withheld and the card says why instead.
+   */
+  const rangeUsable = compound !== undefined && rangeAppliesTo(compound, measure);
+  const verdict = compound && rangeUsable ? rangeHint(compound, status.doseBase) : null;
   const outOfRange: Exclude<RangeVerdict, 'within'> | null =
     verdict && verdict !== 'within' ? verdict : null;
 
@@ -187,6 +199,18 @@ export function VialCard({
           </span>
         )}
       </div>
+
+      {/*
+        The one thing a GLP-1 user should not have to go looking for. It sits
+        outside the collapsed detail on purpose: this repo has already shipped
+        features nobody found because they only appeared after another action,
+        and a routine is exactly what someone about to use this vial needs.
+      */}
+      {kind === 'glp1' && onOpenGlp1 ? (
+        <button type="button" className="btn btn--sm btn--ghost vial__glp1" onClick={onOpenGlp1}>
+          {strings.glp1.openPage}
+        </button>
+      ) : null}
 
       {expanded ? (
         <div className="vial__body">
@@ -292,6 +316,10 @@ export function VialCard({
           {strings.reference.range.label}: {strings.reference.range[outOfRange]} ·{' '}
           {strings.reference.typical} {formatRange(compound)}
         </p>
+      ) : null}
+
+      {compound?.route === 'vial' && measure === 'clicks' ? (
+        <p className="vial__note vial__note--info">{strings.reference.route.vialIsNotPen}</p>
       ) : null}
 
       {steps.length > 0 ? (

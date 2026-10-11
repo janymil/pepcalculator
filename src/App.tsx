@@ -705,6 +705,9 @@ export default function App() {
               vials={scopedVials}
               owners={owners}
               measurements={scopedMeasurements}
+              /* A backup copies the whole device, not the stack on screen. */
+              allVials={liveVialList}
+              allMeasurements={liveMeasurements(measurements)}
               todayIso={todayIso}
               nowTime={nowTime}
               onUpdate={handleUpdateVial}
@@ -714,6 +717,7 @@ export default function App() {
               onRemoveDose={handleRemoveDose}
               onDelete={handleDeleteVial}
               onGoToCalculator={() => changeView('calculator')}
+              onOpenGlp1={() => changeView('glp1')}
             />
           ) : view === 'settings' ? (
             <SettingsPage

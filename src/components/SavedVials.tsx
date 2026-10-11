@@ -56,6 +56,17 @@ interface SavedVialsProps {
    * back. Optional: the backup is the only feature on this page that uses it.
    */
   measurements?: Measurement[];
+  /**
+   * **Everything on the device**, for the backup — not the person on screen.
+   *
+   * `vials` is scoped to the selected person because that is what the page
+   * lists, but a backup that contained only them silently lost the rest on a new
+   * device (the owner list travelled, their vials did not). Defaults to `vials`
+   * for a caller that really does mean everything.
+   */
+  allVials?: SavedVial[];
+  /** The whole measurement log, for the same reason. Defaults to `measurements`. */
+  allMeasurements?: Measurement[];
   todayIso: string;
   nowTime: string;
   onUpdate: (vial: SavedVial) => void;
@@ -66,6 +77,8 @@ interface SavedVialsProps {
   onDelete: (id: string) => void;
   /** Jumps to the calculator from the empty state. */
   onGoToCalculator?: () => void;
+  /** Opens the GLP-1 care page from a GLP-1 vial card. */
+  onOpenGlp1?: () => void;
 }
 
 /** Fallback card for a vial that was saved without a dose plan. */
@@ -77,6 +90,7 @@ function VialCardLegacy({
   onAddDose,
   onRemoveDose,
   onDelete,
+  onOpenGlp1,
 }: {
   vial: SavedVial;
   locale: string;
@@ -85,6 +99,7 @@ function VialCardLegacy({
   onAddDose: (id: string) => void;
   onRemoveDose: (id: string) => void;
   onDelete: (id: string) => void;
+  onOpenGlp1?: () => void;
 }) {
   const { strings } = useI18n();
   const status = vialStatus(vial);
@@ -185,6 +200,11 @@ function VialCardLegacy({
         >
           {strings.vials.removeDose}
         </button>
+        {kind === 'glp1' && onOpenGlp1 ? (
+          <button type="button" className="btn btn--sm btn--ghost" onClick={onOpenGlp1}>
+            {strings.glp1.openPage}
+          </button>
+        ) : null}
         <button
           type="button"
           className="btn btn--sm btn--ghost btn--danger"
@@ -206,6 +226,8 @@ export function SavedVials({
   vials,
   owners,
   measurements = [],
+  allVials,
+  allMeasurements,
   todayIso,
   nowTime,
   onUpdate,
@@ -215,6 +237,7 @@ export function SavedVials({
   onRemoveDose,
   onDelete,
   onGoToCalculator,
+  onOpenGlp1,
 }: SavedVialsProps) {
   const { lang, strings } = useI18n();
   const [filter, setFilter] = useLocalStorage<KindFilter>(STORAGE_KEYS.kindFilter, 'all');
@@ -283,7 +306,14 @@ export function SavedVials({
 
   /** Downloads every saved vial as a JSON file — encrypted when a passphrase is set. */
   const handleBackup = async () => {
-    const plain = serializeBackup(vials, new Date().toISOString(), owners, measurements);
+    // Everyone and everything: a backup is a copy of the device, not of the
+    // person whose stack happens to be on screen.
+    const plain = serializeBackup(
+      allVials ?? vials,
+      new Date().toISOString(),
+      owners,
+      allMeasurements ?? measurements,
+    );
 
     let text = plain;
     if (passphrase !== '') {
@@ -448,6 +478,7 @@ export function SavedVials({
                 onDelete={onDelete}
                 supply={supplyById.get(vial.id)}
                 ratioMismatch={ratioOutliers.has(vial.id)}
+                onOpenGlp1={onOpenGlp1}
               />
             ) : (
               <VialCardLegacy
@@ -459,6 +490,7 @@ export function SavedVials({
                 onAddDose={onAddDose}
                 onRemoveDose={onRemoveDose}
                 onDelete={onDelete}
+                onOpenGlp1={onOpenGlp1}
               />
             );
           })}
@@ -468,6 +500,7 @@ export function SavedVials({
       <div className="backup">
         <p className="backup__title">{strings.backup.title}</p>
         <p className="backup__note">{strings.backup.note}</p>
+        <p className="backup__note">{strings.backup.scope}</p>
         <p className="backup__notice">
           {lastBackup
             ? interpolate(strings.backup.lastAt, { when: formatDate(lastBackup.slice(0, 10), LOCALES[lang]) })

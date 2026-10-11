@@ -87,4 +87,32 @@ describe('PrintSheet (server render)', () => {
   it('carries the disclaimer onto the paper', () => {
     expect(render([makeVial()])).toContain('not medical advice');
   });
+
+  it('adds the pre-use checklist only when a GLP-1 vial has a plan', () => {
+    const glp1 = makeVial({ id: 'g1', name: 'Tirzepatide', kind: 'glp1', device: 'pen', clicksPerMl: 60 });
+    const withGlp1 = render([glp1]);
+
+    expect(withGlp1).toContain(DICTIONARIES.en.print.glp1Title);
+    expect(withGlp1).toContain(DICTIONARIES.en.glp1.checks.items[0].title);
+
+    // On a peptide sheet it would be noise, so it is not printed at all.
+    expect(render([makeVial()])).not.toContain(DICTIONARIES.en.print.glp1Title);
+  });
+
+  it('prints the routine for the device actually in use — and both when both are', () => {
+    const pen = render([makeVial({ id: 'g1', kind: 'glp1', device: 'pen', clicksPerMl: 60 })]);
+    expect(pen).toContain(DICTIONARIES.en.glp1.routine.pen.title);
+    expect(pen).not.toContain(DICTIONARIES.en.glp1.routine.vial.title);
+
+    const drawn = render([makeVial({ id: 'g2', kind: 'glp1' })]);
+    expect(drawn).toContain(DICTIONARIES.en.glp1.routine.vial.title);
+    expect(drawn).not.toContain(DICTIONARIES.en.glp1.routine.pen.title);
+
+    const both = render([
+      makeVial({ id: 'g1', kind: 'glp1', device: 'pen', clicksPerMl: 60 }),
+      makeVial({ id: 'g2', kind: 'glp1' }),
+    ]);
+    expect(both).toContain(DICTIONARIES.en.glp1.routine.pen.title);
+    expect(both).toContain(DICTIONARIES.en.glp1.routine.vial.title);
+  });
 });

@@ -1,5 +1,5 @@
 import { LOCALES, interpolate } from '../i18n';
-import type { Strings } from '../i18n/types';
+import type { RoutineCopy, Strings } from '../i18n/types';
 import { useI18n } from '../i18n/I18nContext';
 import { unitsPerMlOf } from '../lib/calc';
 import { fmt, formatDate, weekdayShort } from '../lib/format';
@@ -98,6 +98,16 @@ export function PrintSheet({ vials, ownerName, todayIso }: PrintSheetProps) {
     }));
   });
 
+  /*
+   * The routines are printed for the route actually in use: a pen user gets the
+   * pen steps, a vial user the vial steps, and a household with both gets both.
+   * The check list is identical either way, so it is printed once.
+   */
+  const glp1 = planned.filter((vial) => vialKind(vial) === 'glp1');
+  const routines: RoutineCopy[] = [];
+  if (glp1.some((vial) => vial.device === 'pen')) routines.push(strings.glp1.routine.pen);
+  if (glp1.some((vial) => vial.device !== 'pen')) routines.push(strings.glp1.routine.vial);
+
   return (
     <section className="print-sheet" aria-hidden="true">
       <header className="print-sheet__head">
@@ -145,6 +155,44 @@ export function PrintSheet({ vials, ownerName, todayIso }: PrintSheetProps) {
           <LabelSticker key={vial.id} vial={vial} todayIso={todayIso} />
         ))}
       </ul>
+
+      {/*
+        A checklist belongs on the fridge, and this class is used at home with no
+        clinician in the room. Printed only when one of the plans is a GLP-1 vial
+        — on any other sheet it would be noise.
+      */}
+      {glp1.length > 0 ? (
+        <section className="print-sheet__glp1">
+          <h2 className="print-sheet__subtitle">{copy.glp1Title}</h2>
+          <p className="print-sheet__glp1-note">{copy.glp1Hint}</p>
+
+          <div className="print-sheet__cols">
+            {routines.map((routine) => (
+              <div className="print-sheet__col" key={routine.title}>
+                <h3 className="print-sheet__h3">{routine.title}</h3>
+                <ol className="print-sheet__steps">
+                  {routine.steps.map((step, index) => (
+                    <li key={`${step.title}-${index}`}>
+                      <span className="print-sheet__num">{index + 1}</span>
+                      {step.title}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+
+          <h3 className="print-sheet__h3">{strings.glp1.checks.title}</h3>
+          <ul className="print-sheet__checks">
+            {strings.glp1.checks.items.map((item, index) => (
+              <li key={`${item.title}-${index}`}>
+                <span className="print-sheet__box" aria-hidden="true" />
+                {item.title}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <p className="print-sheet__note">{strings.disclaimer.body}</p>
     </section>

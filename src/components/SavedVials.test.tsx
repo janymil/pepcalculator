@@ -60,7 +60,7 @@ function anabolicVial(overrides: Partial<SavedVial> = {}): SavedVial {
   };
 }
 
-function render(vials: SavedVial[]): string {
+function render(vials: SavedVial[], onOpenGlp1?: () => void): string {
   return renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
       <SavedVials
@@ -74,6 +74,7 @@ function render(vials: SavedVial[]): string {
         onAddDose={() => {}}
         onRemoveDose={() => {}}
         onDelete={() => {}}
+        onOpenGlp1={onOpenGlp1}
       />
     </I18nProvider>,
   );
@@ -103,5 +104,21 @@ describe('SavedVials page (server render smoke test)', () => {
   it('shows the 28-day use-by for peptides', () => {
     const html = render([peptideVial()]);
     expect(html).not.toContain(DICTIONARIES.en.vials.noExpiry);
+  });
+
+  it('says what a backup contains, so nobody assumes it is one person', () => {
+    expect(render([peptideVial()])).toContain(DICTIONARIES.en.backup.scope);
+  });
+
+  it('offers the GLP-1 care page from a GLP-1 vial', () => {
+    const label = DICTIONARIES.en.glp1.openPage;
+    const glp1 = peptideVial({ id: 'g1', name: 'Tirzepatide', kind: 'glp1' });
+
+    const html = render([glp1], () => {});
+    // Shown without expanding the card, and shown exactly once.
+    expect(html.split(`>${label}</button>`).length - 1).toBe(1);
+
+    // Not on a peptide card: the link is only useful where the class is used.
+    expect(render([peptideVial()], () => {})).not.toContain(label);
   });
 });

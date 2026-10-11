@@ -275,6 +275,7 @@ export const en: Strings = {
     errorEncrypted: 'That backup is encrypted. Enter the passphrase you used.',
     errorWrongPassphrase: 'That passphrase does not open this backup.',
     errorNoCrypto: 'Encryption needs a secure (https) connection.',
+    scope: 'A backup contains every person on this device, and the whole measurement log.',
   },
   plot: {
     title: 'Your protocol',
@@ -382,6 +383,7 @@ export const en: Strings = {
   glp1: {
     title: 'GLP-1 care',
     subtitle: 'Using it safely, following the change, and the questions worth asking.',
+    openPage: 'How to use it safely',
     note: 'This page is procedure and arithmetic. It is not medical advice, and it never replaces your prescriber or the leaflet that came with your medicine.',
     routine: {
       title: 'How to use it',
@@ -553,6 +555,12 @@ export const en: Strings = {
       wellBelow: 'Well below the range usually discussed',
       above: 'Above the range usually discussed',
     },
+    route: {
+      vial: 'Reconstituted vial',
+      pen: 'Prescribed pen',
+      vialIsNotPen:
+        'The cited range describes a reconstituted vial, not a pen, so it is not compared here.',
+    },
   },
   supply: {
     title: 'Supply',
@@ -592,6 +600,8 @@ export const en: Strings = {
     period: 'Period',
     vials: 'Vials',
     labels: 'Vial labels',
+    glp1Title: 'GLP-1 — before every use',
+    glp1Hint: 'Tick these off every time. The full wording is in the app, on the GLP-1 page.',
     labelRatio: '{amount} in {water} mL',
     empty: 'No saved plans to print yet.',
   },

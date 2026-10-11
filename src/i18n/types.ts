@@ -290,6 +290,11 @@ export interface Strings {
     errorEncrypted: string;
     errorWrongPassphrase: string;
     errorNoCrypto: string;
+    /**
+     * What a backup actually contains — every person on the device, not just the
+     * one on screen. Said next to the button rather than discovered on restore.
+     */
+    scope: string;
   };
   /** Plots the user's own plan against a cited half-life. */
   plot: {
@@ -413,6 +418,8 @@ export interface Strings {
   glp1: {
     title: string;
     subtitle: string;
+    /** Button on a GLP-1 vial card that opens this page. */
+    openPage: string;
     /** The strong reminder, in the same voice as the Reference page. */
     note: string;
     routine: {
@@ -561,6 +568,17 @@ export interface Strings {
       wellBelow: string;
       above: string;
     };
+    /**
+     * Which route the cited figures describe. A reconstituted vial and a
+     * prescribed pen are not interchangeable, so a range that belongs to one
+     * must never be read as the other.
+     */
+    route: {
+      vial: string;
+      pen: string;
+      /** Said instead of a range verdict when the two routes do not match. */
+      vialIsNotPen: string;
+    };
   };
   /**
    * The supply outlook on the Vials page: how long the stack lasts, which vials
@@ -628,6 +646,12 @@ export interface Strings {
     vials: string;
     /** Heading of the sticker strip. */
     labels: string;
+    /**
+     * Heading of the GLP-1 checklist, printed only when a GLP-1 vial has a plan.
+     */
+    glp1Title: string;
+    /** One line under it saying where the full wording lives. */
+    glp1Hint: string;
     /** A vial label's ratio line, e.g. "5 mg in 2 mL". */
     labelRatio: string;
     empty: string;
