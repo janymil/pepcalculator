@@ -23,8 +23,7 @@ Under version control, with a **private** remote:
 
 - **GitHub (private):** https://github.com/janymil/pepcalculator
 - **Remote:** `origin` → `https://github.com/janymil/pepcalculator.git`
-- **Branch:** `main`, tracking `origin/main`
-- Latest commit when this was written: `f4c51b6` — "Add PWA, multi-page navigation and saved anabolics"
+- **Branch:** `main`, tracking `origin/main` — run `git log --oneline -5` for the latest commits
 
 ```bash
 git clone https://github.com/janymil/pepcalculator.git   # private: needs your GitHub access
