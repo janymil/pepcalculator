@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
-import { buildCurve, peakOf } from '../lib/pk';
+import { buildCurve, concentrationAt, peakOf } from '../lib/pk';
 import { COMPOUNDS, formatRange, type CompoundClass, type CompoundReference } from '../lib/reference';
 
 /** How many simulation hours the tiny decay chart shows. */
@@ -24,17 +24,20 @@ function DecayChart({ compound, ariaLabel }: DecayChartProps) {
   const midMg = (compound.typicalLowMg + compound.typicalHighMg) / 2;
   const doseMg = compound.unit === 'mcg' ? midMg / 1000 : midMg;
   const intervalHours = compound.halfLifeHours * 4;
+  const schedule = { doseMg, intervalHours, halfLifeHours: compound.halfLifeHours, doses: 4 };
 
-  const curve = buildCurve(
-    { doseMg, intervalHours, halfLifeHours: compound.halfLifeHours, doses: 4 },
-    CHART_HOURS,
-    CHART_STEP,
-  );
+  const curve = buildCurve(schedule, CHART_HOURS, CHART_STEP);
   const peak = peakOf(curve) || 1;
 
   const x = (hour: number) => (hour / CHART_HOURS) * CHART_W;
   const y = (amount: number) => CHART_H - (amount / peak) * (CHART_H - 6) - 3;
   const path = curve.map((point) => `${x(point.hour)},${y(point.amountMg)}`).join(' ');
+
+  // Faint day gridlines, plus a dot at the start of each modelled dose.
+  const gridHours = [0, 24, 48, 72].filter((hour) => hour <= CHART_HOURS);
+  const doseHours = [0, 1, 2, 3]
+    .map((index) => index * intervalHours)
+    .filter((hour) => hour <= CHART_HOURS);
 
   return (
     <svg
@@ -44,8 +47,21 @@ function DecayChart({ compound, ariaLabel }: DecayChartProps) {
       aria-label={ariaLabel}
       preserveAspectRatio="none"
     >
+      {gridHours.map((hour) => (
+        <line key={hour} className="ref__grid" x1={x(hour)} y1={0} x2={x(hour)} y2={CHART_H} />
+      ))}
       <polyline className="ref__chart-area" points={`0,${CHART_H} ${path} ${CHART_W},${CHART_H}`} />
       <polyline className="ref__chart-line" points={path} />
+      <line className="ref__axis" x1={0} y1={CHART_H} x2={CHART_W} y2={CHART_H} />
+      {doseHours.map((hour) => (
+        <circle
+          key={hour}
+          className="ref__dose"
+          cx={x(hour)}
+          cy={y(concentrationAt(schedule, hour))}
+          r={2.4}
+        />
+      ))}
     </svg>
   );
 }

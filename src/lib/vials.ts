@@ -306,3 +306,45 @@ export function clearAllVials(vials: SavedVial[], deletedAt: string): SavedVial[
   });
   return changed ? cleared : vials;
 }
+
+/** How the Vials page is ordered. */
+export type VialSort = 'newest' | 'name' | 'expiry';
+
+/** Case-insensitive name search; a blank query returns the list untouched. */
+export function searchVials(vials: SavedVial[], query: string): SavedVial[] {
+  const needle = query.trim().toLowerCase();
+  if (needle === '') return vials;
+  return vials.filter((vial) => (vial.name || '').toLowerCase().includes(needle));
+}
+
+/**
+ * Returns a sorted copy of the list:
+ *  - `newest`  — most recently changed first (`updatedAt`, then mix date),
+ *  - `name`    — locale-aware, A→Z,
+ *  - `expiry`  — soonest use-by first, with expiring-less oils last.
+ */
+export function sortVials(vials: SavedVial[], sort: VialSort, todayIso: string): SavedVial[] {
+  const list = [...vials];
+
+  if (sort === 'name') {
+    list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return list;
+  }
+
+  if (sort === 'expiry') {
+    list.sort((a, b) => {
+      const left = vialStatus(a, todayIso).daysUntilExpiry;
+      const right = vialStatus(b, todayIso).daysUntilExpiry;
+      if (left === null && right === null) return 0;
+      if (left === null) return 1;
+      if (right === null) return -1;
+      return left - right;
+    });
+    return list;
+  }
+
+  list.sort((a, b) =>
+    (b.updatedAt ?? b.reconstitutedOn ?? '').localeCompare(a.updatedAt ?? a.reconstitutedOn ?? ''),
+  );
+  return list;
+}

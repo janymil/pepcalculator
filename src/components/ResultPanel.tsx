@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { useCountUp } from '../hooks/useCountUp';
 import type { CalcResult, DoseUnit, MeasureSystem } from '../lib/calc';
 import { fromMg } from '../lib/calc';
 import { fmt, parseNumber } from '../lib/format';
 import { AlertList } from './AlertList';
+import { Icon } from './Icon';
 import { SyringeVisual } from './SyringeVisual';
 
 interface ResultPanelProps {
@@ -39,6 +41,10 @@ export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPan
       ? result.concentrationMgPerMl * inverseVolumeMl
       : 0;
   const inverseDose = fromMg(inverseDoseMg, doseUnit);
+
+  // The headline number eases to its new value (first paint is never animated).
+  const animatedUnits = useCountUp(result.units);
+  const animatedVolume = useCountUp(result.volumeMl);
 
   const stats: StatItem[] = [
     {
@@ -81,7 +87,7 @@ export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPan
         aria-pressed={inverseOn}
         onClick={() => setInverseOn((current) => !current)}
       >
-        ⇄ {strings.inverse.title}
+        <Icon name="swap" size={15} /> {strings.inverse.title}
       </button>
 
       {inverseOn ? (
@@ -114,13 +120,13 @@ export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPan
 
       {result.ok ? (
         <>
-          <div className="hero" aria-live="polite">
+          <div className="hero">
             <p className="hero__eyebrow">
               {byVolume ? strings.results.drawVolumeLabel : strings.results.drawUnitsLabel}
             </p>
             <p className="hero__value">
               <span className="hero__number">
-                {byVolume ? fmt.volume(result.volumeMl) : fmt.units(result.units)}
+                {byVolume ? fmt.volume(animatedVolume) : fmt.units(animatedUnits)}
               </span>
               <span className="hero__unit">
                 {byVolume ? strings.units.ml : strings.results.unitsWord}
@@ -130,6 +136,13 @@ export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPan
               {byVolume
                 ? strings.results.drawUnitsSub
                 : `${fmt.volume(result.volumeMl)} ${strings.units.ml} · ${strings.results.drawUnitsSub}`}
+            </p>
+            {/* Announced once per change, not on every animation frame. */}
+            <p className="visually-hidden" role="status">
+              {byVolume ? strings.results.drawVolumeLabel : strings.results.drawUnitsLabel}
+              {': '}
+              {byVolume ? fmt.volume(result.volumeMl) : fmt.units(result.units)}{' '}
+              {byVolume ? strings.units.ml : strings.results.unitsWord}
             </p>
           </div>
 
@@ -151,7 +164,7 @@ export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPan
       ) : (
         <div className="empty">
           <span className="empty__icon" aria-hidden="true">
-            🧪
+            <Icon name="flask" size={26} />
           </span>
           <p className="empty__title">{strings.results.empty}</p>
           <p className="empty__hint">{strings.results.emptyHint}</p>

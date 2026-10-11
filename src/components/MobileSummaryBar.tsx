@@ -1,6 +1,8 @@
 import { useI18n } from '../i18n/I18nContext';
+import { useCountUp } from '../hooks/useCountUp';
 import type { CalcResult, MeasureSystem } from '../lib/calc';
 import { fmt } from '../lib/format';
+import { Icon } from './Icon';
 
 interface MobileSummaryBarProps {
   result: CalcResult;
@@ -16,15 +18,18 @@ interface MobileSummaryBarProps {
 export function MobileSummaryBar({ result, measure }: MobileSummaryBarProps) {
   const { strings } = useI18n();
   const byVolume = measure === 'volume';
+  const animated = useCountUp(byVolume ? result.volumeMl : result.units);
 
   return (
     <div className="summary-bar" aria-hidden="true">
-      <span className="summary-bar__icon">💉</span>
+      <span className="summary-bar__icon">
+        <Icon name="syringe" size={18} />
+      </span>
       {result.ok ? (
         <span className="summary-bar__body">
           <span className="summary-bar__label">{strings.summary.draw}</span>
           <span className="summary-bar__value">
-            {byVolume ? fmt.volume(result.volumeMl) : fmt.units(result.units)}
+            {byVolume ? fmt.volume(animated) : fmt.units(animated)}
           </span>
           <span className="summary-bar__unit">
             {byVolume ? strings.units.ml : strings.results.unitsWord}

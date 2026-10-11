@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { unitsPerMlOf } from '../lib/calc';
@@ -15,6 +16,7 @@ import {
 import { vialKind, vialStatus, type SavedVial } from '../lib/vials';
 import { vialColor } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
+import { Icon } from './Icon';
 
 export interface VialCardProps {
   vial: SavedVial;
@@ -47,6 +49,8 @@ export function VialCard({
   onDelete,
 }: VialCardProps) {
   const { strings } = useI18n();
+  // The card is a scannable summary by default; the detail expands on demand.
+  const [expanded, setExpanded] = useState(false);
   const status = vialStatus(vial, todayIso);
   const schedule = vial.schedule;
   const anabolic = vialKind(vial) === 'anabolic';
@@ -106,6 +110,15 @@ export function VialCard({
           {anabolic ? strings.kinds.anabolic : strings.kinds.peptide}
         </span>
         <span className={`vial__badge vial__badge--${badgeTone}`}>{badgeText}</span>
+        <button
+          type="button"
+          className="vial__toggle"
+          aria-expanded={expanded}
+          aria-label={strings.vials.details}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <Icon name="chevronRight" size={18} />
+        </button>
       </div>
 
       <div className="vial__draw">
@@ -128,8 +141,10 @@ export function VialCard({
         )}
       </div>
 
-      {next ? (
-        <p className="vial__next">
+      {expanded ? (
+        <div className="vial__body">
+          {next ? (
+            <p className="vial__next">
           <span className="vial__next-label">{strings.schedule.nextDose}</span>
           <strong>
             {dayLabel(next)} · {next.time}
@@ -249,6 +264,8 @@ export function VialCard({
           {strings.vials.delete}
         </button>
       </div>
+        </div>
+      ) : null}
     </li>
   );
 }

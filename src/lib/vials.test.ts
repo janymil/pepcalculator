@@ -12,6 +12,8 @@ import {
   mergeVials,
   normalizeSavedVial,
   purgeTombstones,
+  searchVials,
+  sortVials,
   tombstoneVial,
   vialKind,
   vialStatus,
@@ -318,6 +320,43 @@ describe('purgeTombstones', () => {
 
   it('defaults to a 90-day retention window', () => {
     expect(TOMBSTONE_TTL_DAYS).toBe(90);
+  });
+});
+
+
+describe('searchVials / sortVials', () => {
+  const today = '2026-10-10';
+  const a = makeVial({ id: 'a', name: 'BPC-157', updatedAt: '2026-10-01T00:00:00.000Z' });
+  const b = makeVial({ id: 'b', name: 'TB-500', updatedAt: '2026-10-05T00:00:00.000Z' });
+  const oil = makeVial({
+    id: 'c',
+    name: 'Test E',
+    kind: 'anabolic',
+    vialMl: 10,
+    concentrationMgPerMl: 250,
+    reconstitutedOn: today,
+  });
+
+  it('returns everything for a blank query and matches names case-insensitively', () => {
+    expect(searchVials([a, b], '')).toHaveLength(2);
+    expect(searchVials([a, b], 'bpc').map((v) => v.id)).toEqual(['a']);
+    expect(searchVials([a, b], 'ZZZ')).toEqual([]);
+  });
+
+  it('sorts by most recently updated', () => {
+    expect(sortVials([a, b], 'newest', today).map((v) => v.id)).toEqual(['b', 'a']);
+  });
+
+  it('sorts by name', () => {
+    expect(sortVials([b, a], 'name', today).map((v) => v.name)).toEqual(['BPC-157', 'TB-500']);
+  });
+
+  it('sorts by expiry, soonest first, with oils last', () => {
+    // Both peptides expire on day 28 from their mix date; the oil never expires.
+    const soon = makeVial({ id: 'soon', name: 'Soon', reconstitutedOn: '2026-10-05' });
+    const later = makeVial({ id: 'later', name: 'Later', reconstitutedOn: '2026-10-10' });
+    const ids = sortVials([oil, later, soon], 'expiry', today).map((v) => v.id);
+    expect(ids).toEqual(['soon', 'later', 'c']);
   });
 });
 

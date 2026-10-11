@@ -12,8 +12,13 @@ const BARREL_TOP = 16;
 const BARREL_BOTTOM = 74;
 const BARREL_WIDTH = BARREL_RIGHT - BARREL_LEFT;
 
-/** Tick marks drawn along the barrel (fractions of the capacity). */
-const TICKS = [0, 0.25, 0.5, 0.75, 1];
+/** Graduations along the barrel: eighths, with every quarter a longer "major". */
+const TICKS = Array.from({ length: 9 }, (_, index) => index / 8);
+
+/** A tick is "major" at 0, 1/4, 1/2, 3/4 and 1 (float-tolerant). */
+function isMajorTick(tick: number): boolean {
+  return Math.abs(tick * 4 - Math.round(tick * 4)) < 1e-9;
+}
 
 /**
  * A friendly syringe illustration that fills proportionally to the calculated
@@ -87,17 +92,27 @@ export function SyringeVisual({ volumeMl, capacityMl, ariaLabel }: SyringeVisual
         {/* graduations */}
         {TICKS.map((tick) => {
           const x = BARREL_LEFT + tick * BARREL_WIDTH;
+          const major = isMajorTick(tick);
           return (
             <line
               key={tick}
               x1={x}
               y1={BARREL_TOP}
               x2={x}
-              y2={BARREL_TOP + 9}
-              className="syringe__tick"
+              y2={BARREL_TOP + (major ? 12 : 7)}
+              className={major ? 'syringe__tick' : 'syringe__tick syringe__tick--minor'}
             />
           );
         })}
+
+        {/* target marker: exactly where the plunger should sit */}
+        <line
+          x1={plungerX}
+          y1={BARREL_TOP - 5}
+          x2={plungerX}
+          y2={BARREL_BOTTOM + 5}
+          className="syringe__target"
+        />
       </svg>
 
       <figcaption className="syringe__caption">

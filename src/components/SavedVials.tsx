@@ -8,13 +8,17 @@ import { fmt, formatDate } from '../lib/format';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
 import {
   filterVialsByKind,
+  searchVials,
+  sortVials,
   vialKind,
   vialStatus,
   type KindFilter,
   type SavedVial,
+  type VialSort,
 } from '../lib/vials';
 import { vialColor } from '../lib/vialColors';
 import { KindFilterControl } from './KindFilterControl';
+import { Icon } from './Icon';
 import { VialCard } from './VialCard';
 import { VialEditor } from './VialEditor';
 
@@ -192,8 +196,10 @@ export function SavedVials({
   const [filter, setFilter] = useLocalStorage<KindFilter>(STORAGE_KEYS.kindFilter, 'all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<VialSort>('newest');
 
-  const visible = filterVialsByKind(vials, filter);
+  const visible = sortVials(searchVials(filterVialsByKind(vials, filter), query), sort, todayIso);
 
   const handleSaveEdit = (updated: SavedVial) => {
     onUpdate(updated);
@@ -245,12 +251,35 @@ export function SavedVials({
 
       <div className="vials__toolbar">
         <KindFilterControl value={filter} onChange={setFilter} />
+        <label className="vials__search">
+          <Icon name="search" size={16} />
+          <input
+            type="search"
+            value={query}
+            placeholder={strings.vials.search}
+            aria-label={strings.vials.search}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <label className="vials__sort">
+          <span className="visually-hidden">{strings.vials.sortLabel}</span>
+          <select
+            className="vials__sort-select"
+            value={sort}
+            aria-label={strings.vials.sortLabel}
+            onChange={(event) => setSort(event.target.value as VialSort)}
+          >
+            <option value="newest">{strings.vials.sortNewest}</option>
+            <option value="name">{strings.vials.sortName}</option>
+            <option value="expiry">{strings.vials.sortExpiry}</option>
+          </select>
+        </label>
       </div>
 
       {visible.length === 0 ? (
         <div className="empty">
           <span className="empty__icon" aria-hidden="true">
-            🧪
+            <Icon name="flask" size={26} />
           </span>
           <p className="empty__title">{strings.vials.empty}</p>
           <p className="empty__hint">{strings.vials.emptyHint}</p>
