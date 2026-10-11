@@ -282,6 +282,20 @@ export const en: Strings = {
     peptide: 'Peptides',
     anabolic: 'Anabolics',
   },
+  people: {
+    label: 'Whose stack',
+    me: 'Me',
+    add: 'Add person',
+    namePlaceholder: 'Name',
+    save: 'Save',
+    cancel: 'Cancel',
+    title: 'People',
+    subtitle:
+      'Each person has their own separate stack — vials, calendar and doses are never mixed together.',
+    vials: '{count} vials',
+    remove: 'Remove',
+    removeBlocked: 'Move or delete their vials first.',
+  },
   emptyCta: {
     goToCalculator: 'Open the calculator',
     createPlan: 'Create a plan',

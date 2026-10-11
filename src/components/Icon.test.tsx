@@ -6,6 +6,7 @@ const NAMES: IconName[] = [
   'sun',
   'moon',
   'pill',
+  'person',
   'calculator',
   'flask',
   'calendar',

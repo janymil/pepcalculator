@@ -282,6 +282,20 @@ export const sk: Strings = {
     peptide: 'Peptidy',
     anabolic: 'Anaboliká',
   },
+  people: {
+    label: 'Čia zásoba',
+    me: 'Ja',
+    add: 'Pridať osobu',
+    namePlaceholder: 'Meno',
+    save: 'Uložiť',
+    cancel: 'Zrušiť',
+    title: 'Osoby',
+    subtitle:
+      'Každá osoba má vlastnú oddelenú zásobu — fľaštičky, kalendár ani dávky sa nikdy nemiešajú.',
+    vials: '{count} fľaštičiek',
+    remove: 'Odstrániť',
+    removeBlocked: 'Najprv presuňte alebo vymažte jej fľaštičky.',
+  },
   emptyCta: {
     goToCalculator: 'Otvoriť kalkulačku',
     createPlan: 'Vytvoriť plán',

@@ -262,6 +262,24 @@ export interface Strings {
     peptide: string;
     anabolic: string;
   };
+  people: {
+    /** Accessible name for the person switcher. */
+    label: string;
+    /** Fallback name for the first (unnamed) person. */
+    me: string;
+    add: string;
+    namePlaceholder: string;
+    save: string;
+    cancel: string;
+    /** Settings panel heading. */
+    title: string;
+    subtitle: string;
+    /** Vial count next to a person, e.g. "{count} vials". */
+    vials: string;
+    remove: string;
+    /** Shown when a person still holds vials and cannot be removed. */
+    removeBlocked: string;
+  };
   emptyCta: {
     /** Button on the Vials empty state that jumps to the calculator. */
     goToCalculator: string;

@@ -12,6 +12,7 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'pill'
+  | 'person'
   | 'calculator'
   | 'flask'
   | 'calendar'
@@ -51,6 +52,12 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)" />
       <path d="M8.5 15.5l7-7" />
+    </>
+  ),
+  person: (
+    <>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20a7 7 0 0 1 14 0" />
     </>
   ),
   calculator: (

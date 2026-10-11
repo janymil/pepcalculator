@@ -284,6 +284,20 @@ export const es: Strings = {
     peptide: 'Péptidos',
     anabolic: 'Anabólicos',
   },
+  people: {
+    label: 'De quién es',
+    me: 'Yo',
+    add: 'Añadir persona',
+    namePlaceholder: 'Nombre',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    title: 'Personas',
+    subtitle:
+      'Cada persona tiene su propia reserva separada: los viales, el calendario y las dosis nunca se mezclan.',
+    vials: '{count} viales',
+    remove: 'Eliminar',
+    removeBlocked: 'Mueve o elimina antes sus viales.',
+  },
   emptyCta: {
     goToCalculator: 'Abrir la calculadora',
     createPlan: 'Crear un plan',
