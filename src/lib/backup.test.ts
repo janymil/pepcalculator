@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { BACKUP_APP_ID, backupFileName, parseBackup, serializeBackup } from './backup';
+import {
+  BACKUP_APP_ID,
+  backupFileName,
+  decryptBackup,
+  encryptBackup,
+  isEncryptedBackup,
+  parseBackup,
+  serializeBackup,
+} from './backup';
 import type { SavedVial } from './vials';
+
+/**
+ * These tests run a tiny PBKDF2 work factor. The real one is deliberately slow
+ * (200k iterations) and would make the suite crawl for no extra confidence.
+ */
+const FAST_ITERATIONS = 1_000;
 
 function makeVial(overrides: Partial<SavedVial> = {}): SavedVial {
   return {
@@ -139,5 +153,52 @@ describe('parseBackup', () => {
 describe('backupFileName', () => {
   it('includes the date', () => {
     expect(backupFileName('2026-10-10')).toBe('pepcalculator-backup-2026-10-10.json');
+  });
+});
+
+describe('encrypted backups', () => {
+  it('round-trips a backup through the passphrase', async () => {
+    const plain = serializeBackup([makeVial()], '2026-01-05T08:00:00.000Z');
+    const sealed = await encryptBackup(plain, 'correct horse', FAST_ITERATIONS);
+
+    expect(isEncryptedBackup(JSON.parse(sealed))).toBe(true);
+    // The point of the exercise: the file itself gives nothing away.
+    expect(sealed).not.toContain('BPC-157');
+
+    const opened = await decryptBackup(sealed, 'correct horse');
+    expect(opened.ok).toBe(true);
+    if (opened.ok) {
+      expect(opened.text).toBe(plain);
+      expect(parseBackup(opened.text).ok).toBe(true);
+    }
+  });
+
+  it('refuses the wrong passphrase instead of returning nonsense', async () => {
+    const sealed = await encryptBackup('{"app":"pepcalculator"}', 'right', FAST_ITERATIONS);
+
+    expect(await decryptBackup(sealed, 'wrong')).toEqual({ ok: false, reason: 'badPassphrase' });
+  });
+
+  it('never reuses a salt and initialisation vector', async () => {
+    const first = await encryptBackup('same text', 'pw', FAST_ITERATIONS);
+    const second = await encryptBackup('same text', 'pw', FAST_ITERATIONS);
+
+    expect(first).not.toBe(second);
+  });
+
+  it('reports text that is not an envelope at all', async () => {
+    expect(await decryptBackup('not json', 'pw')).toEqual({ ok: false, reason: 'badEnvelope' });
+    expect(await decryptBackup(JSON.stringify({ app: BACKUP_APP_ID }), 'pw')).toEqual({
+      ok: false,
+      reason: 'badEnvelope',
+    });
+  });
+
+  it('recognises only real envelopes', () => {
+    expect(isEncryptedBackup(null)).toBe(false);
+    expect(isEncryptedBackup({ app: BACKUP_APP_ID, encrypted: false })).toBe(false);
+    expect(
+      isEncryptedBackup({ app: BACKUP_APP_ID, encrypted: true, salt: 'a', iv: 'b', data: 'c' }),
+    ).toBe(true);
   });
 });

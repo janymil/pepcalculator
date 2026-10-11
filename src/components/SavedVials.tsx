@@ -3,7 +3,7 @@ import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { STORAGE_KEYS } from '../config/defaults';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { backupFileName, parseBackup, serializeBackup } from '../lib/backup';
+import { backupFileName, decryptBackup, encryptBackup, isEncryptedBackup, parseBackup, serializeBackup } from '../lib/backup';
 import { daysBetween } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
 import type { Owner } from '../lib/owners';
@@ -35,6 +35,15 @@ const INITIAL_SCHEDULE: VialSchedule = {
   durationValue: 4,
   durationUnit: 'weeks',
 };
+
+/** True when the file's text is a passphrase-protected envelope. */
+function looksEncrypted(text: string): boolean {
+  try {
+    return isEncryptedBackup(JSON.parse(text));
+  } catch {
+    return false;
+  }
+}
 
 interface SavedVialsProps {
   /** Live vials (all kinds) for the selected person — tombstones filtered out. */
@@ -206,6 +215,7 @@ export function SavedVials({
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<VialSort>('newest');
   const [lastBackup, setLastBackup] = useLocalStorage<string>(STORAGE_KEYS.lastBackup, '');
+  const [passphrase, setPassphrase] = useState('');
 
   const visible = sortVials(searchVials(filterVialsByKind(vials, filter), query), sort, todayIso);
 
@@ -256,11 +266,22 @@ export function SavedVials({
     setEditingId(null);
   };
 
-  /** Downloads every saved vial as a JSON file. */
-  const handleBackup = () => {
-    const blob = new Blob([serializeBackup(vials, new Date().toISOString(), owners)], {
-      type: 'application/json',
-    });
+  /** Downloads every saved vial as a JSON file — encrypted when a passphrase is set. */
+  const handleBackup = async () => {
+    const plain = serializeBackup(vials, new Date().toISOString(), owners);
+
+    let text = plain;
+    if (passphrase !== '') {
+      try {
+        text = await encryptBackup(plain, passphrase);
+      } catch {
+        // Only reachable when WebCrypto is unavailable (a plain-http origin).
+        setNotice(strings.backup.errorNoCrypto);
+        return;
+      }
+    }
+
+    const blob = new Blob([text], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -277,8 +298,30 @@ export function SavedVials({
     event.target.value = '';
     if (!file) return;
 
-    void file.text().then((text) => {
-      const result = parseBackup(text);
+    void file.text().then(async (text) => {
+      // An encrypted backup has to be opened before it can be parsed, so this
+      // step comes first — and a missing passphrase is reported, not guessed.
+      let readable = text;
+      if (looksEncrypted(text)) {
+        if (passphrase === '') {
+          setNotice(strings.backup.errorEncrypted);
+          return;
+        }
+        const opened = await decryptBackup(text, passphrase);
+        if (!opened.ok) {
+          setNotice(
+            opened.reason === 'badPassphrase'
+              ? strings.backup.errorWrongPassphrase
+              : opened.reason === 'noCrypto'
+                ? strings.backup.errorNoCrypto
+                : strings.backup.errorNotABackup,
+          );
+          return;
+        }
+        readable = opened.text;
+      }
+
+      const result = parseBackup(readable);
       if (result.ok) {
         onRestore(result.vials, result.owners);
         setNotice(interpolate(strings.backup.restored, { count: result.vials.length }));
@@ -402,8 +445,20 @@ export function SavedVials({
             {interpolate(strings.backup.nudge, { days: backupAge })}
           </p>
         ) : null}
+
+        <label className="backup__passphrase">
+          <span className="field__label">{strings.backup.passphrase}</span>
+          <input
+            className="field__input"
+            type="password"
+            value={passphrase}
+            autoComplete="new-password"
+            onChange={(event) => setPassphrase(event.target.value)}
+          />
+          <span className="backup__hint">{strings.backup.passphraseHint}</span>
+        </label>
         <div className="backup__actions">
-          <button type="button" className="btn btn--sm" onClick={handleBackup}>
+          <button type="button" className="btn btn--sm" onClick={() => void handleBackup()}>
             {strings.backup.download}
           </button>
           <label className="btn btn--sm btn--ghost">

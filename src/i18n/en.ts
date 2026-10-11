@@ -233,6 +233,12 @@ export const en: Strings = {
     never: 'No backup taken yet',
     lastAt: 'Last backup {when}',
     nudge: 'It has been {days} days since your last backup.',
+    passphrase: 'Passphrase (optional)',
+    passphraseHint:
+      'Set one and the downloaded file is encrypted — you will need the same passphrase to restore it.',
+    errorEncrypted: 'That backup is encrypted. Enter the passphrase you used.',
+    errorWrongPassphrase: 'That passphrase does not open this backup.',
+    errorNoCrypto: 'Encryption needs a secure (https) connection.',
   },
   sync: {
     title: 'Sync between devices',

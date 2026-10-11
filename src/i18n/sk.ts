@@ -233,6 +233,12 @@ export const sk: Strings = {
     never: 'Zatiaľ žiadna záloha',
     lastAt: 'Posledná záloha {when}',
     nudge: 'Od poslednej zálohy ubehlo {days} dní.',
+    passphrase: 'Heslo (nepovinné)',
+    passphraseHint:
+      'Ak ho nastavíte, stiahnutý súbor bude zašifrovaný — na obnovenie budete potrebovať to isté heslo.',
+    errorEncrypted: 'Táto záloha je zašifrovaná. Zadajte heslo, ktoré ste použili.',
+    errorWrongPassphrase: 'Toto heslo zálohu neotvorí.',
+    errorNoCrypto: 'Šifrovanie vyžaduje zabezpečené spojenie (https).',
   },
   sync: {
     title: 'Synchronizácia medzi zariadeniami',

@@ -218,6 +218,13 @@ export interface Strings {
     lastAt: string;
     /** Gentle reminder to take one again. Placeholder: `{days}`. */
     nudge: string;
+    /** Optional passphrase; when set, the downloaded file is encrypted. */
+    passphrase: string;
+    passphraseHint: string;
+    /** The chosen file is encrypted but no passphrase was entered. */
+    errorEncrypted: string;
+    errorWrongPassphrase: string;
+    errorNoCrypto: string;
   };
   sync: {
     title: string;

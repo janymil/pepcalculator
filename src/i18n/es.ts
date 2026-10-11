@@ -233,6 +233,12 @@ export const es: Strings = {
     never: 'Aún no hay ninguna copia',
     lastAt: 'Última copia {when}',
     nudge: 'Han pasado {days} días desde la última copia.',
+    passphrase: 'Contraseña (opcional)',
+    passphraseHint:
+      'Si la defines, el archivo descargado se cifra — necesitarás la misma contraseña para restaurarlo.',
+    errorEncrypted: 'Esa copia está cifrada. Introduce la contraseña que usaste.',
+    errorWrongPassphrase: 'Esa contraseña no abre esta copia.',
+    errorNoCrypto: 'El cifrado necesita una conexión segura (https).',
   },
   sync: {
     title: 'Sincronizar entre dispositivos',

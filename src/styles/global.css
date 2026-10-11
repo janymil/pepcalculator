@@ -1428,6 +1428,18 @@ body {
   color: var(--text-muted);
 }
 
+.backup__passphrase {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.backup__hint {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
 /* ---------- recovery-code sync ---------- */
 .sync {
   display: flex;
