@@ -1,6 +1,8 @@
 import { useState, type ChangeEvent } from 'react';
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
+import { STORAGE_KEYS } from '../config/defaults';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { backupFileName, parseBackup, serializeBackup } from '../lib/backup';
 import { fmt, formatDate } from '../lib/format';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
@@ -37,6 +39,8 @@ interface SavedVialsProps {
   onAddDose: (id: string) => void;
   onRemoveDose: (id: string) => void;
   onDelete: (id: string) => void;
+  /** Jumps to the calculator from the empty state. */
+  onGoToCalculator?: () => void;
 }
 
 /** Fallback card for a vial that was saved without a dose plan. */
@@ -182,9 +186,10 @@ export function SavedVials({
   onAddDose,
   onRemoveDose,
   onDelete,
+  onGoToCalculator,
 }: SavedVialsProps) {
   const { lang, strings } = useI18n();
-  const [filter, setFilter] = useState<KindFilter>('all');
+  const [filter, setFilter] = useLocalStorage<KindFilter>(STORAGE_KEYS.kindFilter, 'all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -249,6 +254,11 @@ export function SavedVials({
           </span>
           <p className="empty__title">{strings.vials.empty}</p>
           <p className="empty__hint">{strings.vials.emptyHint}</p>
+          {onGoToCalculator ? (
+            <button type="button" className="btn btn--sm btn--accent empty__cta" onClick={onGoToCalculator}>
+              {strings.emptyCta.goToCalculator}
+            </button>
+          ) : null}
         </div>
       ) : (
         <ul className="vials">

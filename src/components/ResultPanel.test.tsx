@@ -14,7 +14,7 @@ import { ResultPanel } from './ResultPanel';
 function renderPanel(result: CalcResult, measure: MeasureSystem, capacityMl: number): string {
   return renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
-      <ResultPanel result={result} capacityMl={capacityMl} measure={measure} />
+      <ResultPanel result={result} capacityMl={capacityMl} measure={measure} doseUnit="mcg" />
     </I18nProvider>,
   );
 }

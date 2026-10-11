@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
-import type { CalcResult, MeasureSystem } from '../lib/calc';
-import { fmt } from '../lib/format';
+import type { CalcResult, DoseUnit, MeasureSystem } from '../lib/calc';
+import { fromMg } from '../lib/calc';
+import { fmt, parseNumber } from '../lib/format';
 import { AlertList } from './AlertList';
 import { SyringeVisual } from './SyringeVisual';
 
@@ -9,6 +11,8 @@ interface ResultPanelProps {
   capacityMl: number;
   /** `insulin` → headline in units; `volume` → headline in mL. */
   measure: MeasureSystem;
+  /** The dose unit the user picked — the inverse answer uses the same one. */
+  doseUnit: DoseUnit;
 }
 
 interface StatItem {
@@ -17,13 +21,24 @@ interface StatItem {
 }
 
 /** The right-hand column: the headline answer, the syringe and the details. */
-export function ResultPanel({ result, capacityMl, measure }: ResultPanelProps) {
+export function ResultPanel({ result, capacityMl, measure, doseUnit }: ResultPanelProps) {
   const { strings } = useI18n();
 
   // Peptides are measured with an insulin syringe, so the headline answer is
   // "how many units?". Anabolic oils are measured in mL, so the headline is
   // the volume itself — showing "units" there would be meaningless.
   const byVolume = measure === 'volume';
+
+  // Inverse mode: "I drew this much — what dose is that?" is derived live from
+  // the concentration and the volume the user types.
+  const [inverseOn, setInverseOn] = useState(false);
+  const [inverseVolume, setInverseVolume] = useState('');
+  const inverseVolumeMl = parseNumber(inverseVolume);
+  const inverseDoseMg =
+    result.concentrationMgPerMl > 0 && inverseVolumeMl > 0
+      ? result.concentrationMgPerMl * inverseVolumeMl
+      : 0;
+  const inverseDose = fromMg(inverseDoseMg, doseUnit);
 
   const stats: StatItem[] = [
     {
@@ -60,9 +75,46 @@ export function ResultPanel({ result, capacityMl, measure }: ResultPanelProps) {
         {strings.sections.results}
       </h2>
 
+      <button
+        type="button"
+        className={`result__inverse-toggle${inverseOn ? ' is-on' : ''}`}
+        aria-pressed={inverseOn}
+        onClick={() => setInverseOn((current) => !current)}
+      >
+        ⇄ {strings.inverse.title}
+      </button>
+
+      {inverseOn ? (
+        <div className="result__inverse">
+          <label className="field__label" htmlFor="inverse-volume">
+            {strings.results.volume}
+          </label>
+          <div className="field__control">
+            <input
+              id="inverse-volume"
+              className="field__input"
+              type="text"
+              inputMode="decimal"
+              value={inverseVolume}
+              onChange={(event) => setInverseVolume(event.target.value)}
+              placeholder={strings.inverse.volumePlaceholder}
+            />
+            <span className="field__suffix">{strings.units.ml}</span>
+          </div>
+          <p className="result__inverse-hint">{strings.inverse.hint}</p>
+          {inverseDose > 0 ? (
+            <p className="result__inverse-out">
+              <span className="result__inverse-label">{strings.inverse.dose}</span>
+              <span className="result__inverse-value">{fmt.mass(inverseDose)}</span>
+              <span className="result__inverse-unit">{doseUnit}</span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {result.ok ? (
         <>
-          <div className="hero">
+          <div className="hero" aria-live="polite">
             <p className="hero__eyebrow">
               {byVolume ? strings.results.drawVolumeLabel : strings.results.drawUnitsLabel}
             </p>

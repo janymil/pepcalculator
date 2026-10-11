@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
+import { STORAGE_KEYS } from '../config/defaults';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import {
   agendaForDay,
   agendaForMonth,
@@ -26,6 +28,8 @@ interface AgendaPageProps {
   vials: SavedVial[];
   todayIso: string;
   nowTime: string;
+  /** Jumps to the calculator from the empty state. */
+  onGoToCalculator?: () => void;
 }
 
 /** Short label for a pill inside a day cell (the full name lives in the title). */
@@ -40,11 +44,11 @@ function pillLabel(name: string, fallback: string): string {
  * `lib/vialColors.ts`), so the pills inside a day are recognisable at a glance;
  * only **today** gets a coloured background, the other days just carry pills.
  */
-export function AgendaPage({ vials, todayIso, nowTime }: AgendaPageProps) {
+export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: AgendaPageProps) {
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
 
-  const [filter, setFilter] = useState<KindFilter>('all');
+  const [filter, setFilter] = useLocalStorage<KindFilter>(STORAGE_KEYS.kindFilter, 'all');
   const [cursorIso, setCursorIso] = useState(todayIso);
   const [selectedIso, setSelectedIso] = useState(todayIso);
 
@@ -138,7 +142,21 @@ export function AgendaPage({ vials, todayIso, nowTime }: AgendaPageProps) {
       </div>
 
       {!hasPlan ? (
-        <p className="agenda__empty">{strings.agenda.empty}</p>
+        <div className="empty">
+          <span className="empty__icon" aria-hidden="true">
+            📅
+          </span>
+          <p className="empty__title">{strings.agenda.empty}</p>
+          {onGoToCalculator ? (
+            <button
+              type="button"
+              className="btn btn--sm btn--accent empty__cta"
+              onClick={onGoToCalculator}
+            >
+              {strings.emptyCta.createPlan}
+            </button>
+          ) : null}
+        </div>
       ) : (
         <>
           <div className="agenda__grid">

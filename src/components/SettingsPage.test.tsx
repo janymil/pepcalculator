@@ -23,6 +23,8 @@ const html = renderToString(
       installed={false}
       onToggleReminders={() => {}}
       onRequestPermission={() => {}}
+      hasVials={false}
+      onClearAll={() => {}}
     />
   </I18nProvider>,
 );

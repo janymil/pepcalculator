@@ -2,6 +2,7 @@ import { useI18n } from '../i18n/I18nContext';
 import type { NotificationPermissionState } from '../lib/pwa';
 import type { UpcomingDose } from '../lib/reminders';
 import type { SyncFailure } from '../lib/sync';
+import { DangerZone } from './DangerZone';
 import { RemindersPanel } from './RemindersPanel';
 import { SyncPanel } from './SyncPanel';
 
@@ -24,6 +25,9 @@ interface SettingsPageProps {
   installed: boolean;
   onToggleReminders: (enabled: boolean) => void;
   onRequestPermission: () => void;
+  // --- danger zone ---
+  hasVials: boolean;
+  onClearAll: () => void;
 }
 
 /**
@@ -48,6 +52,8 @@ export function SettingsPage({
   installed,
   onToggleReminders,
   onRequestPermission,
+  hasVials,
+  onClearAll,
 }: SettingsPageProps) {
   const { strings } = useI18n();
 
@@ -81,6 +87,8 @@ export function SettingsPage({
         onToggle={onToggleReminders}
         onRequestPermission={onRequestPermission}
       />
+
+      <DangerZone hasData={hasVials} onClearAll={onClearAll} />
     </section>
   );
 }

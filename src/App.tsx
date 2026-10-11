@@ -2,12 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AgendaPage } from './components/AgendaPage';
 import { CalculatorForm } from './components/CalculatorForm';
 import { Footer } from './components/Footer';
+import { FirstRunCard, type ExampleSet } from './components/FirstRunCard';
 import { Header } from './components/Header';
+import { MobileSummaryBar } from './components/MobileSummaryBar';
 import { ModeTabs } from './components/ModeTabs';
+import { ReferencePage } from './components/ReferencePage';
 import { ResultPanel } from './components/ResultPanel';
 import { SaveVialForm } from './components/SaveVialForm';
 import { SavedVials } from './components/SavedVials';
 import { SettingsPage } from './components/SettingsPage';
+import { TodayDoseCard } from './components/TodayDose';
+import { Toast } from './components/Toast';
 import { ViewTabs } from './components/ViewTabs';
 import {
   DEFAULT_ANABOLIC_FORM,
@@ -31,6 +36,7 @@ import { syncWithServer, pushVials, type SyncFailure } from './lib/sync';
 import { hashForView, viewFromHash, type ViewId } from './lib/views';
 import {
   canSaveVial,
+  clearAllVials,
   createVialId,
   liveVials,
   mergeVials,
@@ -74,8 +80,25 @@ export default function App() {
     false,
   );
   const [view, setView] = useLocalStorage<ViewId>(STORAGE_KEYS.view, 'calculator');
+  const [firstRunDone, setFirstRunDone] = useLocalStorage<boolean>(STORAGE_KEYS.firstRunDone, false);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<SyncFailure | null>(null);
+
+  // One small undo toast at a time (delete a vial, clear everything).
+  const [toast, setToast] = useState<{ id: number; message: string; undo: () => void } | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  /** Shows an undoable toast and auto-clears it after a few seconds. */
+  const showUndo = (message: string, undo: () => void) => {
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    setToast({ id: Date.now(), message, undo });
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 6000);
+  };
+
+  const dismissToast = () => {
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    setToast(null);
+  };
 
   // Read once (matchMedia): true when the app runs as an installed PWA.
   const [installed] = useState(() => isStandalone());
@@ -124,7 +147,11 @@ export default function App() {
     root.dataset.mode = mode;
     root.lang = lang;
     root.style.colorScheme = theme;
-  }, [theme, mode, lang]);
+
+    // Keep the browser/PWA chrome (status bar) in step with the active theme.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', strings.theme.themeColor);
+  }, [theme, mode, lang, strings]);
 
   /*
    * The two pages live in the URL hash (`#calendar`), so the browser back button
@@ -243,7 +270,12 @@ export default function App() {
           doseAmount: parseNumber(anabolic.doseAmount),
         });
 
-  const handleSaveVial = (name: string, startedOn: string, schedule: VialSchedule) => {
+  const handleSaveVial = (
+    name: string,
+    startedOn: string,
+    schedule: VialSchedule,
+    cost?: { price?: number; currency?: string },
+  ) => {
     if (!canSaveCurrentVial) return;
 
     const base = {
@@ -254,6 +286,8 @@ export default function App() {
       syringeType: syringe.type,
       syringeCapacityMl: capacityMl,
       schedule,
+      price: cost?.price,
+      currency: cost?.currency,
       updatedAt: new Date().toISOString(),
     };
 
@@ -282,6 +316,15 @@ export default function App() {
           };
 
     setSavedVials((previous) => [vial, ...previous]);
+  };
+
+  /** Loads one of the built-in examples, so first-run numbers are a choice. */
+  const handleApplyExample = (example: ExampleSet) => {
+    if (example.peptide) setPeptide(example.peptide);
+    if (example.anabolic) setAnabolic(example.anabolic);
+    setMode(example.id);
+    setFirstRunDone(true);
+    changeView('calculator');
   };
 
   const handleLoadVial = (vial: SavedVial) => {
@@ -329,9 +372,28 @@ export default function App() {
   const handleDeleteVial = (id: string) => {
     // Soft delete: keep a tombstone so the removal reaches your other devices.
     const now = new Date().toISOString();
+    const target = savedVials.find((vial) => vial.id === id);
     setSavedVials((previous) =>
       previous.map((vial) => (vial.id === id ? tombstoneVial(vial, now) : vial)),
     );
+
+    // Offer a short undo window. The tombstone is reverted to the original
+    // record (without `deletedAt`) so the vial comes straight back.
+    if (target) {
+      showUndo(strings.toast.vialDeleted, () => {
+        setSavedVials((previous) =>
+          previous.map((vial) => (vial.id === id ? { ...target, deletedAt: undefined } : vial)),
+        );
+      });
+    }
+  };
+
+  /** Soft-deletes every live vial — the "clear all data" action. */
+  const handleClearAll = () => {
+    const now = new Date().toISOString();
+    const snapshot = savedVials;
+    setSavedVials((previous) => clearAllVials(previous, now));
+    showUndo(strings.toast.deletedAll, () => setSavedVials(snapshot));
   };
 
   const handleUpdateVial = (updated: SavedVial) => {
@@ -405,6 +467,10 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedVials, syncCode, syncServer]);
 
+  // The first-run card is only ever a welcome: it disappears once the user
+  // loads an example, dismisses it, or saves their first vial.
+  const showFirstRun = !firstRunDone && liveVialList.length === 0;
+
   return (
     <I18nProvider value={{ lang, setLang, strings }}>
       <div className="app">
@@ -417,7 +483,12 @@ export default function App() {
           <ViewTabs view={view} onChange={changeView} />
 
           {view === 'calendar' ? (
-            <AgendaPage vials={liveVialList} todayIso={todayIso} nowTime={nowTime} />
+            <AgendaPage
+              vials={liveVialList}
+              todayIso={todayIso}
+              nowTime={nowTime}
+              onGoToCalculator={() => changeView('calculator')}
+            />
           ) : view === 'vials' ? (
             <SavedVials
               vials={liveVialList}
@@ -429,6 +500,7 @@ export default function App() {
               onAddDose={handleAddDose}
               onRemoveDose={handleRemoveDose}
               onDelete={handleDeleteVial}
+              onGoToCalculator={() => changeView('calculator')}
             />
           ) : view === 'settings' ? (
             <SettingsPage
@@ -448,9 +520,25 @@ export default function App() {
               installed={installed}
               onToggleReminders={setRemindersEnabled}
               onRequestPermission={reminders.requestPermission}
+              hasVials={liveVialList.length > 0}
+              onClearAll={handleClearAll}
             />
+          ) : view === 'reference' ? (
+            <ReferencePage />
           ) : (
             <>
+              {showFirstRun ? (
+                <FirstRunCard onApply={handleApplyExample} onDismiss={() => setFirstRunDone(true)} />
+              ) : null}
+
+              <TodayDoseCard
+                vials={liveVialList}
+                todayIso={todayIso}
+                nowTime={nowTime}
+                onLoad={handleLoadVial}
+                onAddDose={handleAddDose}
+              />
+
               <ModeTabs mode={mode} onChange={setMode} />
 
               <div className="app__grid">
@@ -465,7 +553,12 @@ export default function App() {
                   onReset={handleReset}
                 />
 
-                <ResultPanel result={result} capacityMl={capacityMl} measure={measure} />
+                <ResultPanel
+                  result={result}
+                  capacityMl={capacityMl}
+                  measure={measure}
+                  doseUnit={mode === 'anabolic' ? anabolic.doseUnit : peptide.doseUnit}
+                />
               </div>
 
               {canSaveCurrentVial ? (
@@ -476,6 +569,19 @@ export default function App() {
         </main>
 
         <Footer />
+
+        {view === 'calculator' ? <MobileSummaryBar result={result} measure={measure} /> : null}
+
+        <Toast
+          key={toast?.id ?? 0}
+          message={toast?.message ?? ''}
+          actionLabel={strings.toast.undo}
+          onAction={() => {
+            toast?.undo();
+            dismissToast();
+          }}
+          onDismiss={dismissToast}
+        />
       </div>
     </I18nProvider>
   );
