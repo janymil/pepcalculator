@@ -255,3 +255,58 @@ describe('calculateAnabolic', () => {
     expect(r.warnings).toHaveLength(0);
   });
 });
+
+describe('inverse mode (draw → dose)', () => {
+  it('turns a drawn volume back into a dose for a peptide', () => {
+    // 5 mg / 2 mL = 2.5 mg/mL; drawing 0.1 mL -> 0.25 mg -> 250 mcg.
+    const r = calculatePeptide({
+      vialAmount: 5,
+      vialUnit: 'mg',
+      waterMl: 2,
+      doseAmount: 250,
+      doseUnit: 'mcg',
+      ...syringe(),
+      inverseVolumeMl: 0.1,
+      inverseDoseUnit: 'mcg',
+    });
+
+    expect(r.doseFromVolume).toBeCloseTo(250, 6);
+  });
+
+  it('turns a drawn volume back into a dose for an oil', () => {
+    const r = calculateAnabolic({
+      concentrationMgPerMl: 250,
+      doseAmount: 250,
+      doseUnit: 'mg',
+      vialMl: 10,
+      ...syringe('U100', 3),
+      inverseVolumeMl: 0.5,
+      inverseDoseUnit: 'mg',
+    });
+
+    expect(r.doseFromVolume).toBeCloseTo(125, 6);
+  });
+
+  it('has no answer without a volume or concentration', () => {
+    const noVolume = calculateAnabolic({
+      concentrationMgPerMl: 250,
+      doseAmount: 250,
+      doseUnit: 'mg',
+      vialMl: 10,
+      ...syringe('U100', 3),
+    });
+    expect(noVolume.doseFromVolume).toBeNull();
+
+    const noConcentration = calculateAnabolic({
+      concentrationMgPerMl: 0,
+      doseAmount: 250,
+      doseUnit: 'mg',
+      vialMl: 10,
+      ...syringe('U100', 3),
+      inverseVolumeMl: 1,
+      inverseDoseUnit: 'mg',
+    });
+    expect(noConcentration.doseFromVolume).toBeNull();
+  });
+});
+

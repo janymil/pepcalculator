@@ -5,6 +5,7 @@ const VIEW_ICONS: Record<ViewId, string> = {
   calculator: '🧮',
   vials: '🧪',
   calendar: '📅',
+  reference: '📖',
   settings: '⚙️',
 };
 

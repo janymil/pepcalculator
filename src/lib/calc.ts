@@ -64,6 +64,11 @@ export interface CalcResult {
   totalVialMg: number | null;
   /** How many full doses fit in one vial, when known. */
   dosesPerVial: number | null;
+  /**
+   * Inverse mode only: the dose (in `doseUnit`) obtained from a volume the user
+   * actually drew. `null` when the concentration or the volume is unusable.
+   */
+  doseFromVolume: number | null;
   warnings: CalcWarning[];
 }
 
@@ -116,6 +121,10 @@ interface AssembleArgs {
   warnings: CalcWarning[];
   /** Decides which "too small to measure" message fits this workflow. */
   measure: MeasureSystem;
+  /** Inverse mode: a volume the user actually drew, in mL. */
+  inverseVolumeMl?: number;
+  /** Inverse mode: the unit to express `doseFromVolume` in. */
+  inverseDoseUnit?: DoseUnit;
 }
 
 /** Shared tail-end of every calculation: derive volume, units and warnings. */
@@ -127,6 +136,8 @@ function assemble(args: AssembleArgs): CalcResult {
     unitsPerMl,
     syringeCapacityMl,
     measure,
+    inverseVolumeMl,
+    inverseDoseUnit,
   } = args;
   const warnings = [...args.warnings];
 
@@ -135,6 +146,13 @@ function assemble(args: AssembleArgs): CalcResult {
   const volumeMl = ready ? doseMg / concentrationMgPerMl : 0;
   const units = ready ? volumeMl * unitsPerMl : 0;
   const dosesPerVial = totalVialMg !== null && isPositive(doseMg) ? totalVialMg / doseMg : null;
+
+  // Inverse mode: "I drew this much — what dose is that?"
+  const doseFromVolume =
+    inverseVolumeMl !== undefined && inverseDoseUnit !== undefined &&
+    isPositive(concentrationMgPerMl) && isPositive(inverseVolumeMl)
+      ? fromMg(concentrationMgPerMl * inverseVolumeMl, inverseDoseUnit)
+      : null;
 
   if (ready) {
     if (totalVialMg !== null && doseMg > totalVialMg) {
@@ -174,6 +192,7 @@ function assemble(args: AssembleArgs): CalcResult {
     unitsPerMl,
     totalVialMg,
     dosesPerVial,
+    doseFromVolume,
     warnings,
   };
 }
@@ -189,6 +208,10 @@ export interface PeptideInput {
   doseUnit: DoseUnit;
   syringeType: SyringeTypeId;
   syringeCapacityMl: number;
+  /** Inverse mode: a volume the user drew, in mL. */
+  inverseVolumeMl?: number;
+  /** Inverse mode: unit to express the derived dose in. */
+  inverseDoseUnit?: DoseUnit;
 }
 
 /**
@@ -216,6 +239,8 @@ export function calculatePeptide(input: PeptideInput): CalcResult {
     syringeCapacityMl: input.syringeCapacityMl,
     warnings,
     measure: 'insulin',
+    inverseVolumeMl: input.inverseVolumeMl,
+    inverseDoseUnit: input.inverseDoseUnit,
   });
 }
 
@@ -228,6 +253,10 @@ export interface AnabolicInput {
   vialMl: number | null;
   syringeType: SyringeTypeId;
   syringeCapacityMl: number;
+  /** Inverse mode: a volume the user drew, in mL. */
+  inverseVolumeMl?: number;
+  /** Inverse mode: unit to express the derived dose in. */
+  inverseDoseUnit?: DoseUnit;
 }
 
 /**
@@ -257,5 +286,7 @@ export function calculateAnabolic(input: AnabolicInput): CalcResult {
     syringeCapacityMl: input.syringeCapacityMl,
     warnings,
     measure: 'volume',
+    inverseVolumeMl: input.inverseVolumeMl,
+    inverseDoseUnit: input.inverseDoseUnit,
   });
 }

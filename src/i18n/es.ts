@@ -3,7 +3,7 @@ import type { Strings } from './types';
 export const es: Strings = {
   appName: 'PepCalculator',
   tagline: 'Convierte una dosis en la cantidad exacta que debes extraer.',
-  theme: { light: 'Clara', dark: 'Oscura', label: 'Tema' },
+  theme: { light: 'Clara', dark: 'Oscura', label: 'Tema', themeColor: '#0d9488' },
   language: { label: 'Idioma' },
   sections: { inputs: 'Tus datos', syringe: 'Jeringa', results: 'Resultado' },
   modes: {
@@ -47,6 +47,10 @@ export const es: Strings = {
       label: 'Tamaño de la jeringa',
       hint: 'Lo máximo que puedes extraer en una jeringa.',
     },
+    vialPrice: {
+      label: 'Precio por vial (opcional)',
+      hint: 'Lo que costó el vial completo, para poder mostrar el coste por dosis.',
+    },
   },
   results: {
     drawUnitsLabel: 'Extrae hasta',
@@ -82,6 +86,45 @@ export const es: Strings = {
   disclaimer: {
     title: 'No es consejo médico',
     body: 'Esta herramienta solo hace los cálculos. No es consejo médico ni sustituye a un médico o a un farmacéutico. Verifica siempre tu dosis y tu medición.',
+    pointOfUse:
+      'Comprueba el vial, la jeringa y la dosis antes de cada inyección. Esta app solo calcula: no es consejo médico.',
+  },
+  firstRun: {
+    title: 'Estos números son solo un ejemplo',
+    body: 'La calculadora empieza con un vial de muestra de 5 mg para que veas cómo funciona. Sustitúyelos por los números de tu propio vial, o empieza con un ejemplo.',
+    exampleLabel: 'Probar un ejemplo',
+    examplePeptide: 'Péptido · 5 mg en 2 mL',
+    exampleAnabolic: 'Aceite anabólico · 250 mg/mL',
+    dismiss: 'Entendido',
+  },
+  today: {
+    title: 'Hoy',
+    next: 'Próxima dosis',
+    none: 'Hoy no hay nada programado.',
+    load: 'Cargar en la calculadora',
+    markTaken: 'Marcar como puesta',
+    taken: 'Puesta',
+    timeSeparator: ' · ',
+  },
+  summary: { draw: 'Extrae', nothing: 'Introduce tus datos' },
+  inverse: {
+    title: 'Extraje esto — ¿qué dosis es?',
+    hint: 'Introduce el volumen que extrajiste y la app calcula la dosis.',
+    dose: 'Eso es',
+    volumePlaceholder: '0,1',
+  },
+  toast: {
+    dismiss: 'Cerrar',
+    vialDeleted: 'Vial eliminado.',
+    deletedAll: 'Todos los viales eliminados.',
+    undo: 'Deshacer',
+  },
+  danger: {
+    title: 'Tus datos',
+    note: 'Todo se guarda solo en este navegador. Si lo borras, eliminarás todos los viales guardados en este dispositivo; descarga antes una copia de seguridad si quieres conservarlos.',
+    clear: 'Borrar todos los datos',
+    confirm: 'Toca otra vez para confirmar',
+    cleared: 'Se eliminaron todos los viales guardados.',
   },
   footer: {
     note: 'Funciona sin conexión · Solo se guardan en este navegador — descarga una copia de seguridad.',
@@ -113,6 +156,8 @@ export const es: Strings = {
     delete: 'Eliminar',
     budNote:
       'Solo orientativo: una vez mezclado con agua bacteriostática, un vial suele conservarse hasta 28 días. Consulta tu producto.',
+    costPerDose: 'Coste por dosis',
+    planCost: 'Coste del plan',
   },
   schedule: {
     title: '¿Cuándo lo tomas?',
@@ -223,6 +268,7 @@ export const es: Strings = {
     calculator: 'Calculadora',
     vials: 'Mis viales',
     calendar: 'Calendario',
+    reference: 'Referencia',
     settings: 'Ajustes',
   },
   kinds: {
@@ -230,6 +276,10 @@ export const es: Strings = {
     all: 'Todos',
     peptide: 'Péptidos',
     anabolic: 'Anabólicos',
+  },
+  emptyCta: {
+    goToCalculator: 'Abrir la calculadora',
+    createPlan: 'Crear un plan',
   },
   agenda: {
     subtitle: 'Todos tus planes guardados de un vistazo: qué días y a qué horas.',
@@ -248,5 +298,17 @@ export const es: Strings = {
     title: 'Ajustes',
     subtitle:
       'Sincronización entre dispositivos y recordatorios de dosis. Todo lo demás se queda en este dispositivo.',
+  },
+  reference: {
+    title: 'Referencia',
+    subtitle:
+      'Rangos y semividas citados habitualmente, solo como orientación: nunca como objetivo.',
+    typical: 'Rango típico',
+    cadence: 'Se suele tomar',
+    halfLife: 'Semivida',
+    water: 'Agua habitual',
+    halfLifeUnit: 'h',
+    halfLifeDaysUnit: 'días',
+    note: 'Son cifras redondeadas y ampliamente publicadas en la comunidad, usadas solo como ilustración. No son consejo médico ni sustituyen a un médico o farmacéutico.',
   },
 };

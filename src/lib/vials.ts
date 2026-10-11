@@ -49,6 +49,13 @@ export interface SavedVial {
   /** The dose this vial is being used for. */
   doseAmount: number;
   doseUnit: DoseUnit;
+  /**
+   * Optional price paid for the whole vial, in `currency`. Used to show
+   * cost-per-dose and what a plan will cost. Absent on older records.
+   */
+  price?: number;
+  /** Optional ISO-4217 currency code for `price`, e.g. `EUR`. */
+  currency?: string;
   /** How many doses have already been taken from this vial. */
   dosesTaken: number;
   syringeType: SyringeTypeId;
@@ -214,6 +221,8 @@ export function normalizeSavedVial(value: unknown): SavedVial {
     concentrationMgPerMl:
       typeof vial.concentrationMgPerMl === 'number' ? vial.concentrationMgPerMl : undefined,
     vialMl: typeof vial.vialMl === 'number' ? vial.vialMl : undefined,
+    price: typeof vial.price === 'number' && vial.price > 0 ? vial.price : undefined,
+    currency: typeof vial.currency === 'string' && vial.currency ? vial.currency : undefined,
   };
 }
 
@@ -280,4 +289,20 @@ export function purgeTombstones(
  */
 export function tombstoneVial(vial: SavedVial, deletedAt: string): SavedVial {
   return { ...vial, deletedAt, updatedAt: deletedAt };
+}
+
+/**
+ * Soft-deletes **every** live vial in one go — the "clear all my data" path.
+ * Already-tombstoned records are left as they are so their original deletion
+ * time is preserved. Returns the original array when there is nothing to clear,
+ * which keeps React state updates from firing needlessly.
+ */
+export function clearAllVials(vials: SavedVial[], deletedAt: string): SavedVial[] {
+  let changed = false;
+  const cleared = vials.map((vial) => {
+    if (vial.deletedAt) return vial;
+    changed = true;
+    return tombstoneVial(vial, deletedAt);
+  });
+  return changed ? cleared : vials;
 }

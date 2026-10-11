@@ -4,6 +4,7 @@ import {
   BUD_DAYS,
   TOMBSTONE_TTL_DAYS,
   canSaveVial,
+  clearAllVials,
   createVialId,
   filterVialsByKind,
   liveVials,
@@ -178,6 +179,23 @@ describe('tombstones (soft delete)', () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].deletedAt).toBeUndefined();
     expect(merged[0].name).toBe('Back again');
+  });
+
+  it('clearAllVials tombstones every live vial at once', () => {
+    const cleared = clearAllVials(
+      [makeVial(), makeVial({ id: 'v2' })],
+      '2026-02-01T00:00:00.000Z',
+    );
+    expect(liveVials(cleared)).toEqual([]);
+    expect(cleared.every((vial) => vial.deletedAt === '2026-02-01T00:00:00.000Z')).toBe(true);
+  });
+
+  it('clearAllVials leaves existing tombstones (and returns the same array when empty)', () => {
+    const already = makeVial({ id: 'old', deletedAt: '2026-01-01T00:00:00.000Z' });
+    const cleared = clearAllVials([already], '2026-02-01T00:00:00.000Z');
+    // The earlier deletion timestamp must survive, not be overwritten.
+    expect(cleared[0].deletedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(clearAllVials([], '2026-02-01T00:00:00.000Z')).toEqual([]);
   });
 });
 

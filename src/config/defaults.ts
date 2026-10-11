@@ -46,4 +46,6 @@ export const STORAGE_KEYS = {
   syncLast: 'pepcalc.v1.syncLast',
   reminders: 'pepcalc.v1.reminders',
   view: 'pepcalc.v1.view',
+  firstRunDone: 'pepcalc.v1.firstRunDone',
+  kindFilter: 'pepcalc.v1.kindFilter',
 } as const;

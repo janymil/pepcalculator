@@ -3,7 +3,7 @@ import type { Strings } from './types';
 export const en: Strings = {
   appName: 'PepCalculator',
   tagline: 'Turn a dose into the exact amount to draw.',
-  theme: { light: 'Light', dark: 'Dark', label: 'Theme' },
+  theme: { light: 'Light', dark: 'Dark', label: 'Theme', themeColor: '#0d9488' },
   language: { label: 'Language' },
   sections: { inputs: 'Your numbers', syringe: 'Syringe', results: 'Result' },
   modes: {
@@ -47,6 +47,10 @@ export const en: Strings = {
       label: 'Syringe size',
       hint: 'The most you can draw into one syringe.',
     },
+    vialPrice: {
+      label: 'Price per vial (optional)',
+      hint: 'What the whole vial cost, so the app can show cost per dose.',
+    },
   },
   results: {
     drawUnitsLabel: 'Draw to',
@@ -82,6 +86,45 @@ export const en: Strings = {
   disclaimer: {
     title: 'Not medical advice',
     body: 'This tool only does the maths. It is not medical advice and does not replace a doctor or pharmacist. Always double-check your dose and your measurement.',
+    pointOfUse:
+      'Check your vial, your syringe and your dose before every injection. This app only calculates — it is not medical advice.',
+  },
+  firstRun: {
+    title: 'These numbers are just an example',
+    body: 'The calculator starts with a sample 5 mg vial so you can see how it works. Replace them with the numbers from your own vial — or start from an example.',
+    exampleLabel: 'Try an example',
+    examplePeptide: 'Peptide · 5 mg in 2 mL',
+    exampleAnabolic: 'Anabolic oil · 250 mg/mL',
+    dismiss: 'Got it',
+  },
+  today: {
+    title: 'Today',
+    next: 'Next dose',
+    none: 'Nothing scheduled today.',
+    load: 'Load into calculator',
+    markTaken: 'Mark taken',
+    taken: 'Taken',
+    timeSeparator: ' · ',
+  },
+  summary: { draw: 'Draw', nothing: 'Enter your numbers' },
+  inverse: {
+    title: 'I drew this much — what dose is that?',
+    hint: 'Enter the volume you drew and the app works the dose back out.',
+    dose: 'That is',
+    volumePlaceholder: '0.1',
+  },
+  toast: {
+    dismiss: 'Dismiss',
+    vialDeleted: 'Vial deleted.',
+    deletedAll: 'All vials deleted.',
+    undo: 'Undo',
+  },
+  danger: {
+    title: 'Your data',
+    note: 'Everything lives only in this browser. Clearing it removes every saved vial on this device — download a backup first if you want to keep them.',
+    clear: 'Clear all data',
+    confirm: 'Tap again to confirm',
+    cleared: 'All saved vials were deleted.',
   },
   footer: {
     note: 'Works offline · Stored only in this browser — download a backup to keep your vials safe.',
@@ -113,6 +156,8 @@ export const en: Strings = {
     delete: 'Remove',
     budNote:
       'Guidance only: once mixed with bacteriostatic water a vial is usually kept for up to 28 days. Check your own product.',
+    costPerDose: 'Cost per dose',
+    planCost: 'Plan cost',
   },
   schedule: {
     title: 'When do you take it?',
@@ -221,6 +266,7 @@ export const en: Strings = {
     calculator: 'Calculator',
     vials: 'My vials',
     calendar: 'Calendar',
+    reference: 'Reference',
     settings: 'Settings',
   },
   kinds: {
@@ -228,6 +274,10 @@ export const en: Strings = {
     all: 'All',
     peptide: 'Peptides',
     anabolic: 'Anabolics',
+  },
+  emptyCta: {
+    goToCalculator: 'Open the calculator',
+    createPlan: 'Create a plan',
   },
   agenda: {
     subtitle: 'Every saved plan at a glance — which days, and at which hours.',
@@ -244,5 +294,16 @@ export const en: Strings = {
   settings: {
     title: 'Settings',
     subtitle: 'Sync between devices and dose reminders. Everything else stays on this device.',
+  },
+  reference: {
+    title: 'Reference',
+    subtitle: 'Commonly cited starting ranges and half-lives for orientation only — never a target.',
+    typical: 'Typical range',
+    cadence: 'Usually taken',
+    halfLife: 'Half-life',
+    water: 'Common water',
+    halfLifeUnit: 'h',
+    halfLifeDaysUnit: 'days',
+    note: 'These are rounded, widely published community figures used for illustration. They are not medical advice and must not replace a doctor or pharmacist.',
   },
 };

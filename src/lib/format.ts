@@ -63,4 +63,22 @@ export function monthLabel(locale: string, year: number, month: number): string 
   return new Date(year, month, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
+/**
+ * Formats an amount of money. Without a currency code it just shows the number
+ * (useful when the user hasn't told us their currency); with one, it uses the
+ * locale's symbol placement.
+ */
+export function formatMoney(value: number, locale = 'en-GB', currency?: string): string {
+  if (!Number.isFinite(value)) return '—';
+  if (currency) {
+    try {
+      return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+    } catch {
+      /* fall through to the plain number */
+    }
+  }
+  return formatNumber(value, 2);
+}
+
+
 

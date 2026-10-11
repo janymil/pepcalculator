@@ -37,13 +37,15 @@ describe('App (server render smoke test)', () => {
     expect(html).not.toContain('sync-title');
     expect(html).not.toContain('vials-title');
     expect(html).not.toContain('reminders-title');
+    expect(html).not.toContain('reference-title');
   });
 
-  it('renders the four-page switcher', () => {
-    expect(html.match(/views__tab/g)).toHaveLength(4);
+  it('renders the five-page switcher', () => {
+    expect(html.match(/views__tab/g)).toHaveLength(5);
     expect(html).toContain('Calculator');
     expect(html).toContain('My vials');
     expect(html).toContain('Calendar');
+    expect(html).toContain('Reference');
     expect(html).toContain('Settings');
   });
 

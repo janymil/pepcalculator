@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { VIEWS, hashForView, isViewId, viewFromHash } from './views';
 
 describe('views', () => {
-  it('lists the four pages', () => {
-    expect(VIEWS).toEqual(['calculator', 'vials', 'calendar', 'settings']);
+  it('lists the five pages', () => {
+    expect(VIEWS).toEqual(['calculator', 'vials', 'calendar', 'reference', 'settings']);
   });
 
   it('recognises a valid view id', () => {
     expect(isViewId('calculator')).toBe(true);
     expect(isViewId('vials')).toBe(true);
     expect(isViewId('calendar')).toBe(true);
+    expect(isViewId('reference')).toBe(true);
     expect(isViewId('settings')).toBe(true);
     expect(isViewId('nope')).toBe(false);
     expect(isViewId(undefined)).toBe(false);

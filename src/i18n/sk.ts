@@ -3,7 +3,7 @@ import type { Strings } from './types';
 export const sk: Strings = {
   appName: 'PepCalculator',
   tagline: 'Premeňte dávku na presné množstvo, ktoré natiahnete.',
-  theme: { light: 'Svetlá', dark: 'Tmavá', label: 'Vzhľad' },
+  theme: { light: 'Svetlá', dark: 'Tmavá', label: 'Vzhľad', themeColor: '#0d9488' },
   language: { label: 'Jazyk' },
   sections: { inputs: 'Vaše hodnoty', syringe: 'Striekačka', results: 'Výsledok' },
   modes: {
@@ -47,6 +47,10 @@ export const sk: Strings = {
       label: 'Veľkosť striekačky',
       hint: 'Najviac, koľko sa zmestí do jednej striekačky.',
     },
+    vialPrice: {
+      label: 'Cena za fľaštičku (nepovinné)',
+      hint: 'Koľko stála celá fľaštička, aby aplikácia vedela ukázať cenu za dávku.',
+    },
   },
   results: {
     drawUnitsLabel: 'Natiahnuť po',
@@ -82,6 +86,45 @@ export const sk: Strings = {
   disclaimer: {
     title: 'Toto nie je lekárska rada',
     body: 'Nástroj robí len výpočet. Nie je lekárskou radou a nenahrádza lekára ani lekárnika. Dávku aj meranie vždy dôkladne skontrolujte.',
+    pointOfUse:
+      'Pred každou injekciou skontrolujte fľaštičku, striekačku aj dávku. Aplikácia len počíta — nie je lekárskou radou.',
+  },
+  firstRun: {
+    title: 'Tieto čísla sú len príklad',
+    body: 'Kalkulačka začína so vzorovou 5 mg fľaštičkou, aby ste videli, ako funguje. Nahraďte ich číslami zo svojej fľaštičky — alebo začnite s príkladom.',
+    exampleLabel: 'Vyskúšať príklad',
+    examplePeptide: 'Peptid · 5 mg v 2 mL',
+    exampleAnabolic: 'Anabolický olej · 250 mg/mL',
+    dismiss: 'Rozumiem',
+  },
+  today: {
+    title: 'Dnes',
+    next: 'Najbližšia dávka',
+    none: 'Dnes nie je naplánované nič.',
+    load: 'Načítať do kalkulačky',
+    markTaken: 'Označiť ako podané',
+    taken: 'Podané',
+    timeSeparator: ' · ',
+  },
+  summary: { draw: 'Natiahnuť', nothing: 'Zadajte hodnoty' },
+  inverse: {
+    title: 'Natiahol som toľko — aká je to dávka?',
+    hint: 'Zadajte natiahnutý objem a aplikácia dopočíta dávku.',
+    dose: 'To je',
+    volumePlaceholder: '0,1',
+  },
+  toast: {
+    dismiss: 'Zavrieť',
+    vialDeleted: 'Fľaštička vymazaná.',
+    deletedAll: 'Všetky fľaštičky vymazané.',
+    undo: 'Späť',
+  },
+  danger: {
+    title: 'Vaše údaje',
+    note: 'Všetko je uložené len v tomto prehliadači. Vymazaním odstránite všetky uložené fľaštičky v tomto zariadení — ak si ich chcete ponechať, najprv si stiahnite zálohu.',
+    clear: 'Vymazať všetky údaje',
+    confirm: 'Potvrďte ďalším kliknutím',
+    cleared: 'Všetky uložené fľaštičky boli vymazané.',
   },
   footer: {
     note: 'Funguje offline · Údaje sú len v tomto prehliadači — stiahnite si zálohu, aby ste o ne neprišli.',
@@ -113,6 +156,8 @@ export const sk: Strings = {
     delete: 'Odstrániť',
     budNote:
       'Len orientačne: po nariedení bakteriostatickou vodou sa fľaštička zvyčajne používa najviac 28 dní. Overte si to pre svoj produkt.',
+    costPerDose: 'Cena za dávku',
+    planCost: 'Cena plánu',
   },
   schedule: {
     title: 'Kedy to užívate?',
@@ -221,6 +266,7 @@ export const sk: Strings = {
     calculator: 'Kalkulačka',
     vials: 'Moje fľaštičky',
     calendar: 'Kalendár',
+    reference: 'Prehľad',
     settings: 'Nastavenia',
   },
   kinds: {
@@ -228,6 +274,10 @@ export const sk: Strings = {
     all: 'Všetko',
     peptide: 'Peptidy',
     anabolic: 'Anaboliká',
+  },
+  emptyCta: {
+    goToCalculator: 'Otvoriť kalkulačku',
+    createPlan: 'Vytvoriť plán',
   },
   agenda: {
     subtitle: 'Všetky uložené plány na jednom mieste — v ktoré dni a v akých hodinách.',
@@ -246,5 +296,17 @@ export const sk: Strings = {
     title: 'Nastavenia',
     subtitle:
       'Synchronizácia medzi zariadeniami a pripomienky dávok. Všetko ostatné zostáva v tomto zariadení.',
+  },
+  reference: {
+    title: 'Prehľad',
+    subtitle:
+      'Bežne uvádzané rozsahy a polčasy len na orientáciu — nikdy nie ako cieľ.',
+    typical: 'Typický rozsah',
+    cadence: 'Zvyčajne sa berie',
+    halfLife: 'Polčas',
+    water: 'Bežná voda',
+    halfLifeUnit: 'h',
+    halfLifeDaysUnit: 'dní',
+    note: 'Toto sú zaokrúhlené, bežne publikované údaje z komunity, slúžia len na ilustráciu. Nie sú lekárskou radou a nenahrádzajú lekára ani lekárnika.',
   },
 };

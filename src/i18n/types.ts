@@ -25,7 +25,7 @@ export interface FieldCopy {
 export interface Strings {
   appName: string;
   tagline: string;
-  theme: { light: string; dark: string; label: string };
+  theme: { light: string; dark: string; label: string; themeColor: string };
   language: { label: string };
   sections: { inputs: string; syringe: string; results: string };
   modes: Record<ModeId, ModeCopy>;
@@ -37,6 +37,7 @@ export interface Strings {
     vialSize: FieldCopy;
     syringeType: FieldCopy;
     syringeCapacity: FieldCopy;
+    vialPrice: FieldCopy;
   };
   results: {
     drawUnitsLabel: string;
@@ -56,7 +57,45 @@ export interface Strings {
   warnings: Record<WarningCode, string>;
   actions: { reset: string };
   units: { mg: string; mcg: string; ml: string };
-  disclaimer: { title: string; body: string };
+  disclaimer: { title: string; body: string; pointOfUse: string };
+  firstRun: {
+    title: string;
+    body: string;
+    exampleLabel: string;
+    /** Example chips, shown above the mode tabs on a first visit. */
+    examplePeptide: string;
+    exampleAnabolic: string;
+    dismiss: string;
+  };
+  today: {
+    title: string;
+    next: string;
+    none: string;
+    load: string;
+    markTaken: string;
+    taken: string;
+    /** Joins a time to a day label, e.g. "09:00 · Today". */
+    timeSeparator: string;
+  };
+  summary: { draw: string; nothing: string };
+  inverse: {
+    /** Toggle/label for the "I drew X, what is that?" mode. */
+    title: string;
+    /** Hint under the drawn-volume input. */
+    hint: string;
+    /** Label above the derived dose. */
+    dose: string;
+    /** Placeholder for the drawn-volume input. */
+    volumePlaceholder: string;
+  };
+  toast: { dismiss: string; vialDeleted: string; deletedAll: string; undo: string };
+  danger: {
+    title: string;
+    note: string;
+    clear: string;
+    confirm: string;
+    cleared: string;
+  };
   footer: { note: string; version: string };
   vials: {
     title: string;
@@ -84,6 +123,10 @@ export interface Strings {
     removeDose: string;
     delete: string;
     budNote: string;
+    /** Cost of one dose, derived from the optional vial price. */
+    costPerDose: string;
+    /** Cost to finish the whole saved plan, derived from the vial price. */
+    planCost: string;
   };
   schedule: {
     title: string;
@@ -196,6 +239,7 @@ export interface Strings {
     calculator: string;
     vials: string;
     calendar: string;
+    reference: string;
     settings: string;
   };
   kinds: {
@@ -204,6 +248,12 @@ export interface Strings {
     all: string;
     peptide: string;
     anabolic: string;
+  };
+  emptyCta: {
+    /** Button on the Vials empty state that jumps to the calculator. */
+    goToCalculator: string;
+    /** Button on the Calendar empty state that jumps to the calculator. */
+    createPlan: string;
   };
   agenda: {
     subtitle: string;
@@ -223,5 +273,24 @@ export interface Strings {
   settings: {
     title: string;
     subtitle: string;
+  };
+  reference: {
+    title: string;
+    /** One-line explanation under the page title. */
+    subtitle: string;
+    /** Row label for the cited typical range of a compound. */
+    typical: string;
+    /** Row label for how often it is usually taken. */
+    cadence: string;
+    /** Row label for the elimination half-life. */
+    halfLife: string;
+    /** Row label for common reconstitution volumes. */
+    water: string;
+    /** Unit for a half-life under a day, e.g. "h". */
+    halfLifeUnit: string;
+    /** Unit for a half-life of a day or more, e.g. "days". */
+    halfLifeDaysUnit: string;
+    /** The strong reminder under the list that this is not advice. */
+    note: string;
   };
 }
