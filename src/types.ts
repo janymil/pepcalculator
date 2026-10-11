@@ -27,4 +27,7 @@ export interface SyringeSettings {
   capacityMl: number;
 }
 
+/** HGH/HCG use exactly the same fields as a peptide — only the units differ. */
+export type HormoneForm = PeptideForm;
+
 export type ThemeName = 'light' | 'dark';

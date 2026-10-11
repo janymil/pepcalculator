@@ -20,8 +20,13 @@ import type { MeasureSystem, ModeId } from '../lib/calc';
 export interface ModeMeta {
   id: ModeId;
   icon: IconName;
-  /** How the drawn amount is read off the syringe for this workflow. */
+  /** How the drawn amount is read off the device for this workflow. */
   measure: MeasureSystem;
+  /**
+   * True when the workflow is drawn with an *insulin* syringe, so the scale
+   * (U-100 / U-40 / U-50) is meaningful. Oils are read in mL on a plain barrel.
+   */
+  showSyringeScale: boolean;
   /** Syringe sizes (in mL) offered for this workflow. */
   capacities: readonly number[];
   /** Fallback used when a remembered capacity doesn't fit this workflow. */
@@ -33,6 +38,7 @@ export const MODES: readonly ModeMeta[] = [
     id: 'peptide',
     icon: 'dna',
     measure: 'insulin',
+    showSyringeScale: true,
     capacities: [0.3, 0.5, 1, 2, 3],
     defaultCapacityMl: 1,
   },
@@ -40,8 +46,20 @@ export const MODES: readonly ModeMeta[] = [
     id: 'anabolic',
     icon: 'syringe',
     measure: 'volume',
+    showSyringeScale: false,
     capacities: [1, 2, 3, 5, 10],
     defaultCapacityMl: 3,
+  },
+  {
+    // HGH/HCG: reconstituted like a peptide, but the label and the dose are in
+    // IU. The answer is given in mL (see `calculateHormone`) with the syringe
+    // graduations beside it, so "units" can never be confused with IU.
+    id: 'hormone',
+    icon: 'sparkles',
+    measure: 'volume',
+    showSyringeScale: true,
+    capacities: [0.3, 0.5, 1, 2, 3],
+    defaultCapacityMl: 1,
   },
 ];
 

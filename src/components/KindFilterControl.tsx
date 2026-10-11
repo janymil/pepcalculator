@@ -15,6 +15,7 @@ export function KindFilterControl({ value, onChange }: KindFilterControlProps) {
     { value: 'all', label: strings.kinds.all },
     { value: 'peptide', label: strings.kinds.peptide },
     { value: 'anabolic', label: strings.kinds.anabolic },
+    { value: 'hormone', label: strings.kinds.hormone },
   ];
 
   return (

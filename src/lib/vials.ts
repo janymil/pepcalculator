@@ -7,7 +7,15 @@
  * so the expiry maths is deterministic in tests.
  */
 
-import { isPositive, toMg, type DoseUnit, type SyringeTypeId } from './calc';
+import {
+  DOSE_UNITS,
+  isPositive,
+  toBase,
+  unitsCompatible,
+  type DoseUnit,
+  type MeasureSystem,
+  type SyringeTypeId,
+} from './calc';
 import { addDays, daysBetween, toIsoDate } from './dates';
 import type { VialSchedule } from './schedule';
 
@@ -20,8 +28,13 @@ export const BUD_DAYS = 28;
 /** A dose below this many mL cannot realistically be measured. */
 export const MIN_MEASURABLE_ML = 0.02;
 
-/** Peptides are reconstituted powder; anabolics are ready-to-use oils. */
-export type VialKind = 'peptide' | 'anabolic';
+/**
+ * Vial kinds:
+ *  - `peptide`  — powder reconstituted with water, drawn with an insulin syringe.
+ *  - `anabolic` — ready-to-use oil whose strength is printed on the label.
+ *  - `hormone`  — reconstituted like a peptide, but labelled and dosed in **IU**.
+ */
+export type VialKind = 'peptide' | 'anabolic' | 'hormone';
 
 /** UI filter: everything, or a single kind. */
 export type KindFilter = 'all' | VialKind;
@@ -84,8 +97,10 @@ export interface SavedVial {
 }
 
 export interface VialStatus {
-  concentrationMgPerMl: number;
-  doseMg: number;
+  /** Strength in the base unit of the vial's family per mL (mg/mL or IU/mL). */
+  concentrationPerMl: number;
+  /** The dose in the base unit of its family. */
+  doseBase: number;
   /** mL drawn per dose. */
   volumePerDoseMl: number;
   /** How many doses the vial holds in total (may be fractional). */
@@ -105,7 +120,18 @@ export interface VialStatus {
 
 /** The kind of a saved vial. Records from before kinds existed are peptides. */
 export function vialKind(vial: SavedVial): VialKind {
-  return vial.kind === 'anabolic' ? 'anabolic' : 'peptide';
+  if (vial.kind === 'anabolic') return 'anabolic';
+  if (vial.kind === 'hormone') return 'hormone';
+  return 'peptide';
+}
+
+/**
+ * How the drawn amount is read off the device for this kind of vial: peptides in
+ * insulin-syringe graduations, oils *and IU-dosed hormones* in mL — for a
+ * hormone, "units" would be ambiguous with the IU printed on the label.
+ */
+export function kindMeasure(kind: VialKind): MeasureSystem {
+  return kind === 'peptide' ? 'insulin' : 'volume';
 }
 
 /** Keeps only the vials matching a UI filter (`all` keeps everything). */
@@ -118,18 +144,24 @@ export function filterVialsByKind(vials: SavedVial[], filter: KindFilter): Saved
 export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Date())): VialStatus {
   const anabolic = vialKind(vial) === 'anabolic';
 
-  const totalMg = isPositive(vial.vialAmount) ? toMg(vial.vialAmount, vial.vialUnit) : 0;
-  const concentrationMgPerMl = anabolic
-    ? isPositive(vial.concentrationMgPerMl ?? 0)
-      ? (vial.concentrationMgPerMl as number)
-      : 0
-    : isPositive(vial.waterMl) && totalMg > 0
-      ? totalMg / vial.waterMl
-      : 0;
+  // Units from different families (a vial in IU, a dose in mg) cannot be
+  // reconciled, so nothing is derived from them at all.
+  const unitsMatch = unitsCompatible(vial.vialUnit, vial.doseUnit);
 
-  const doseMg = isPositive(vial.doseAmount) ? toMg(vial.doseAmount, vial.doseUnit) : 0;
+  const totalBase = isPositive(vial.vialAmount) ? toBase(vial.vialAmount, vial.vialUnit) : 0;
+  const concentrationPerMl = !unitsMatch
+    ? 0
+    : anabolic
+      ? isPositive(vial.concentrationMgPerMl ?? 0)
+        ? (vial.concentrationMgPerMl as number)
+        : 0
+      : isPositive(vial.waterMl) && totalBase > 0
+        ? totalBase / vial.waterMl
+        : 0;
+
+  const doseBase = isPositive(vial.doseAmount) ? toBase(vial.doseAmount, vial.doseUnit) : 0;
   const volumePerDoseMl =
-    concentrationMgPerMl > 0 && doseMg > 0 ? doseMg / concentrationMgPerMl : 0;
+    concentrationPerMl > 0 && doseBase > 0 ? doseBase / concentrationPerMl : 0;
 
   // Peptides know their mL from the water added; oils only if a size was entered.
   const volumeTotalMl = anabolic
@@ -140,13 +172,14 @@ export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Dat
       ? vial.waterMl
       : 0;
 
-  // Peptide: mg in the vial ÷ dose. Oil: mL in the vial ÷ mL per dose.
+  // Peptide: amount in the vial ÷ dose. Oil: mL in the vial ÷ mL per dose.
+  // Both are gated on a usable strength, so a family mismatch yields nothing.
   const totalDoses = anabolic
     ? volumeTotalMl > 0 && volumePerDoseMl > 0
       ? volumeTotalMl / volumePerDoseMl
       : 0
-    : totalMg > 0 && doseMg > 0
-      ? totalMg / doseMg
+    : concentrationPerMl > 0 && doseBase > 0
+      ? totalBase / doseBase
       : 0;
 
   const dosesTaken = Math.max(0, Math.floor(vial.dosesTaken));
@@ -160,8 +193,8 @@ export function vialStatus(vial: SavedVial, todayIso: string = toIsoDate(new Dat
   const daysUntilExpiry = expiresOn === null ? null : daysBetween(todayIso, expiresOn);
 
   return {
-    concentrationMgPerMl,
-    doseMg,
+    concentrationPerMl,
+    doseBase,
     volumePerDoseMl,
     totalDoses,
     dosesTaken,
@@ -186,6 +219,7 @@ export function canSaveVial(
 ): boolean {
   if (!isPositive(vial.doseAmount)) return false;
   if (vial.kind === 'anabolic') return isPositive(vial.concentrationMgPerMl ?? 0);
+  // Peptides and hormones are both reconstituted, so both need a vial and water.
   return isPositive(vial.vialAmount ?? 0) && isPositive(vial.waterMl ?? 0);
 }
 
@@ -208,8 +242,8 @@ export function looksLikeSavedVial(value: unknown): boolean {
     typeof vial.vialAmount === 'number' &&
     typeof vial.waterMl === 'number' &&
     typeof vial.doseAmount === 'number' &&
-    (vial.vialUnit === 'mg' || vial.vialUnit === 'mcg') &&
-    (vial.doseUnit === 'mg' || vial.doseUnit === 'mcg')
+    DOSE_UNITS.includes(vial.vialUnit as DoseUnit) &&
+    DOSE_UNITS.includes(vial.doseUnit as DoseUnit)
   );
 }
 

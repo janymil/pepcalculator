@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateAnabolic,
+  calculateHormone,
   calculatePeptide,
-  fromMg,
+  fromBase,
   suggestWaterMl,
-  toMg,
+  toBase,
+  unitFamily,
+  unitsCompatible,
   unitsPerMlOf,
   type SyringeTypeId,
 } from './calc';
@@ -17,14 +20,14 @@ const syringe = (type: SyringeTypeId = 'U100', capacityMl = 1) => ({
 
 describe('unit helpers', () => {
   it('converts micrograms to milligrams', () => {
-    expect(toMg(250, 'mcg')).toBeCloseTo(0.25, 9);
-    expect(toMg(1000, 'mcg')).toBeCloseTo(1, 9);
-    expect(toMg(5, 'mg')).toBe(5);
+    expect(toBase(250, 'mcg')).toBeCloseTo(0.25, 9);
+    expect(toBase(1000, 'mcg')).toBeCloseTo(1, 9);
+    expect(toBase(5, 'mg')).toBe(5);
   });
 
   it('converts milligrams back to the display unit', () => {
-    expect(fromMg(0.25, 'mcg')).toBeCloseTo(250, 9);
-    expect(fromMg(5, 'mg')).toBe(5);
+    expect(fromBase(0.25, 'mcg')).toBeCloseTo(250, 9);
+    expect(fromBase(5, 'mg')).toBe(5);
   });
 
   it('knows the units-per-mL of each syringe scale', () => {
@@ -48,11 +51,11 @@ describe('calculatePeptide', () => {
     });
 
     expect(r.ok).toBe(true);
-    expect(r.concentrationMgPerMl).toBeCloseTo(2.5, 9);
-    expect(r.doseMg).toBeCloseTo(0.25, 9);
+    expect(r.concentrationPerMl).toBeCloseTo(2.5, 9);
+    expect(r.doseBase).toBeCloseTo(0.25, 9);
     expect(r.volumeMl).toBeCloseTo(0.1, 9);
     expect(r.units).toBeCloseTo(10, 9);
-    expect(r.totalVialMg).toBeCloseTo(5, 9);
+    expect(r.totalVialBase).toBeCloseTo(5, 9);
     expect(r.dosesPerVial).toBeCloseTo(20, 9);
     expect(r.warnings).toHaveLength(0);
   });
@@ -68,7 +71,7 @@ describe('calculatePeptide', () => {
       ...syringe(),
     });
 
-    expect(r.concentrationMgPerMl).toBeCloseTo(5, 9);
+    expect(r.concentrationPerMl).toBeCloseTo(5, 9);
     expect(r.volumeMl).toBeCloseTo(0.2, 9);
     expect(r.units).toBeCloseTo(20, 9);
   });
@@ -179,7 +182,7 @@ describe('calculateAnabolic', () => {
     expect(r.ok).toBe(true);
     expect(r.volumeMl).toBeCloseTo(2, 9);
     expect(r.units).toBeCloseTo(200, 9);
-    expect(r.totalVialMg).toBeNull();
+    expect(r.totalVialBase).toBeNull();
     expect(r.dosesPerVial).toBeNull();
   });
 
@@ -193,7 +196,7 @@ describe('calculateAnabolic', () => {
       ...syringe('U100', 3),
     });
 
-    expect(r.totalVialMg).toBeCloseTo(2500, 9);
+    expect(r.totalVialBase).toBeCloseTo(2500, 9);
     expect(r.dosesPerVial).toBeCloseTo(10, 9);
     expect(r.volumeMl).toBeCloseTo(1, 9);
   });
@@ -208,7 +211,7 @@ describe('calculateAnabolic', () => {
       ...syringe('U100', 1),
     });
 
-    expect(r.doseMg).toBeCloseTo(0.4, 9);
+    expect(r.doseBase).toBeCloseTo(0.4, 9);
     expect(r.volumeMl).toBeCloseTo(0.002, 9);
   });
 
@@ -359,6 +362,98 @@ describe('suggestWaterMl', () => {
     expect(suggestWaterMl({ ...base, vialAmount: 0 })).toBeNull();
     expect(suggestWaterMl({ ...base, vialAmount: 5, doseAmount: 0 })).toBeNull();
     expect(suggestWaterMl({ ...base, vialAmount: 5, unitsPerMl: 0 })).toBeNull();
+  });
+});
+
+describe('unit families (IU is not a mass)', () => {
+  it('knows which units belong together', () => {
+    expect(unitFamily('mg')).toBe('mass');
+    expect(unitFamily('mcg')).toBe('mass');
+    expect(unitFamily('IU')).toBe('activity');
+
+    expect(unitsCompatible('mg', 'mcg')).toBe(true);
+    expect(unitsCompatible('IU', 'IU')).toBe(true);
+    expect(unitsCompatible('IU', 'mcg')).toBe(false);
+    expect(unitsCompatible('mg', 'IU')).toBe(false);
+  });
+
+  it('treats IU as its own base unit, never converting it to mg', () => {
+    // 2 IU is 2 IU. Inventing a mass here is exactly what must not happen.
+    expect(toBase(2, 'IU')).toBe(2);
+    expect(fromBase(2, 'IU')).toBe(2);
+    expect(toBase(2500, 'mcg')).toBeCloseTo(2.5, 9);
+  });
+});
+
+describe('calculateHormone (HGH / HCG dosed in IU)', () => {
+  const input = {
+    vialAmount: 10,
+    vialUnit: 'IU' as const,
+    waterMl: 1,
+    doseAmount: 2,
+    doseUnit: 'IU' as const,
+    syringeType: 'U100' as const,
+    syringeCapacityMl: 1,
+  };
+
+  it('converts an IU dose into a volume, and that volume into graduations', () => {
+    const result = calculateHormone(input);
+
+    expect(result.ok).toBe(true);
+    expect(result.concentrationPerMl).toBeCloseTo(10, 9);
+    expect(result.doseBase).toBeCloseTo(2, 9);
+    expect(result.volumeMl).toBeCloseTo(0.2, 9);
+    // 0.2 mL on a U-100 barrel is the 20 mark — what the user actually reads.
+    expect(result.units).toBeCloseTo(20, 9);
+    expect(result.totalVialBase).toBeCloseTo(10, 9);
+    expect(result.dosesPerVial).toBeCloseTo(5, 9);
+    expect(result.warnings).toHaveLength(0);
+  });
+
+  it('still reads a hormone in mL if the vial is labelled in mass', () => {
+    const result = calculateHormone({ ...input, vialUnit: 'mg', doseUnit: 'mcg', doseAmount: 500 });
+
+    expect(result.ok).toBe(true);
+    expect(result.concentrationPerMl).toBeCloseTo(10, 9);
+  });
+
+  it('refuses to mix IU with mg rather than inventing a conversion', () => {
+    const result = calculateHormone({ ...input, doseAmount: 2, doseUnit: 'mg' });
+
+    expect(result.ok).toBe(false);
+    expect(result.volumeMl).toBe(0);
+    expect(result.warnings.map((warning) => warning.code)).toContain('mixedUnits');
+    // The message has to name both units, or it cannot be acted on.
+    expect(result.warnings[result.warnings.length - 1].params).toEqual({
+      vialUnit: 'IU',
+      doseUnit: 'mg',
+    });
+  });
+
+  it('keeps an oil from being dosed in IU at all', () => {
+    const result = calculateAnabolic({
+      concentrationMgPerMl: 250,
+      doseAmount: 2,
+      doseUnit: 'IU',
+      vialMl: 10,
+      syringeType: 'U100',
+      syringeCapacityMl: 3,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.warnings.map((warning) => warning.code)).toContain('mixedUnits');
+  });
+
+  it('has nothing to suggest when the vial and the dose disagree on family', () => {
+    expect(
+      suggestWaterMl({
+        vialAmount: 10,
+        vialUnit: 'IU',
+        doseAmount: 250,
+        doseUnit: 'mcg',
+        unitsPerMl: 100,
+      }),
+    ).toBeNull();
   });
 });
 

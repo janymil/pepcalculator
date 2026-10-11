@@ -60,8 +60,8 @@ describe('vialStatus', () => {
   it('derives concentration, dose volume and doses per vial', () => {
     const status = vialStatus(makeVial(), '2026-10-10');
 
-    expect(status.concentrationMgPerMl).toBeCloseTo(2.5, 9);
-    expect(status.doseMg).toBeCloseTo(0.25, 9);
+    expect(status.concentrationPerMl).toBeCloseTo(2.5, 9);
+    expect(status.doseBase).toBeCloseTo(0.25, 9);
     expect(status.volumePerDoseMl).toBeCloseTo(0.1, 9);
     expect(status.totalDoses).toBeCloseTo(20, 9);
     expect(status.dosesLeft).toBeCloseTo(20, 9);
@@ -113,7 +113,7 @@ describe('vialStatus', () => {
   it('stays sane when the inputs are incomplete', () => {
     const status = vialStatus(makeVial({ vialAmount: 0, waterMl: 0 }), '2026-10-10');
 
-    expect(status.concentrationMgPerMl).toBe(0);
+    expect(status.concentrationPerMl).toBe(0);
     expect(status.volumePerDoseMl).toBe(0);
     expect(status.dosesLeft).toBe(0);
   });
@@ -249,7 +249,7 @@ describe('anabolic vials', () => {
 
   it('computes the volume from the label concentration, not from water', () => {
     const status = vialStatus(makeAnabolic(), '2024-01-01');
-    expect(status.concentrationMgPerMl).toBe(250);
+    expect(status.concentrationPerMl).toBe(250);
     expect(status.volumePerDoseMl).toBeCloseTo(1, 9); // 250 mg ÷ 250 mg per mL
     expect(status.volumeTotalMl).toBe(10);
     expect(status.totalDoses).toBeCloseTo(10, 9); // 10 mL ÷ 1 mL per dose
@@ -357,6 +357,55 @@ describe('searchVials / sortVials', () => {
     const later = makeVial({ id: 'later', name: 'Later', reconstitutedOn: '2026-10-10' });
     const ids = sortVials([oil, later, soon], 'expiry', today).map((v) => v.id);
     expect(ids).toEqual(['soon', 'later', 'c']);
+  });
+});
+
+describe('hormone vials (dosed in IU)', () => {
+  /** 10 IU in 1 mL, 2 IU a shot: 10 IU/mL, so 0.2 mL a dose and 5 doses a vial. */
+  const hormone = () =>
+    makeVial({
+      kind: 'hormone',
+      name: 'HGH',
+      vialAmount: 10,
+      vialUnit: 'IU',
+      waterMl: 1,
+      doseAmount: 2,
+      doseUnit: 'IU',
+    });
+
+  it('is its own kind, filtered apart from plain peptides', () => {
+    expect(vialKind(hormone())).toBe('hormone');
+    expect(vialKind(makeVial())).toBe('peptide');
+    expect(filterVialsByKind([hormone(), makeVial()], 'hormone')).toHaveLength(1);
+  });
+
+  it('derives an IU/mL strength and a volume per dose', () => {
+    const status = vialStatus(hormone(), '2026-10-11');
+
+    expect(status.concentrationPerMl).toBeCloseTo(10, 9);
+    expect(status.doseBase).toBeCloseTo(2, 9);
+    expect(status.volumePerDoseMl).toBeCloseTo(0.2, 9);
+    expect(status.totalDoses).toBeCloseTo(5, 9);
+  });
+
+  it('expires like a peptide — it is reconstituted with water', () => {
+    expect(vialStatus(hormone(), '2026-10-11').expiresOn).toBe('2026-11-07');
+  });
+
+  it('derives nothing at all when the units come from different families', () => {
+    // A vial in IU and a dose in mcg cannot be reconciled, so nothing is drawn.
+    const mixed = makeVial({ kind: 'hormone', vialUnit: 'IU', doseAmount: 250, doseUnit: 'mcg' });
+    const status = vialStatus(mixed, '2026-10-11');
+
+    expect(status.concentrationPerMl).toBe(0);
+    expect(status.volumePerDoseMl).toBe(0);
+    expect(status.dosesLeft).toBe(0);
+  });
+
+  it('accepts IU through a backup or sync payload', () => {
+    expect(looksLikeSavedVial(hormone())).toBe(true);
+    expect(looksLikeSavedVial(normalizeSavedVial(hormone()))).toBe(true);
+    expect(looksLikeSavedVial({ ...hormone(), vialUnit: 'grains' })).toBe(false);
   });
 });
 

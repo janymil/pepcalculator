@@ -17,11 +17,16 @@ export const en: Strings = {
       desc: 'Oils that are already mixed — no reconstitution needed.',
       tag: 'Ready to use',
     },
+    hormone: {
+      title: 'HGH / HCG',
+      desc: 'Hormones labelled and dosed in IU, dissolved with water first.',
+      tag: 'Dosed in IU',
+    },
   },
   fields: {
     vialAmount: {
-      label: 'Peptide in the vial',
-      hint: 'The amount printed on the vial, e.g. 5 mg or 5000 mcg.',
+      label: 'Amount in the vial',
+      hint: 'The amount printed on the vial — e.g. 5 mg, 5000 mcg or 10 IU.',
     },
     waterMl: {
       label: 'Bacteriostatic water added',
@@ -60,16 +65,20 @@ export const en: Strings = {
     concentration: 'Concentration',
     totalInVial: 'Total in vial',
     dosesPerVial: 'Doses per vial',
-    doseInMg: 'Dose (mg)',
+    doseInBase: 'Dose',
     empty: 'Fill in your numbers',
     emptyHint: 'Enter the fields on the left to see the result here.',
     unitsWord: 'units',
     notApplicable: '—',
     waterHint:
       'Using {water} mL of water instead would put about {units} units on the syringe — easier to read.',
+    /** Secondary reading of the same volume, in syringe graduations. `{scale}` */
+    syringeReading: 'On a {scale} syringe',
   },
   syringeVisual: { ariaLabel: 'Syringe filled to the calculated volume' },
   warnings: {
+    mixedUnits:
+      'The vial is labelled in {vialUnit} but the dose is in {doseUnit}. Those are different kinds of unit — pick the one printed on your vial.',
     missingVial: 'Enter how much peptide is in the vial.',
     missingWater: 'Enter how much bacteriostatic water you added.',
     missingConcentration: 'Enter the concentration in mg/mL.',
@@ -85,7 +94,7 @@ export const en: Strings = {
   },
   actions: { reset: 'Reset', useWater: 'Use {water} mL' },
   validation: { invalidNumber: 'Enter a number greater than 0.' },
-  units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
+  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'IU' },
   disclaimer: {
     title: 'Not medical advice',
     body: 'This tool only does the maths. It is not medical advice and does not replace a doctor or pharmacist. Always double-check your dose and your measurement.',
@@ -298,6 +307,8 @@ export const en: Strings = {
     settings: 'Settings',
   },
   kinds: {
+    /** HGH, HCG and similar: labelled and dosed in IU. */
+    hormone: 'HGH / HCG',
     label: 'Show',
     all: 'All',
     peptide: 'Peptides',

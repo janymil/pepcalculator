@@ -1,4 +1,4 @@
-import type { AnabolicForm, PeptideForm, SyringeSettings } from '../types';
+import type { AnabolicForm, HormoneForm, PeptideForm, SyringeSettings } from '../types';
 
 /** Sensible starting values so the app is usable the moment it opens. */
 export const DEFAULT_PEPTIDE_FORM: PeptideForm = {
@@ -7,6 +7,18 @@ export const DEFAULT_PEPTIDE_FORM: PeptideForm = {
   waterMl: '2',
   doseAmount: '250',
   doseUnit: 'mcg',
+};
+
+/**
+ * HGH/HCG defaults: a 10 IU vial dissolved in 1 mL, dosed at 2 IU — which is
+ * 0.2 mL, i.e. 20 graduations on a U-100 syringe.
+ */
+export const DEFAULT_HORMONE_FORM: HormoneForm = {
+  vialAmount: '10',
+  vialUnit: 'IU',
+  waterMl: '1',
+  doseAmount: '2',
+  doseUnit: 'IU',
 };
 
 export const DEFAULT_ANABOLIC_FORM: AnabolicForm = {
@@ -41,6 +53,7 @@ export const STORAGE_KEYS = {
   theme: 'pepcalc.v1.theme',
   mode: 'pepcalc.v1.mode',
   vials: 'pepcalc.v1.vials',
+  hormone: 'pepcalc.v1.hormone',
   syncCode: 'pepcalc.v1.syncCode',
   syncServer: 'pepcalc.v1.syncServer',
   syncLast: 'pepcalc.v1.syncLast',

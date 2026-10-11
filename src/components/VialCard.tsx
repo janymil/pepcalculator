@@ -16,7 +16,7 @@ import {
 } from '../lib/schedule';
 import type { VialSupply } from '../lib/supply';
 import { formatRange, matchCompound, rangeHint, type RangeVerdict } from '../lib/reference';
-import { vialKind, vialStatus, type SavedVial } from '../lib/vials';
+import { kindMeasure, vialKind, vialStatus, type SavedVial } from '../lib/vials';
 import { vialColor } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
 import { Icon } from './Icon';
@@ -65,8 +65,11 @@ export function VialCard({
   const [expanded, setExpanded] = useState(false);
   const status = vialStatus(vial, todayIso);
   const schedule = vial.schedule;
-  const anabolic = vialKind(vial) === 'anabolic';
+  const kind = vialKind(vial);
+  const anabolic = kind === 'anabolic';
   const color = vialColor(vial.id);
+  /** Oils *and* IU-dosed hormones are read in mL; peptides in graduations. */
+  const byVolume = kindMeasure(kind) === 'volume';
 
   /** The single most important number: insulin units (peptides) or mL (oils). */
   const unitsPerDose = status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
@@ -113,7 +116,7 @@ export function VialCard({
    * a line of its own.
    */
   const compound = matchCompound(vial.name);
-  const verdict = compound ? rangeHint(compound, status.doseMg) : null;
+  const verdict = compound ? rangeHint(compound, status.doseBase) : null;
   const outOfRange: Exclude<RangeVerdict, 'within'> | null =
     verdict && verdict !== 'within' ? verdict : null;
 
@@ -132,9 +135,7 @@ export function VialCard({
           <span className="vial__dot" style={{ backgroundColor: color }} aria-hidden="true" />
           {vial.name || strings.vials.untitled}
         </h3>
-        <span className={`vial__kind vial__kind--${anabolic ? 'anabolic' : 'peptide'}`}>
-          {anabolic ? strings.kinds.anabolic : strings.kinds.peptide}
-        </span>
+        <span className={`vial__kind vial__kind--${kind}`}>{strings.kinds[kind]}</span>
         <span className={`vial__badge vial__badge--${badgeTone}`}>{badgeText}</span>
         <button
           type="button"
@@ -150,7 +151,7 @@ export function VialCard({
       <div className="vial__draw">
         <span className="vial__draw-label">{strings.schedule.draw}</span>
         <span className="vial__draw-value">
-          {anabolic ? (
+          {byVolume ? (
             <>
               {fmt.volume(status.volumePerDoseMl)} <small>{strings.units.ml}</small>
             </>
@@ -160,7 +161,7 @@ export function VialCard({
             </>
           )}
         </span>
-        {anabolic ? null : (
+        {byVolume ? null : (
           <span className="vial__draw-sub">
             {fmt.volume(status.volumePerDoseMl)} {strings.units.ml}
           </span>
@@ -207,7 +208,7 @@ export function VialCard({
         <div className="vial__stat">
           <dt>{strings.results.concentration}</dt>
           <dd>
-            {fmt.concentration(status.concentrationMgPerMl)} mg/{strings.units.ml}
+            {fmt.concentration(status.concentrationPerMl)} mg/{strings.units.ml}
           </dd>
         </div>
         <div className="vial__stat">

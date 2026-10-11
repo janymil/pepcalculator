@@ -48,7 +48,8 @@ export interface Strings {
     concentration: string;
     totalInVial: string;
     dosesPerVial: string;
-    doseInMg: string;
+    /** Row label for the dose. The unit is appended by the UI (mg or IU). */
+    doseInBase: string;
     empty: string;
     emptyHint: string;
     unitsWord: string;
@@ -58,6 +59,11 @@ export interface Strings {
      * Placeholders: `{water}` (mL to add) and `{units}` (units that would show).
      */
     waterHint: string;
+    /**
+     * Secondary reading of the same volume in syringe graduations, for workflows
+     * whose headline is mL. Placeholder: `{scale}` (e.g. `U-100`).
+     */
+    syringeReading: string;
   };
   syringeVisual: { ariaLabel: string };
   warnings: Record<WarningCode, string>;
@@ -66,7 +72,7 @@ export interface Strings {
     /** Shown under a field whose text is not a usable positive number. */
     invalidNumber: string;
   };
-  units: { mg: string; mcg: string; ml: string };
+  units: { mg: string; mcg: string; ml: string; /** International units (activity). */ IU: string };
   disclaimer: { title: string; body: string; pointOfUse: string };
   firstRun: {
     title: string;
@@ -288,11 +294,13 @@ export interface Strings {
     settings: string;
   };
   kinds: {
-    /** Accessible name for the peptide/anabolic filter. */
+    /** Accessible name for the kind filter. */
     label: string;
     all: string;
     peptide: string;
     anabolic: string;
+    /** HGH/HCG are reconstituted, but filtered apart from plain peptides. */
+    hormone: string;
   };
   people: {
     /** Accessible name for the person switcher. */

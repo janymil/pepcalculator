@@ -1,6 +1,7 @@
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import App from './App';
+import { MODES } from './config/modes';
 
 /**
  * Full-tree smoke test.
@@ -21,8 +22,10 @@ describe('App (server render smoke test)', () => {
     expect(html).toContain('disclaimer');
   });
 
-  it('renders both mode options', () => {
-    expect(html.match(/mode__title/g)).toHaveLength(2);
+  it('renders every workflow the registry offers', () => {
+    // The tabs render from `MODES`, so this also guards the registry.
+    expect(html.match(/mode__title/g)).toHaveLength(MODES.length);
+    expect(MODES).toHaveLength(3);
   });
 
   it('renders the save-vial form with a dose schedule', () => {

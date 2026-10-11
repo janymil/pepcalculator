@@ -82,8 +82,11 @@ function VialCardLegacy({
 }) {
   const { strings } = useI18n();
   const status = vialStatus(vial);
-  const anabolic = vialKind(vial) === 'anabolic';
+  const kind = vialKind(vial);
+  const anabolic = kind === 'anabolic';
   const color = vialColor(vial.id);
+  /** Base unit of this vial's family — mg for mass, IU for an HGH/HCG vial. */
+  const baseUnit = vial.vialUnit === 'IU' ? strings.units.IU : strings.units.mg;
 
   const expiryDays = status.daysUntilExpiry;
   const badgeTone =
@@ -106,9 +109,7 @@ function VialCardLegacy({
           <span className="vial__dot" style={{ backgroundColor: color }} aria-hidden="true" />
           {vial.name || strings.vials.untitled}
         </h3>
-        <span className={`vial__kind vial__kind--${anabolic ? 'anabolic' : 'peptide'}`}>
-          {anabolic ? strings.kinds.anabolic : strings.kinds.peptide}
-        </span>
+        <span className={`vial__kind vial__kind--${kind}`}>{strings.kinds[kind]}</span>
         <span className={`vial__badge vial__badge--${badgeTone}`}>{badgeText}</span>
       </div>
 
@@ -137,7 +138,7 @@ function VialCardLegacy({
         <div className="vial__stat">
           <dt>{strings.results.concentration}</dt>
           <dd>
-            {fmt.concentration(status.concentrationMgPerMl)} mg/{strings.units.ml}
+            {fmt.concentration(status.concentrationPerMl)} {baseUnit}/{strings.units.ml}
           </dd>
         </div>
         <div className="vial__stat">
@@ -236,7 +237,7 @@ export function SavedVials({
    */
   const ratioOutliers = useMemo(() => {
     const concentrationOf = (vial: SavedVial): number =>
-      Number(vialStatus(vial, todayIso).concentrationMgPerMl.toFixed(4));
+      Number(vialStatus(vial, todayIso).concentrationPerMl.toFixed(4));
 
     const byName = new Map<string, Set<number>>();
     for (const vial of vials) {

@@ -3,7 +3,7 @@ import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { useCountUp } from '../hooks/useCountUp';
 import type { CalcResult, DoseUnit, MeasureSystem } from '../lib/calc';
-import { fromMg } from '../lib/calc';
+import { fromBase } from '../lib/calc';
 import { fmt, parseNumber } from '../lib/format';
 import { AlertList } from './AlertList';
 import { Icon } from './Icon';
@@ -16,6 +16,13 @@ interface ResultPanelProps {
   measure: MeasureSystem;
   /** The dose unit the user picked — the inverse answer uses the same one. */
   doseUnit: DoseUnit;
+  /** Display label for the base unit of the vial's family: `mg` or `IU`. */
+  baseUnitLabel: string;
+  /**
+   * Syringe scale label (`U-100`…). Supplied for IU workflows, where the
+   * headline is in mL but the user reads graduations off the barrel.
+   */
+  scaleLabel?: string;
   /**
    * A water volume that would make a hard-to-read draw easier, when one helps.
    * Shown beside the warnings as the concrete fix for "too small to measure".
@@ -36,6 +43,8 @@ export function ResultPanel({
   capacityMl,
   measure,
   doseUnit,
+  baseUnitLabel,
+  scaleLabel,
   waterHint,
   onApplyWater,
 }: ResultPanelProps) {
@@ -51,11 +60,11 @@ export function ResultPanel({
   const [inverseOn, setInverseOn] = useState(false);
   const [inverseVolume, setInverseVolume] = useState('');
   const inverseVolumeMl = parseNumber(inverseVolume);
-  const inverseDoseMg =
-    result.concentrationMgPerMl > 0 && inverseVolumeMl > 0
-      ? result.concentrationMgPerMl * inverseVolumeMl
+  const inverseDoseBase =
+    result.concentrationPerMl > 0 && inverseVolumeMl > 0
+      ? result.concentrationPerMl * inverseVolumeMl
       : 0;
-  const inverseDose = fromMg(inverseDoseMg, doseUnit);
+  const inverseDose = fromBase(inverseDoseBase, doseUnit);
 
   // The headline number eases to its new value (first paint is never animated).
   const animatedUnits = useCountUp(result.units);
@@ -68,17 +77,17 @@ export function ResultPanel({
     },
     {
       label: strings.results.concentration,
-      value: `${fmt.concentration(result.concentrationMgPerMl)} mg/${strings.units.ml}`,
+      value: `${fmt.concentration(result.concentrationPerMl)} ${baseUnitLabel}/${strings.units.ml}`,
     },
     {
-      label: strings.results.doseInMg,
-      value: `${fmt.mass(result.doseMg)} mg`,
+      label: strings.results.doseInBase,
+      value: `${fmt.mass(result.doseBase)} ${baseUnitLabel}`,
     },
     {
       label: strings.results.totalInVial,
       value:
-        result.totalVialMg !== null
-          ? `${fmt.mass(result.totalVialMg)} mg`
+        result.totalVialBase !== null
+          ? `${fmt.mass(result.totalVialBase)} ${baseUnitLabel}`
           : strings.results.notApplicable,
     },
     {
@@ -89,6 +98,15 @@ export function ResultPanel({
           : strings.results.notApplicable,
     },
   ];
+
+  // For an IU workflow the headline is the volume, but what the user actually
+  // reads is the graduation count — so show both, side by side.
+  if (scaleLabel) {
+    stats.push({
+      label: interpolate(strings.results.syringeReading, { scale: scaleLabel }),
+      value: fmt.units(result.units),
+    });
+  }
 
   return (
     <section className="card card--result" aria-labelledby="result-title">

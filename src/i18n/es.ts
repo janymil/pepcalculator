@@ -17,11 +17,16 @@ export const es: Strings = {
       desc: 'Aceites que ya vienen mezclados — no necesitan reconstitución.',
       tag: 'Listo para usar',
     },
+    hormone: {
+      title: 'HGH / HCG',
+      desc: 'Hormonas etiquetadas y dosificadas en UI, primero disueltas en agua.',
+      tag: 'Dosis en UI',
+    },
   },
   fields: {
     vialAmount: {
-      label: 'Péptido en el vial',
-      hint: 'La cantidad indicada en el vial, p. ej. 5 mg o 5000 mcg.',
+      label: 'Cantidad en el vial',
+      hint: 'La cantidad impresa en el vial — p. ej. 5 mg, 5000 mcg o 10 UI.',
     },
     waterMl: {
       label: 'Agua bacteriostática añadida',
@@ -60,16 +65,20 @@ export const es: Strings = {
     concentration: 'Concentración',
     totalInVial: 'Total en el vial',
     dosesPerVial: 'Dosis por vial',
-    doseInMg: 'Dosis (mg)',
+    doseInBase: 'Dosis',
     empty: 'Completa tus datos',
     emptyHint: 'Rellena los campos de la izquierda para ver el resultado aquí.',
     unitsWord: 'unidades',
     notApplicable: '—',
     waterHint:
       'Con {water} mL de agua, en la jeringa habría unas {units} unidades — más fácil de leer.',
+    /** Lectura secundaria del mismo volumen, en marcas de la jeringa. `{scale}` */
+    syringeReading: 'En una jeringa {scale}',
   },
   syringeVisual: { ariaLabel: 'Jeringa llenada hasta el volumen calculado' },
   warnings: {
+    mixedUnits:
+      'El vial está etiquetado en {vialUnit}, pero la dosis está en {doseUnit}. Son tipos de unidad distintos: elige la que aparece impresa en tu vial.',
     missingVial: 'Introduce cuánto péptido hay en el vial.',
     missingWater: 'Introduce cuánta agua bacteriostática añadiste.',
     missingConcentration: 'Introduce la concentración en mg/mL.',
@@ -85,7 +94,7 @@ export const es: Strings = {
   },
   actions: { reset: 'Restablecer', useWater: 'Usar {water} mL' },
   validation: { invalidNumber: 'Introduce un número mayor que 0.' },
-  units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
+  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'UI' },
   disclaimer: {
     title: 'No es consejo médico',
     body: 'Esta herramienta solo hace los cálculos. No es consejo médico ni sustituye a un médico o a un farmacéutico. Verifica siempre tu dosis y tu medición.',
@@ -300,6 +309,8 @@ export const es: Strings = {
     settings: 'Ajustes',
   },
   kinds: {
+    /** HGH, HCG y similares: etiquetados y dosificados en UI. */
+    hormone: 'HGH / HCG',
     label: 'Mostrar',
     all: 'Todos',
     peptide: 'Péptidos',

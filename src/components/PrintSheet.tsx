@@ -13,7 +13,7 @@ import {
   type IntervalPresetId,
   type VialSchedule,
 } from '../lib/schedule';
-import { vialKind, vialStatus, type SavedVial } from '../lib/vials';
+import { kindMeasure, vialKind, vialStatus, type SavedVial } from '../lib/vials';
 
 interface PrintSheetProps {
   /** Live vials for one person (the scope the rest of the app uses). */
@@ -121,8 +121,9 @@ function PlanRow({ vial, todayIso }: { vial: SavedVial; todayIso: string }) {
 
   const schedule = vial.schedule as VialSchedule;
   const status = vialStatus(vial, todayIso);
-  const anabolic = vialKind(vial) === 'anabolic';
-  const draw = anabolic
+  // Hormones are read in mL too — "units" would collide with the IU on the label.
+  const byVolume = kindMeasure(vialKind(vial)) === 'volume';
+  const draw = byVolume
     ? `${fmt.volume(status.volumePerDoseMl)} ${strings.units.ml}`
     : `${fmt.units(status.volumePerDoseMl * unitsPerMlOf(vial.syringeType))} ${
         strings.results.unitsWord
@@ -158,20 +159,21 @@ function LabelSticker({ vial, todayIso }: { vial: SavedVial; todayIso: string })
 
   const status = vialStatus(vial, todayIso);
   const anabolic = vialKind(vial) === 'anabolic';
+  const byVolume = kindMeasure(vialKind(vial)) === 'volume';
 
   return (
     <li className="print-label">
       <p className="print-label__name">{vial.name || strings.vials.untitled}</p>
       <p className="print-label__ratio">
         {anabolic
-          ? `${fmt.concentration(status.concentrationMgPerMl)} mg/${strings.units.ml}`
+          ? `${fmt.concentration(status.concentrationPerMl)} mg/${strings.units.ml}`
           : interpolate(copy.labelRatio, {
               amount: `${fmt.mass(vial.vialAmount)} ${vial.vialUnit}`,
               water: fmt.volume(vial.waterMl),
             })}
       </p>
       <p className="print-label__draw">
-        {anabolic
+        {byVolume
           ? `${copy.draw} ${fmt.volume(status.volumePerDoseMl)} ${strings.units.ml}`
           : `${copy.draw} ${fmt.units(
               status.volumePerDoseMl * unitsPerMlOf(vial.syringeType),

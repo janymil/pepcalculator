@@ -11,10 +11,21 @@ import {
 import { ResultPanel } from './ResultPanel';
 
 /** Renders the panel in a fixed language so assertions are deterministic. */
-function renderPanel(result: CalcResult, measure: MeasureSystem, capacityMl: number): string {
+function renderPanel(
+  result: CalcResult,
+  measure: MeasureSystem,
+  capacityMl: number,
+  baseUnitLabel = 'mg',
+): string {
   return renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
-      <ResultPanel result={result} capacityMl={capacityMl} measure={measure} doseUnit="mcg" />
+      <ResultPanel
+        result={result}
+        capacityMl={capacityMl}
+        measure={measure}
+        doseUnit="mcg"
+        baseUnitLabel={baseUnitLabel}
+      />
     </I18nProvider>,
   );
 }

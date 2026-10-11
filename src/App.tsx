@@ -18,6 +18,7 @@ import { Toast } from './components/Toast';
 import { ViewTabs } from './components/ViewTabs';
 import {
   DEFAULT_ANABOLIC_FORM,
+  DEFAULT_HORMONE_FORM,
   DEFAULT_PEPTIDE_FORM,
   DEFAULT_SYRINGE,
   DEFAULT_SYNC_SERVER,
@@ -29,7 +30,7 @@ import { useDoseReminders } from './hooks/useDoseReminders';
 import { DICTIONARIES, detectLang, interpolate } from './i18n';
 import { I18nProvider } from './i18n/I18nContext';
 import type { Lang } from './i18n/types';
-import { calculateAnabolic, calculatePeptide, suggestWaterMl, unitsPerMlOf, type ModeId } from './lib/calc';
+import { calculateAnabolic, calculateHormone, calculatePeptide, suggestWaterMl, unitsPerMlOf, SYRINGE_TYPES, type ModeId } from './lib/calc';
 import { parseNumber } from './lib/format';
 import { toIsoDate } from './lib/dates';
 import type { VialSchedule } from './lib/schedule';
@@ -64,7 +65,7 @@ import {
 function vialsSnapshot(vials: SavedVial[]): string {
   return JSON.stringify(vials);
 }
-import type { AnabolicForm, PeptideForm, SyringeSettings, ThemeName } from './types';
+import type { AnabolicForm, HormoneForm, PeptideForm, SyringeSettings, ThemeName } from './types';
 
 export default function App() {
   const [mode, setMode] = useLocalStorage<ModeId>(STORAGE_KEYS.mode, DEFAULT_MODE);
@@ -81,6 +82,11 @@ export default function App() {
   const [syringe, setSyringe] = useLocalStorage<SyringeSettings>(
     STORAGE_KEYS.syringe,
     DEFAULT_SYRINGE,
+  );
+  // HGH/HCG keep their own inputs: same shape as a peptide, different units.
+  const [hormone, setHormone] = useLocalStorage<HormoneForm>(
+    STORAGE_KEYS.hormone,
+    DEFAULT_HORMONE_FORM,
   );
   const [savedVials, setSavedVials] = useLocalStorage<SavedVial[]>(STORAGE_KEYS.vials, []);
   const [syncCode, setSyncCode] = useLocalStorage<string>(STORAGE_KEYS.syncCode, '');
@@ -158,6 +164,12 @@ export default function App() {
   // mode — e.g. a 0.3 mL insulin barrel while viewing anabolic oils.
   const capacityMl = resolveCapacity(mode, syringe.capacityMl);
   const measure = modeMeta(mode).measure;
+
+  // Peptides and hormones both reconstitute, so they share one set of inputs
+  // and one maths path — only the units and the reading of the draw differ.
+  const reconstituted = mode === 'hormone' ? hormone : peptide;
+  /** The base unit the engine works in for this workflow: mg, or IU. */
+  const baseUnitLabel = reconstituted.vialUnit === 'IU' ? strings.units.IU : strings.units.mg;
 
   // A clock that ticks once a minute keeps "next dose" accurate without the
   // user having to touch anything.
@@ -264,27 +276,30 @@ export default function App() {
 
   // Recomputed on every keystroke. The engine is pure and cheap, so no debounce.
   const result = useMemo(() => {
-    if (mode === 'peptide') {
-      return calculatePeptide({
-        vialAmount: parseNumber(peptide.vialAmount),
-        vialUnit: peptide.vialUnit,
-        waterMl: parseNumber(peptide.waterMl),
-        doseAmount: parseNumber(peptide.doseAmount),
-        doseUnit: peptide.doseUnit,
+    if (mode === 'anabolic') {
+      return calculateAnabolic({
+        concentrationMgPerMl: parseNumber(anabolic.concentration),
+        doseAmount: parseNumber(anabolic.doseAmount),
+        doseUnit: anabolic.doseUnit,
+        vialMl: anabolic.vialMl.trim() === '' ? null : parseNumber(anabolic.vialMl),
         syringeType: syringe.type,
         syringeCapacityMl: capacityMl,
       });
     }
 
-    return calculateAnabolic({
-      concentrationMgPerMl: parseNumber(anabolic.concentration),
-      doseAmount: parseNumber(anabolic.doseAmount),
-      doseUnit: anabolic.doseUnit,
-      vialMl: anabolic.vialMl.trim() === '' ? null : parseNumber(anabolic.vialMl),
+    // Peptides and hormones share the reconstitution maths; only how the draw
+    // is read back differs (see `calculateHormone`).
+    const input = {
+      vialAmount: parseNumber(reconstituted.vialAmount),
+      vialUnit: reconstituted.vialUnit,
+      waterMl: parseNumber(reconstituted.waterMl),
+      doseAmount: parseNumber(reconstituted.doseAmount),
+      doseUnit: reconstituted.doseUnit,
       syringeType: syringe.type,
       syringeCapacityMl: capacityMl,
-    });
-  }, [mode, peptide, anabolic, syringe]);
+    };
+    return mode === 'hormone' ? calculateHormone(input) : calculatePeptide(input);
+  }, [mode, peptide, hormone, anabolic, syringe, capacityMl, reconstituted]);
 
   /*
    * The "hard to measure" warning is only useful with a fix attached, so when
@@ -293,41 +308,42 @@ export default function App() {
    * this stays quiet for every other case.
    */
   const waterHint = useMemo(() => {
-    if (mode !== 'peptide') return null;
+    if (mode === 'anabolic') return null;
     if (!result.warnings.some((warning) => warning.code === 'doseTooSmall')) return null;
 
     return suggestWaterMl({
-      vialAmount: parseNumber(peptide.vialAmount),
-      vialUnit: peptide.vialUnit,
-      doseAmount: parseNumber(peptide.doseAmount),
-      doseUnit: peptide.doseUnit,
+      vialAmount: parseNumber(reconstituted.vialAmount),
+      vialUnit: reconstituted.vialUnit,
+      doseAmount: parseNumber(reconstituted.doseAmount),
+      doseUnit: reconstituted.doseUnit,
       unitsPerMl: unitsPerMlOf(syringe.type),
-      currentWaterMl: parseNumber(peptide.waterMl),
+      currentWaterMl: parseNumber(reconstituted.waterMl),
     });
-  }, [mode, peptide, syringe.type, result.warnings]);
+  }, [mode, reconstituted, syringe.type, result.warnings]);
 
   const handleReset = () => {
     setPeptide(DEFAULT_PEPTIDE_FORM);
     setAnabolic(DEFAULT_ANABOLIC_FORM);
+    setHormone(DEFAULT_HORMONE_FORM);
     setSyringe(DEFAULT_SYRINGE);
   };
 
   /* ---------- saved vials ("My vials") ---------- */
 
   // A vial can be saved once its numbers are complete — and what counts as
-  // complete differs by workflow (peptides: vial + water; oils: mg/mL).
+  // complete differs by workflow (reconstituted: vial + water; oils: mg/mL).
   const canSaveCurrentVial =
-    mode === 'peptide'
+    mode === 'anabolic'
       ? canSaveVial({
-          kind: 'peptide',
-          vialAmount: parseNumber(peptide.vialAmount),
-          waterMl: parseNumber(peptide.waterMl),
-          doseAmount: parseNumber(peptide.doseAmount),
-        })
-      : canSaveVial({
           kind: 'anabolic',
           concentrationMgPerMl: parseNumber(anabolic.concentration),
           doseAmount: parseNumber(anabolic.doseAmount),
+        })
+      : canSaveVial({
+          kind: mode,
+          vialAmount: parseNumber(reconstituted.vialAmount),
+          waterMl: parseNumber(reconstituted.waterMl),
+          doseAmount: parseNumber(reconstituted.doseAmount),
         });
 
   const handleSaveVial = (
@@ -369,12 +385,12 @@ export default function App() {
           }
         : {
             ...base,
-            kind: 'peptide',
-            vialAmount: parseNumber(peptide.vialAmount),
-            vialUnit: peptide.vialUnit,
-            waterMl: parseNumber(peptide.waterMl),
-            doseAmount: parseNumber(peptide.doseAmount),
-            doseUnit: peptide.doseUnit,
+            kind: mode,
+            vialAmount: parseNumber(reconstituted.vialAmount),
+            vialUnit: reconstituted.vialUnit,
+            waterMl: parseNumber(reconstituted.waterMl),
+            doseAmount: parseNumber(reconstituted.doseAmount),
+            doseUnit: reconstituted.doseUnit,
           };
 
     setSavedVials((previous) => [vial, ...previous]);
@@ -392,7 +408,8 @@ export default function App() {
   const handleLoadVial = (vial: SavedVial) => {
     setSyringe({ type: vial.syringeType, capacityMl: vial.syringeCapacityMl });
 
-    if (vialKind(vial) === 'anabolic') {
+    const kind = vialKind(vial);
+    if (kind === 'anabolic') {
       setMode('anabolic');
       setAnabolic({
         concentration: String(vial.concentrationMgPerMl ?? ''),
@@ -401,14 +418,16 @@ export default function App() {
         vialMl: vial.vialMl === undefined ? '' : String(vial.vialMl),
       });
     } else {
-      setMode('peptide');
-      setPeptide({
+      const form = {
         vialAmount: String(vial.vialAmount),
         vialUnit: vial.vialUnit,
         waterMl: String(vial.waterMl),
         doseAmount: String(vial.doseAmount),
         doseUnit: vial.doseUnit,
-      });
+      };
+      setMode(kind);
+      if (kind === 'hormone') setHormone(form);
+      else setPeptide(form);
     }
 
     // Loading only makes sense on the calculator, so jump there.
@@ -649,20 +668,35 @@ export default function App() {
                   onPeptideChange={(patch) => setPeptide((prev) => ({ ...prev, ...patch }))}
                   anabolic={anabolic}
                   onAnabolicChange={(patch) => setAnabolic((prev) => ({ ...prev, ...patch }))}
+                  hormone={hormone}
+                  onHormoneChange={(patch) => setHormone((prev) => ({ ...prev, ...patch }))}
                   syringe={syringe}
                   onSyringeChange={(patch) => setSyringe((prev) => ({ ...prev, ...patch }))}
                   onReset={handleReset}
                 />
 
+                {/* Only an IU workflow needs the graduation count spelled out:
+                    there the headline is mL, but the barrel is read in units. */}
                 <ResultPanel
                   result={result}
                   capacityMl={capacityMl}
                   measure={measure}
-                  doseUnit={mode === 'anabolic' ? anabolic.doseUnit : peptide.doseUnit}
-                  waterHint={waterHint}
-                  onApplyWater={(waterMl) =>
-                    setPeptide((prev) => ({ ...prev, waterMl: String(waterMl) }))
+                  doseUnit={mode === 'anabolic' ? anabolic.doseUnit : reconstituted.doseUnit}
+                  baseUnitLabel={baseUnitLabel}
+                  scaleLabel={
+                    mode === 'hormone'
+                      ? (SYRINGE_TYPES.find((type) => type.id === syringe.type)?.label ?? 'U-100')
+                      : undefined
                   }
+                  waterHint={waterHint}
+                  onApplyWater={(waterMl) => {
+                    const withWater = (prev: PeptideForm) => ({
+                      ...prev,
+                      waterMl: String(waterMl),
+                    });
+                    if (mode === 'hormone') setHormone(withWater);
+                    else setPeptide(withWater);
+                  }}
                 />
               </div>
 

@@ -17,11 +17,16 @@ export const sk: Strings = {
       desc: 'Oleje, ktoré sú už zmiešané — riedenie netreba.',
       tag: 'Pripravené na použitie',
     },
+    hormone: {
+      title: 'HGH / HCG',
+      desc: 'Hormóny označené a dávkované v IU, najprv rozpustené vo vode.',
+      tag: 'Dávkované v IU',
+    },
   },
   fields: {
     vialAmount: {
-      label: 'Peptid vo fľaštičke',
-      hint: 'Množstvo uvedené na fľaštičke, napr. 5 mg alebo 5000 mcg.',
+      label: 'Množstvo vo fľaštičke',
+      hint: 'Množstvo vytlačené na fľaštičke — napr. 5 mg, 5000 mcg alebo 10 IU.',
     },
     waterMl: {
       label: 'Pridaná bakteriostatická voda',
@@ -60,16 +65,20 @@ export const sk: Strings = {
     concentration: 'Koncentrácia',
     totalInVial: 'Celkom vo fľaštičke',
     dosesPerVial: 'Dávok vo fľaštičke',
-    doseInMg: 'Dávka (mg)',
+    doseInBase: 'Dávka',
     empty: 'Doplňte hodnoty',
     emptyHint: 'Vyplňte polia vľavo a výsledok sa zobrazí tu.',
     unitsWord: 'jednotiek',
     notApplicable: '—',
     waterHint:
       'Ak by ste použili {water} mL vody, na striekačke by bolo približne {units} jednotiek — ľahšie sa odčíta.',
+    /** Sekundárne odčítanie rovnakého objemu, v dielikoch striekačky. `{scale}` */
+    syringeReading: 'Na {scale} striekačke',
   },
   syringeVisual: { ariaLabel: 'Striekačka naplnená po vypočítaný objem' },
   warnings: {
+    mixedUnits:
+      'Fľaštička je označená v {vialUnit}, ale dávka je v {doseUnit}. Sú to rôzne druhy jednotiek — vyberte tú, ktorá je vytlačená na vašej fľaštičke.',
     missingVial: 'Zadajte, koľko peptidu je vo fľaštičke.',
     missingWater: 'Zadajte, koľko bakteriostatickej vody ste pridali.',
     missingConcentration: 'Zadajte koncentráciu v mg/mL.',
@@ -85,7 +94,7 @@ export const sk: Strings = {
   },
   actions: { reset: 'Vymazať', useWater: 'Použiť {water} mL' },
   validation: { invalidNumber: 'Zadajte číslo väčšie ako 0.' },
-  units: { mg: 'mg', mcg: 'mcg', ml: 'mL' },
+  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'IU' },
   disclaimer: {
     title: 'Toto nie je lekárska rada',
     body: 'Nástroj robí len výpočet. Nie je lekárskou radou a nenahrádza lekára ani lekárnika. Dávku aj meranie vždy dôkladne skontrolujte.',
@@ -298,6 +307,8 @@ export const sk: Strings = {
     settings: 'Nastavenia',
   },
   kinds: {
+    /** HGH, HCG a podobne: označené a dávkované v IU. */
+    hormone: 'HGH / HCG',
     label: 'Zobraziť',
     all: 'Všetko',
     peptide: 'Peptidy',

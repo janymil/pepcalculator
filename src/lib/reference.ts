@@ -8,7 +8,7 @@
  * to this data.
  */
 
-import { isPositive, toMg } from './calc';
+import { isPositive, toBase } from './calc';
 
 export type CompoundClass = 'peptide' | 'anabolic';
 
@@ -239,8 +239,8 @@ export type RangeVerdict = 'wellBelow' | 'below' | 'within' | 'above';
 export function rangeHint(compound: CompoundReference, doseMg: number): RangeVerdict | null {
   if (!isPositive(doseMg)) return null;
 
-  const low = toMg(compound.typicalLowMg, compound.unit);
-  const high = toMg(compound.typicalHighMg, compound.unit);
+  const low = toBase(compound.typicalLowMg, compound.unit);
+  const high = toBase(compound.typicalHighMg, compound.unit);
   if (!isPositive(low) || !isPositive(high)) return null;
 
   if (doseMg < low * 0.5) return 'wellBelow';

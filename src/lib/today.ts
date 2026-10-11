@@ -11,15 +11,15 @@
 import { unitsPerMlOf } from './calc';
 import { addDays } from './dates';
 import { totalPlannedDoses, elapsedDoses, timesOnDay } from './schedule';
-import { vialKind, vialStatus, type KindFilter, type SavedVial } from './vials';
+import { kindMeasure, vialKind, vialStatus, type KindFilter, type SavedVial, type VialKind } from './vials';
 
 /** One scheduled dose for a specific date. */
 export interface TodayDose {
   vialId: string;
   /** Name as saved (may be blank — the UI falls back to an "untitled" label). */
   name: string;
-  /** `'peptide'` (insulin units) or `'anabolic'` (mL). */
-  kind: 'peptide' | 'anabolic';
+  /** Which workflow the vial belongs to; this decides how the draw is read. */
+  kind: VialKind;
   /** `yyyy-mm-dd` the dose falls on. */
   date: string;
   /** `HH:mm` of the dose. */
@@ -69,15 +69,18 @@ function toDose(
   nowTime: string,
 ): TodayDose {
   const status = vialStatus(vial, nowIso);
-  const anabolic = vialKind(vial) === 'anabolic';
-  const drawValue = anabolic
+  const kind = vialKind(vial);
+  // A hormone is read in mL as well: its syringe graduations would otherwise be
+  // confused with the IU printed on the vial.
+  const byVolume = kindMeasure(kind) === 'volume';
+  const drawValue = byVolume
     ? status.volumePerDoseMl
     : status.volumePerDoseMl * unitsPerMlOf(vial.syringeType);
 
   return {
     vialId: vial.id,
     name: vial.name,
-    kind: anabolic ? 'anabolic' : 'peptide',
+    kind,
     date,
     time,
     volumeMl: status.volumePerDoseMl,

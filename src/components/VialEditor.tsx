@@ -57,7 +57,8 @@ export function VialEditor({ vial, fallbackSchedule, onSave, onCancel }: VialEdi
         doseAmount: parseNumber(doseAmount),
       }
     : {
-        kind: 'peptide' as const,
+        // A hormone vial stays a hormone vial when it is edited.
+        kind: vialKind(vial),
         vialAmount: parseNumber(vialAmount),
         waterMl: parseNumber(waterMl),
         doseAmount: parseNumber(doseAmount),

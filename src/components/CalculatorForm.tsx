@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { modeMeta, resolveCapacity } from '../config/modes';
 import {
+  DOSE_UNITS,
   SYRINGE_TYPES,
   type DoseUnit,
   type ModeId,
@@ -18,6 +19,8 @@ interface CalculatorFormProps {
   onPeptideChange: (patch: Partial<PeptideForm>) => void;
   anabolic: AnabolicForm;
   onAnabolicChange: (patch: Partial<AnabolicForm>) => void;
+  hormone: PeptideForm;
+  onHormoneChange: (patch: Partial<PeptideForm>) => void;
   syringe: SyringeSettings;
   onSyringeChange: (patch: Partial<SyringeSettings>) => void;
   onReset: () => void;
@@ -59,6 +62,8 @@ export function CalculatorForm({
   onPeptideChange,
   anabolic,
   onAnabolicChange,
+  hormone,
+  onHormoneChange,
   syringe,
   onSyringeChange,
   onReset,
@@ -66,15 +71,20 @@ export function CalculatorForm({
   const { strings } = useI18n();
   const invalidNumber = strings.validation.invalidNumber;
 
-  const unitOptions: SegmentedOption<DoseUnit>[] = [
-    { value: 'mg', label: strings.units.mg },
-    { value: 'mcg', label: strings.units.mcg },
-  ];
+  // Peptides and hormones share the reconstitution fields; only the units and
+  // the placeholders differ. Oils use a completely different (label-driven) set.
+  const reconstituting = mode !== 'anabolic';
+  const reconstituted = mode === 'hormone' ? hormone : peptide;
+  const onReconstitutedChange = mode === 'hormone' ? onHormoneChange : onPeptideChange;
+
+  const unitOptions: SegmentedOption<DoseUnit>[] = (
+    mode === 'hormone' ? DOSE_UNITS : (['mg', 'mcg'] as const)
+  ).map((unit) => ({ value: unit, label: strings.units[unit] }));
 
   const meta = modeMeta(mode);
-  // Anabolic oils are drawn with a plain mL syringe, so the insulin scale
-  // (U-100 / U-40 / U-50) and its "units" only apply to peptides.
-  const usesInsulinSyringe = meta.measure === 'insulin';
+  // Peptides and hormones are drawn with an insulin syringe, so its scale
+  // matters; anabolic oils are read in mL on a plain barrel.
+  const usesInsulinSyringe = meta.showSyringeScale;
   const capacityMl = resolveCapacity(mode, syringe.capacityMl);
 
   const syringeTypeOptions: SegmentedOption<SyringeTypeId>[] = SYRINGE_TYPES.map((type) => ({
@@ -92,24 +102,24 @@ export function CalculatorForm({
       <section className="card">
         <h2 className="card__title">{strings.sections.inputs}</h2>
 
-        {mode === 'peptide' ? (
+        {reconstituting ? (
           <>
             <NumberField
               id="vial-amount"
               label={strings.fields.vialAmount.label}
               hint={strings.fields.vialAmount.hint}
-              value={peptide.vialAmount}
-              onChange={(vialAmount) => onPeptideChange({ vialAmount })}
-              placeholder="5"
-              invalid={isInvalidNumberInput(peptide.vialAmount)}
+              value={reconstituted.vialAmount}
+              onChange={(vialAmount) => onReconstitutedChange({ vialAmount })}
+              placeholder={mode === 'hormone' ? '10' : '5'}
+              invalid={isInvalidNumberInput(reconstituted.vialAmount)}
               error={invalidNumber}
               trailing={
                 <SegmentedControl
                   ariaLabel={strings.fields.vialAmount.label}
                   size="sm"
                   options={unitOptions}
-                  value={peptide.vialUnit}
-                  onChange={(vialUnit) => onPeptideChange({ vialUnit })}
+                  value={reconstituted.vialUnit}
+                  onChange={(vialUnit) => onReconstitutedChange({ vialUnit })}
                 />
               }
             />
@@ -118,10 +128,10 @@ export function CalculatorForm({
               id="water-ml"
               label={strings.fields.waterMl.label}
               hint={strings.fields.waterMl.hint}
-              value={peptide.waterMl}
-              onChange={(waterMl) => onPeptideChange({ waterMl })}
-              placeholder="2"
-              invalid={isInvalidNumberInput(peptide.waterMl)}
+              value={reconstituted.waterMl}
+              onChange={(waterMl) => onReconstitutedChange({ waterMl })}
+              placeholder={mode === 'hormone' ? '1' : '2'}
+              invalid={isInvalidNumberInput(reconstituted.waterMl)}
               error={invalidNumber}
               suffix={strings.units.ml}
             />
@@ -130,18 +140,18 @@ export function CalculatorForm({
               id="peptide-dose"
               label={strings.fields.dose.label}
               hint={strings.fields.dose.hint}
-              value={peptide.doseAmount}
-              onChange={(doseAmount) => onPeptideChange({ doseAmount })}
-              placeholder="250"
-              invalid={isInvalidNumberInput(peptide.doseAmount)}
+              value={reconstituted.doseAmount}
+              onChange={(doseAmount) => onReconstitutedChange({ doseAmount })}
+              placeholder={mode === 'hormone' ? '2' : '250'}
+              invalid={isInvalidNumberInput(reconstituted.doseAmount)}
               error={invalidNumber}
               trailing={
                 <SegmentedControl
                   ariaLabel={strings.fields.dose.label}
                   size="sm"
                   options={unitOptions}
-                  value={peptide.doseUnit}
-                  onChange={(doseUnit) => onPeptideChange({ doseUnit })}
+                  value={reconstituted.doseUnit}
+                  onChange={(doseUnit) => onReconstitutedChange({ doseUnit })}
                 />
               }
             />
