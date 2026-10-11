@@ -3,7 +3,7 @@
 > 🆕 **Picking this up in a new session? Read [`HANDOFF.md`](HANDOFF.md) first** — it is a
 > one-file brief with the architecture, decisions, gotchas and roadmap.
 
-An **installable, offline-first** web app (six pages: Calculator · My vials · Calendar · Reference · Guide · Settings) that turns the **dose you want** into the **exact amount to draw on a syringe** — for reconstituted peptides and ready-to-use anabolic oils. It works with no network and installs to your home screen.
+An **installable, offline-first** web app (seven pages: Calculator · My vials · Calendar · GLP-1 · Reference · Guide · Settings) that turns the **dose you want** into the **exact amount to draw on a syringe** — for reconstituted peptides and ready-to-use anabolic oils. It works with no network and installs to your home screen.
 
 > ⚕️ **Not medical advice.** The app only does the maths. It does not replace a doctor or pharmacist.
 
@@ -63,8 +63,9 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Inverse mode** — "I drew this much — what dose is that?" A toggle on the result panel turns a drawn volume back into a dose (`dose = concentration × volume`), for both peptides and oils.
 - **Cost per dose** — add an optional price (and currency) to a vial and the app shows the **cost per dose** and the **cost of finishing the whole plan**.
 - **Reference sheet** — a fifth page lists commonly cited **typical ranges, cadences and half-lives** for a set of peptides and anabolics, each with a small decay chart, every row stamped as educational only — never a target, never advice.
+- **GLP-1 care page** — a page for the class the app already answers in clicks: **how to use it** (a pen routine *and* a vial routine, because these compounds reach people both ways), **what to check before every use**, a **body-measurement log** (waist first, then hip / neck / upper arm / thigh and weight, each optional, with the change since your first entry and a small trend line), and the **questions worth asking your prescriber** — training and diet included, as questions rather than instructions. No dose, no brand and no target anywhere on it: procedure and arithmetic only, and it says so at the top.
 - **Undo & safe clearing** — deleting a vial offers an **Undo** snackbar, and Settings has a guarded **Clear all data** action for the escape hatch the app used to lack.
-- **Six pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **Reference**, **Guide** (the video), and **Settings** (sync + reminders + your data). The page switcher sits at the top.
+- **Seven pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **GLP-1** (routines, checks and your own measurements), **Reference**, **Guide** (the video), and **Settings** (sync + reminders + your data). The page switcher sits at the top.
 - **A modern, token-driven UI** — spacing/type/radius/elevation/motion tokens, a single accent colour with semantic states, a hand-rolled **SVG icon set** (no emoji), a **phone bottom tab bar**, gentle page motion, a count-up on the headline number and clean field-validity states.
 - **Separate stacks per person** — a **Whose stack** switcher keeps your vials apart from your partner's or a family member's. Every page, the calendar and the saved-vial list belong to exactly **one** person (there is deliberately no "show everyone"), and the people travel with your data in backups and sync. Rename or remove them under **Settings → People**.
 
@@ -163,6 +164,7 @@ src/
 │  ├─ agenda.ts          # pure: ALL plans by day & hour (the Calendar page)
 │  ├─ today.ts           # pure: which doses fall today / what is next (the Today card)
 │  ├─ owners.ts          # pure: "whose stack" — people registry + per-person filtering
+│  ├─ measure.ts         # pure: the body-measurement log — points + change since the first entry
 │  ├─ pk.ts              # pure: one-compartment half-life decay for the reference chart
 │  ├─ cost.ts            # pure: cost per dose + plan cost from an optional vial price
 │  ├─ reference.ts       # static compound reference data (ranges, half-lives) — not advice

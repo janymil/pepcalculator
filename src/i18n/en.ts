@@ -111,7 +111,7 @@ export const en: Strings = {
   },
   actions: { reset: 'Reset', useWater: 'Use {water} mL' },
   validation: { invalidNumber: 'Enter a number greater than 0.' },
-  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'IU' },
+  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'IU', cm: 'cm', kg: 'kg' },
   disclaimer: {
     title: 'Not medical advice',
     body: 'This tool only does the maths. It is not medical advice and does not replace a doctor or pharmacist. Always double-check your dose and your measurement.',
@@ -146,15 +146,16 @@ export const en: Strings = {
   toast: {
     dismiss: 'Dismiss',
     vialDeleted: 'Vial deleted.',
+    measurementDeleted: 'Entry removed.',
     deletedAll: 'All vials deleted.',
     undo: 'Undo',
   },
   danger: {
     title: 'Your data',
-    note: 'Everything lives only in this browser. Clearing it removes every saved vial on this device — download a backup first if you want to keep them.',
+    note: 'Everything lives only in this browser. Clearing it removes every saved vial and every body measurement on this device — download a backup first if you want to keep them.',
     clear: 'Clear all data',
     confirm: 'Tap again to confirm',
-    cleared: 'All saved vials were deleted.',
+    cleared: 'All saved vials and measurements were deleted.',
   },
   footer: {
     note: 'Works offline · Stored only in this browser — download a backup to keep your vials safe.',
@@ -359,6 +360,7 @@ export const en: Strings = {
     calculator: 'Calculator',
     vials: 'My vials',
     calendar: 'Calendar',
+    glp1: 'GLP-1',
     reference: 'Reference',
     guide: 'Guide',
     settings: 'Settings',
@@ -371,6 +373,94 @@ export const en: Strings = {
     open: 'Open the video on its own',
     saveHint:
       'Want the file? Press Export video (.webm) under the video to record it, then convert it to MP4 if you need one.',
+  },
+  /**
+   * The GLP-1 care page. Procedure and questions only: how to use a device, what
+   * to check, how to follow the change and what to ask — never how much to take,
+   * and never a brand.
+   */
+  glp1: {
+    title: 'GLP-1 care',
+    subtitle: 'Using it safely, following the change, and the questions worth asking.',
+    note: 'This page is procedure and arithmetic. It is not medical advice, and it never replaces your prescriber or the leaflet that came with your medicine.',
+    routine: {
+      title: 'How to use it',
+      hint: 'Read the leaflet that came with your device first. Where it disagrees with this page, the leaflet wins.',
+      pen: {
+        title: 'If it is a pen',
+        steps: [
+          { title: 'Wash your hands', body: 'Soap and water, then let them dry. It is the cheapest step there is.' },
+          { title: 'Check the date and the in-use window', body: 'How long an opened pen keeps is printed in its own leaflet — check that, not this page.' },
+          { title: 'Look at the liquid', body: 'It should be clear. Cloudy, coloured or containing particles means stop and ask a pharmacist.' },
+          { title: 'New needle, firmly on', body: 'A fresh needle every time, pushed straight on and tight. Reusing one is how doses go wrong.' },
+          { title: 'Set the dial to your prescribed amount', body: 'Turn it until the number, or the clicks, match what your prescriber told you — not what an app suggests.' },
+          { title: 'Prime only if your leaflet says to', body: 'Some pens want a small test shot into the air first, to prove the flow. Follow your leaflet either way.' },
+          { title: 'Inject, then hold', body: 'Keep the needle in for the count your leaflet gives. Pulling out early is the usual cause of a wet spot.' },
+          { title: 'Dispose of the needle', body: 'Straight into a sharps bin. Never re-cap a used needle, and never leave it on the pen.' },
+        ],
+      },
+      vial: {
+        title: 'If you draw from a vial',
+        steps: [
+          { title: 'Check the label against the screen', body: 'Same compound, same strength. The calculator works out the draw for the vial you saved — make sure you are holding that one.' },
+          { title: 'Wipe the rubber stopper', body: 'Alcohol swab, then let it dry. A wet stopper carries alcohol into the vial.' },
+          { title: 'Draw the figure the app gives you', body: 'The same syringe size as in the calculator, filled to the draw it shows for this vial.' },
+          { title: 'Look at the liquid', body: 'Clear, with no particles. If it is cloudy or has specks in it, do not use it.' },
+          { title: 'New needle and syringe', body: 'Every time, for every vial.' },
+          { title: 'Inject, then dispose', body: 'Straight into a sharps bin.' },
+        ],
+      },
+    },
+    checks: {
+      title: 'Before you use it',
+      hint: 'Every time. It takes ten seconds, and it is the part that catches mistakes.',
+      items: [
+        { title: 'The name matches', body: 'The label in your hand against the screen. Two vials with the same name can be mixed differently.' },
+        { title: 'The date and the in-use window are fine', body: 'Your leaflet says how long it keeps once opened or mixed.' },
+        { title: 'The liquid is clear', body: 'No cloudiness, no colour change, no particles.' },
+        { title: 'The needle is new and firmly on', body: 'And the dial, or the syringe, reads the amount you are expecting.' },
+        { title: 'That amount is your prescription', body: 'Not a figure this app produced, and not one from a plan you have since changed.' },
+        { title: 'A sharps bin is within reach', body: 'So the needle goes into it straight away.' },
+      ],
+    },
+    track: {
+      title: 'Follow the change',
+      subtitle: 'Waist first, then whatever else you can measure the same way twice.',
+      hint: 'Measure the same way, at about the same time of day, roughly once a week. The direction over a month says more than any single number.',
+      date: 'Date',
+      optional: 'Fill in only what you measured — one number is enough to start.',
+      add: 'Save measurement',
+      empty: 'No measurements yet.',
+      log: 'Your log',
+      latest: 'Latest',
+      since: 'Change since your first entry',
+      needsTwo: 'Two entries needed to compare.',
+      change: '{from} → {to}',
+      remove: 'Remove the entry from {date}',
+      trend: '{field} over time',
+    },
+    ask: {
+      title: 'Ask your prescriber',
+      subtitle: 'Questions worth asking before you start, step up or stop. Take them to your appointment.',
+      items: [
+        'What should I eat to keep muscle while I lose weight?',
+        'Should I be doing resistance training, and how often?',
+        'How fast should the dose go up, and what if I get side effects?',
+        'What should I do if I miss a dose?',
+        'Which side effects mean I should call you rather than wait?',
+        'Does anything I already take change this?',
+        'What do I do if I cannot keep food or water down?',
+        'How would we stop, if I wanted to?',
+      ],
+    },
+    points: {
+      waistCm: 'Waist',
+      hipCm: 'Hip',
+      neckCm: 'Neck',
+      armCm: 'Upper arm',
+      thighCm: 'Thigh',
+      weightKg: 'Weight',
+    },
   },
   kinds: {
     /** HGH, HCG and similar: labelled and dosed in IU. */

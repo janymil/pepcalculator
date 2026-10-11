@@ -111,7 +111,7 @@ export const sk: Strings = {
   },
   actions: { reset: 'Vymazať', useWater: 'Použiť {water} mL' },
   validation: { invalidNumber: 'Zadajte číslo väčšie ako 0.' },
-  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'IU' },
+  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'IU', cm: 'cm', kg: 'kg' },
   disclaimer: {
     title: 'Toto nie je lekárska rada',
     body: 'Nástroj robí len výpočet. Nie je lekárskou radou a nenahrádza lekára ani lekárnika. Dávku aj meranie vždy dôkladne skontrolujte.',
@@ -146,15 +146,16 @@ export const sk: Strings = {
   toast: {
     dismiss: 'Zavrieť',
     vialDeleted: 'Fľaštička vymazaná.',
+    measurementDeleted: 'Zápis odstránený.',
     deletedAll: 'Všetky fľaštičky vymazané.',
     undo: 'Späť',
   },
   danger: {
     title: 'Vaše údaje',
-    note: 'Všetko je uložené len v tomto prehliadači. Vymazaním odstránite všetky uložené fľaštičky v tomto zariadení — ak si ich chcete ponechať, najprv si stiahnite zálohu.',
+    note: 'Všetko je uložené len v tomto prehliadači. Vymazaním odstránite všetky uložené fľaštičky aj všetky merania v tomto zariadení — ak si ich chcete ponechať, najprv si stiahnite zálohu.',
     clear: 'Vymazať všetky údaje',
     confirm: 'Potvrďte ďalším kliknutím',
-    cleared: 'Všetky uložené fľaštičky boli vymazané.',
+    cleared: 'Všetky uložené fľaštičky aj merania boli vymazané.',
   },
   footer: {
     note: 'Funguje offline · Údaje sú len v tomto prehliadači — stiahnite si zálohu, aby ste o ne neprišli.',
@@ -359,6 +360,7 @@ export const sk: Strings = {
     calculator: 'Kalkulačka',
     vials: 'Moje fľaštičky',
     calendar: 'Kalendár',
+    glp1: 'GLP-1',
     reference: 'Prehľad',
     guide: 'Návod',
     settings: 'Nastavenia',
@@ -370,6 +372,94 @@ export const sk: Strings = {
     open: 'Otvoriť video samostatne',
     saveHint:
       'Chcete súbor? Pod videom stlačte Export video (.webm) a nahrá sa; ak potrebujete MP4, skonvertujte ho.',
+  },
+  /**
+   * Stránka starostlivosti o GLP-1. Len postup a otázky: ako používať zariadenie,
+   * čo skontrolovať, ako sledovať zmenu a na čo sa opýtať — nikdy koľko si dať
+   * a nikdy žiadna značka.
+   */
+  glp1: {
+    title: 'Starostlivosť o GLP-1',
+    subtitle: 'Bezpečné používanie, sledovanie zmeny a otázky, ktoré stojí za to položiť.',
+    note: 'Táto stránka je postup a aritmetika. Nie je lekárskou radou a nenahrádza vášho lekára ani príbalový leták k lieku.',
+    routine: {
+      title: 'Ako to používať',
+      hint: 'Najprv si prečítajte leták, ktorý bol priložený k vášmu zariadeniu. Kde sa líši od tejto stránky, platí leták.',
+      pen: {
+        title: 'Ak je to pero',
+        steps: [
+          { title: 'Umyte si ruky', body: 'Mydlo a voda, potom nechajte uschnúť. Najlacnejší krok, aký existuje.' },
+          { title: 'Skontrolujte dátum a dobu po otvorení', body: 'Ako dlho otvorené pero vydrží, je uvedené v jeho letáku — riaďte sa ním, nie touto stránkou.' },
+          { title: 'Pozrite sa na roztok', body: 'Má byť číry. Zakalený, sfarbený alebo s čiastočkami znamená zastaviť a opýtať sa lekárnika.' },
+          { title: 'Nová ihla, pevne nasadená', body: 'Vždy nová ihla, nasadená priamo a pevne. Opakované použitie ihly je najčastejšia chyba.' },
+          { title: 'Nastavte dávkovanie podľa predpisu', body: 'Otáčajte, kým číslo alebo kliknutia nesedia s tým, čo vám povedal lekár — nie s tým, čo navrhuje aplikácia.' },
+          { title: 'Odvzdušnite, len ak to píše leták', body: 'Niektoré perá chcú pred injekciou malú skúšobnú dávku do vzduchu, aby sa overil prietok. Riaďte sa letákom.' },
+          { title: 'Pichnite a potom podržte', body: 'Nechajte ihlu v koži tak dlho, ako uvádza leták. Predčasné vytiahnutie je bežná príčina mokrého miesta.' },
+          { title: 'Zlikvidujte ihlu', body: 'Rovno do obalu na ostré predmety. Použitú ihlu nikdy nezakrývajte a nenechávajte ju na pere.' },
+        ],
+      },
+      vial: {
+        title: 'Ak ťaháte z fľaštičky',
+        steps: [
+          { title: 'Porovnajte označenie s obrazovkou', body: 'Rovnaká látka, rovnaká koncentrácia. Kalkulačka počíta pre fľaštičku, ktorú ste si uložili — overte, že držíte tú.' },
+          { title: 'Vyčistite gumený uzáver', body: 'Tampón s alkoholom, potom nechajte uschnúť. Mokrý uzáver zanesie alkohol do fľaštičky.' },
+          { title: 'Natiahnite množstvo, ktoré dáva aplikácia', body: 'Rovnaká veľkosť striekačky ako v kalkulačke, naplnená po hodnotu, ktorú ukazuje pre túto fľaštičku.' },
+          { title: 'Pozrite sa na roztok', body: 'Číry, bez čiastočiek. Ak je zakalený alebo v ňom niečo pláva, nepoužívajte ho.' },
+          { title: 'Nová ihla a striekačka', body: 'Vždy, pri každej fľaštičke.' },
+          { title: 'Pichnite a zlikvidujte', body: 'Rovno do obalu na ostré predmety.' },
+        ],
+      },
+    },
+    checks: {
+      title: 'Pred použitím',
+      hint: 'Vždy. Trvá to desať sekúnd a práve to odhalí chyby.',
+      items: [
+        { title: 'Názov sedí', body: 'Označenie v ruke proti obrazovke. Dve fľaštičky s rovnakým názvom môžu byť nariedené inak.' },
+        { title: 'Dátum a doba po otvorení sú v poriadku', body: 'V letáku je uvedené, ako dlho to po otvorení alebo nariedení vydrží.' },
+        { title: 'Roztok je číry', body: 'Bez zákalu, bez zmeny farby, bez čiastočiek.' },
+        { title: 'Ihla je nová a pevne nasadená', body: 'A dávkovanie — na pere alebo na striekačke — ukazuje množstvo, ktoré očakávate.' },
+        { title: 'To množstvo je váš predpis', body: 'Nie hodnota z tejto aplikácie a nie hodnota z plánu, ktorý ste medzitým zmenili.' },
+        { title: 'Obal na ostré predmety je poruke', body: 'Aby doň ihla šla hneď.' },
+      ],
+    },
+    track: {
+      title: 'Sledujte zmenu',
+      subtitle: 'Najprv pás, potom čokoľvek, čo viete zmerať dvakrát rovnako.',
+      hint: 'Merajte rovnako, zhruba v rovnakú dennú dobu, asi raz týždenne. Smer za mesiac povie viac než jedno číslo.',
+      date: 'Dátum',
+      optional: 'Vyplňte len to, čo ste zmerali — na začiatok stačí jedno číslo.',
+      add: 'Uložiť meranie',
+      empty: 'Zatiaľ žiadne merania.',
+      log: 'Váš denník',
+      latest: 'Najnovšie',
+      since: 'Zmena od prvého zápisu',
+      needsTwo: 'Na porovnanie treba dva zápisy.',
+      change: '{from} → {to}',
+      remove: 'Odstrániť zápis z {date}',
+      trend: '{field} v čase',
+    },
+    ask: {
+      title: 'Opýtajte sa svojho lekára',
+      subtitle: 'Otázky, ktoré stoja za to položiť pred začiatkom, zvýšením dávky alebo ukončením. Vezmite si ich na kontrolu.',
+      items: [
+        'Čo mám jesť, aby som pri chudnutí nestrácal svaly?',
+        'Mám cvičiť so závažím a ako často?',
+        'Ako rýchlo má dávka stúpať a čo robiť pri vedľajších účinkoch?',
+        'Čo mám robiť, ak vynechám dávku?',
+        'Ktoré vedľajšie účinky znamenajú, že mám zavolať hneď?',
+        'Mení niečo z toho, čo už užívam, tento liek?',
+        'Čo robiť, ak nedokážem udržať jedlo ani vodu?',
+        'Ako by sme to ukončili, keby som chcel?',
+      ],
+    },
+    points: {
+      waistCm: 'Pás',
+      hipCm: 'Boky',
+      neckCm: 'Krk',
+      armCm: 'Nadlaktie',
+      thighCm: 'Stehno',
+      weightKg: 'Hmotnosť',
+    },
   },
   kinds: {
     /** HGH, HCG a podobne: označené a dávkované v IU. */

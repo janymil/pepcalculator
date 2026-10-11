@@ -6,6 +6,7 @@ const VIEW_ICONS: Record<ViewId, IconName> = {
   calculator: 'calculator',
   vials: 'flask',
   calendar: 'calendar',
+  glp1: 'shield',
   reference: 'book',
   guide: 'info',
   settings: 'settings',

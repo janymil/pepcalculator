@@ -7,6 +7,7 @@ describe('views', () => {
       'calculator',
       'vials',
       'calendar',
+      'glp1',
       'reference',
       'guide',
       'settings',
@@ -17,6 +18,7 @@ describe('views', () => {
     expect(isViewId('calculator')).toBe(true);
     expect(isViewId('vials')).toBe(true);
     expect(isViewId('calendar')).toBe(true);
+    expect(isViewId('glp1')).toBe(true);
     expect(isViewId('reference')).toBe(true);
     expect(isViewId('guide')).toBe(true);
     expect(isViewId('settings')).toBe(true);

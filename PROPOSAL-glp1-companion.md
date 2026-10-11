@@ -1,8 +1,11 @@
 # Proposal — a "GLP-1 companion" for PepCalculator
 
-**Status:** proposal, plus one small correction already landed — see "Corrections made while writing
-this", below. The companion itself is **not** built, and this file changes no behaviour. It exists so
-the decision is made in one place instead of drifting into code.
+**Status:** proposed, then **built** — phases 1–3 shipped as one page: the **GLP-1** tab
+(`components/Glp1Page.tsx` + `lib/measure.ts` + storage key `pepcalc.v1.measurements`). Phase 4 (a
+"general principles" card) did **not** ship, and is still the open question at the bottom. This file
+is now the record of the agreed scope — molecules only, no brands, questions instead of instructions —
+rather than a to-do list. What was deliberately left out is listed under "What I would refuse to
+build", and most of it is still refused.
 
 **The ask:** a special function for the GLP-1 class — the molecules **tirzepatide** and
 **retatrutide**, with no brand names anywhere — that tells the user
@@ -88,6 +91,8 @@ this pen".
 ---
 
 ## Proposed scope — four phases, each shippable on its own
+
+*(1–3 shipped as one page; 4 did not, and is the decision at the end of this file.)*
 
 ### Phase 1 — Pen routine + pre-use check *(small, highest value, lowest risk)*
 

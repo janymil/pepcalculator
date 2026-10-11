@@ -111,7 +111,7 @@ export const es: Strings = {
   },
   actions: { reset: 'Restablecer', useWater: 'Usar {water} mL' },
   validation: { invalidNumber: 'Introduce un número mayor que 0.' },
-  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'UI' },
+  units: { mg: 'mg', mcg: 'mcg', ml: 'mL', IU: 'UI', cm: 'cm', kg: 'kg' },
   disclaimer: {
     title: 'No es consejo médico',
     body: 'Esta herramienta solo hace los cálculos. No es consejo médico ni sustituye a un médico o a un farmacéutico. Verifica siempre tu dosis y tu medición.',
@@ -146,15 +146,16 @@ export const es: Strings = {
   toast: {
     dismiss: 'Cerrar',
     vialDeleted: 'Vial eliminado.',
+    measurementDeleted: 'Registro eliminado.',
     deletedAll: 'Todos los viales eliminados.',
     undo: 'Deshacer',
   },
   danger: {
     title: 'Tus datos',
-    note: 'Todo se guarda solo en este navegador. Si lo borras, eliminarás todos los viales guardados en este dispositivo; descarga antes una copia de seguridad si quieres conservarlos.',
+    note: 'Todo se guarda solo en este navegador. Si lo borras, eliminarás todos los viales guardados y todas tus mediciones en este dispositivo; descarga antes una copia de seguridad si quieres conservarlos.',
     clear: 'Borrar todos los datos',
     confirm: 'Toca otra vez para confirmar',
-    cleared: 'Se eliminaron todos los viales guardados.',
+    cleared: 'Se eliminaron todos los viales guardados y las mediciones.',
   },
   footer: {
     note: 'Funciona sin conexión · Solo se guardan en este navegador — descarga una copia de seguridad.',
@@ -361,6 +362,7 @@ export const es: Strings = {
     calculator: 'Calculadora',
     vials: 'Mis viales',
     calendar: 'Calendario',
+    glp1: 'GLP-1',
     reference: 'Referencia',
     guide: 'Guía',
     settings: 'Ajustes',
@@ -372,6 +374,94 @@ export const es: Strings = {
     open: 'Abrir el vídeo por separado',
     saveHint:
       '¿Quieres el archivo? Pulsa Export video (.webm) bajo el vídeo para grabarlo y conviértelo a MP4 si lo necesitas.',
+  },
+  /**
+   * La página de cuidados del GLP-1. Solo procedimiento y preguntas: cómo usar
+   * un dispositivo, qué comprobar, cómo seguir el cambio y qué preguntar — nunca
+   * cuánto tomar, y nunca una marca.
+   */
+  glp1: {
+    title: 'Cuidados del GLP-1',
+    subtitle: 'Usarlo con seguridad, seguir el cambio y las preguntas que vale la pena hacer.',
+    note: 'Esta página es procedimiento y aritmética. No es consejo médico y nunca sustituye a tu médico ni al prospecto que viene con tu medicamento.',
+    routine: {
+      title: 'Cómo usarlo',
+      hint: 'Lee primero el prospecto que viene con tu dispositivo. Donde no coincida con esta página, manda el prospecto.',
+      pen: {
+        title: 'Si es una pluma',
+        steps: [
+          { title: 'Lávate las manos', body: 'Agua y jabón, y deja que se sequen. Es el paso más barato que hay.' },
+          { title: 'Comprueba la fecha y el plazo de uso', body: 'Cuánto dura una pluma abierta lo dice su propio prospecto: míralo ahí, no en esta página.' },
+          { title: 'Mira el líquido', body: 'Debe ser transparente. Turbio, con color o con partículas significa parar y preguntar a un farmacéutico.' },
+          { title: 'Aguja nueva, bien puesta', body: 'Una aguja nueva cada vez, colocada recta y firme. Reutilizarla es como se fallan las dosis.' },
+          { title: 'Pon el dial en tu dosis recetada', body: 'Gíralo hasta que el número, o los clics, coincidan con lo que te dijo tu médico, no con lo que sugiera una aplicación.' },
+          { title: 'Ceba solo si el prospecto lo indica', body: 'Algunas plumas quieren una pequeña prueba al aire para comprobar el flujo. Sigue tu prospecto en cualquier caso.' },
+          { title: 'Inyecta y luego espera', body: 'Mantén la aguja dentro el tiempo que indique tu prospecto. Sacarla antes es la causa habitual de una gota en la piel.' },
+          { title: 'Desecha la aguja', body: 'Directa al contenedor de objetos cortantes. Nunca vuelvas a tapar una aguja usada ni la dejes en la pluma.' },
+        ],
+      },
+      vial: {
+        title: 'Si extraes de un vial',
+        steps: [
+          { title: 'Compara la etiqueta con la pantalla', body: 'Mismo compuesto, misma concentración. La calculadora calcula para el vial que guardaste: comprueba que tienes ese.' },
+          { title: 'Limpia el tapón de goma', body: 'Con una toallita de alcohol y deja que se seque. Un tapón húmedo arrastra alcohol al vial.' },
+          { title: 'Usa la extracción que te da la app', body: 'La misma jeringa que en la calculadora, llena hasta la cifra que muestra para ese vial.' },
+          { title: 'Mira el líquido', body: 'Transparente, sin partículas. Si está turbio o tiene motas, no lo uses.' },
+          { title: 'Aguja y jeringa nuevas', body: 'Siempre, en cada vial.' },
+          { title: 'Inyecta y desecha', body: 'Directa al contenedor de objetos cortantes.' },
+        ],
+      },
+    },
+    checks: {
+      title: 'Antes de usarlo',
+      hint: 'Siempre. Tarda diez segundos y es lo que detecta los errores.',
+      items: [
+        { title: 'El nombre coincide', body: 'La etiqueta que tienes en la mano contra la pantalla. Dos viales con el mismo nombre pueden estar mezclados de forma distinta.' },
+        { title: 'La fecha y el plazo de uso están bien', body: 'Tu prospecto dice cuánto dura una vez abierto o mezclado.' },
+        { title: 'El líquido está transparente', body: 'Sin turbidez, sin cambio de color, sin partículas.' },
+        { title: 'La aguja es nueva y está firme', body: 'Y el dial, o la jeringa, marca la cantidad que esperas.' },
+        { title: 'Esa cantidad es tu receta', body: 'No una cifra que haya producido esta aplicación, ni la de un plan que hayas cambiado después.' },
+        { title: 'Tienes el contenedor de cortantes a mano', body: 'Para que la aguja entre directamente.' },
+      ],
+    },
+    track: {
+      title: 'Sigue el cambio',
+      subtitle: 'Primero la cintura; después lo que puedas medir dos veces igual.',
+      hint: 'Mide igual, más o menos a la misma hora del día, una vez por semana. La dirección de un mes dice más que cualquier cifra suelta.',
+      date: 'Fecha',
+      optional: 'Rellena solo lo que hayas medido: con un número basta para empezar.',
+      add: 'Guardar medición',
+      empty: 'Todavía no hay mediciones.',
+      log: 'Tu registro',
+      latest: 'Última',
+      since: 'Cambio desde tu primer registro',
+      needsTwo: 'Hacen falta dos registros para comparar.',
+      change: '{from} → {to}',
+      remove: 'Eliminar el registro del {date}',
+      trend: '{field} a lo largo del tiempo',
+    },
+    ask: {
+      title: 'Pregunta a tu médico',
+      subtitle: 'Preguntas que vale la pena hacer antes de empezar, de subir la dosis o de dejarlo. Llévalas a la consulta.',
+      items: [
+        '¿Qué debería comer para no perder músculo mientras adelgazo?',
+        '¿Debería hacer entrenamiento de fuerza y con qué frecuencia?',
+        '¿A qué ritmo debe subir la dosis y qué hago si tengo efectos secundarios?',
+        '¿Qué hago si me salto una dosis?',
+        '¿Qué efectos secundarios significan que debo llamarte en vez de esperar?',
+        '¿Cambia algo de lo que ya tomo este tratamiento?',
+        '¿Qué hago si no puedo retener ni comida ni agua?',
+        '¿Cómo lo dejaríamos si yo quisiera?',
+      ],
+    },
+    points: {
+      waistCm: 'Cintura',
+      hipCm: 'Cadera',
+      neckCm: 'Cuello',
+      armCm: 'Brazo',
+      thighCm: 'Muslo',
+      weightKg: 'Peso',
+    },
   },
   kinds: {
     /** HGH, HCG y similares: etiquetados y dosificados en UI. */

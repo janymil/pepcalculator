@@ -42,6 +42,7 @@ describe('App (server render smoke test)', () => {
     expect(html).not.toContain('vials-title');
     expect(html).not.toContain('reminders-title');
     expect(html).not.toContain('reference-title');
+    expect(html).not.toContain('glp1-title');
   });
 
   it('renders a tab for every page in the registry', () => {
@@ -49,6 +50,7 @@ describe('App (server render smoke test)', () => {
     expect(html).toContain('Calculator');
     expect(html).toContain('My vials');
     expect(html).toContain('Calendar');
+    expect(html).toContain('GLP-1');
     expect(html).toContain('Reference');
     expect(html).toContain('Guide');
     expect(html).toContain('Settings');

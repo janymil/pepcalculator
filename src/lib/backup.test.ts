@@ -136,6 +136,43 @@ describe('parseBackup', () => {
     }
   });
 
+  it('carries the measurement log, so a restore does not lose it', () => {
+    const json = serializeBackup([makeVial()], '2026-10-10T08:00:00.000Z', [], [
+      { id: 'm1', date: '2026-01-05', waistCm: 104, updatedAt: '2026-01-05T08:00:00.000Z' },
+    ]);
+
+    const result = parseBackup(json);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.measurements).toHaveLength(1);
+      expect(result.measurements[0].waistCm).toBe(104);
+    }
+  });
+
+  it('leaves removed measurements out of the file, exactly like removed vials', () => {
+    const json = serializeBackup([makeVial()], '2026-10-10T08:00:00.000Z', [], [
+      { id: 'm1', date: '2026-01-05', waistCm: 104, updatedAt: '2026-01-05T08:00:00.000Z' },
+      {
+        id: 'm2',
+        date: '2026-01-06',
+        waistCm: 100,
+        updatedAt: '2026-01-06T08:00:00.000Z',
+        deletedAt: '2026-01-07T00:00:00.000Z',
+      },
+    ]);
+
+    const result = parseBackup(json);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.measurements.map((entry) => entry.id)).toEqual(['m1']);
+  });
+
+  it('reads a backup written before the log existed, without inventing one', () => {
+    const result = parseBackup(JSON.stringify({ app: BACKUP_APP_ID, vials: [makeVial()] }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.measurements).toEqual([]);
+  });
+
   it('derives a person for every vial in a backup that predates owners', () => {
     const json = JSON.stringify({
       app: BACKUP_APP_ID,

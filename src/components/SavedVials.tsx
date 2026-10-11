@@ -6,6 +6,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { backupFileName, decryptBackup, encryptBackup, isEncryptedBackup, parseBackup, serializeBackup } from '../lib/backup';
 import { daysBetween } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
+import type { Measurement } from '../lib/measure';
 import type { Owner } from '../lib/owners';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
 import { buildSupply } from '../lib/supply';
@@ -50,10 +51,15 @@ interface SavedVialsProps {
   vials: SavedVial[];
   /** The people, so a backup keeps the stacks separate. */
   owners: Owner[];
+  /**
+   * The body-measurement log, so a backup carries it and a restore brings it
+   * back. Optional: the backup is the only feature on this page that uses it.
+   */
+  measurements?: Measurement[];
   todayIso: string;
   nowTime: string;
   onUpdate: (vial: SavedVial) => void;
-  onRestore: (vials: SavedVial[], owners: Owner[]) => void;
+  onRestore: (vials: SavedVial[], owners: Owner[], measurements: Measurement[]) => void;
   onLoad: (vial: SavedVial) => void;
   onAddDose: (id: string) => void;
   onRemoveDose: (id: string) => void;
@@ -199,6 +205,7 @@ function VialCardLegacy({
 export function SavedVials({
   vials,
   owners,
+  measurements = [],
   todayIso,
   nowTime,
   onUpdate,
@@ -276,7 +283,7 @@ export function SavedVials({
 
   /** Downloads every saved vial as a JSON file — encrypted when a passphrase is set. */
   const handleBackup = async () => {
-    const plain = serializeBackup(vials, new Date().toISOString(), owners);
+    const plain = serializeBackup(vials, new Date().toISOString(), owners, measurements);
 
     let text = plain;
     if (passphrase !== '') {
@@ -331,7 +338,7 @@ export function SavedVials({
 
       const result = parseBackup(readable);
       if (result.ok) {
-        onRestore(result.vials, result.owners);
+        onRestore(result.vials, result.owners, result.measurements);
         setNotice(interpolate(strings.backup.restored, { count: result.vials.length }));
         return;
       }

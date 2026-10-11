@@ -3,6 +3,7 @@ import { AgendaPage } from './components/AgendaPage';
 import { CalculatorForm } from './components/CalculatorForm';
 import { Footer } from './components/Footer';
 import { FirstRunCard, type ExampleSet } from './components/FirstRunCard';
+import { Glp1Page, type MeasurementDraft } from './components/Glp1Page';
 import { GuidePage } from './components/GuidePage';
 import { Header } from './components/Header';
 import { MobileSummaryBar } from './components/MobileSummaryBar';
@@ -35,6 +36,7 @@ import { I18nProvider } from './i18n/I18nContext';
 import type { Lang } from './i18n/types';
 import { calculateAnabolic, calculateHormone, calculatePeptide, suggestWaterMl, unitsPerMlOf, SYRINGE_TYPES, type ModeId } from './lib/calc';
 import { parseNumber } from './lib/format';
+import { createMeasurementId, liveMeasurements, mergeMeasurements, type Measurement } from './lib/measure';
 import { toIsoDate } from './lib/dates';
 import type { VialSchedule } from './lib/schedule';
 import { isStandalone } from './lib/pwa';
@@ -100,6 +102,14 @@ export default function App() {
   const [glp1, setGlp1] = useLocalStorage<Glp1Form>(STORAGE_KEYS.glp1, DEFAULT_GLP1_FORM);
   const [pen, setPen] = useLocalStorage<PenSettings>(STORAGE_KEYS.pen, DEFAULT_PEN);
   const [savedVials, setSavedVials] = useLocalStorage<SavedVial[]>(STORAGE_KEYS.vials, []);
+  /**
+   * The body-measurement log. It belongs to a person, exactly like a vial, so it
+   * is scoped by the same owner switch rather than mixed into one list.
+   */
+  const [measurements, setMeasurements] = useLocalStorage<Measurement[]>(
+    STORAGE_KEYS.measurements,
+    [],
+  );
   const [syncCode, setSyncCode] = useLocalStorage<string>(STORAGE_KEYS.syncCode, '');
   const [syncServer, setSyncServer] = useLocalStorage<string>(
     STORAGE_KEYS.syncServer,
@@ -155,6 +165,11 @@ export default function App() {
   const ownerId = resolveOwnerId(owners, activeOwnerId);
   /** Every view (vials, calendar, today) renders from this, never from the mix. */
   const scopedVials = useMemo(() => filterByOwner(liveVialList, ownerId), [liveVialList, ownerId]);
+  /** The measurement log for the selected person, removals hidden. */
+  const scopedMeasurements = useMemo(
+    () => filterByOwner(liveMeasurements(measurements), ownerId),
+    [measurements, ownerId],
+  );
   /** Live vial counts per person — shown in Settings, and guards removal. */
   const vialCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -506,8 +521,16 @@ export default function App() {
   const handleClearAll = () => {
     const now = new Date().toISOString();
     const snapshot = savedVials;
+    const measurementSnapshot = measurements;
     setSavedVials((previous) => clearAllVials(previous, now));
-    showUndo(strings.toast.deletedAll, () => setSavedVials(snapshot));
+    // "Clear all data" means all of it, so the measurement log goes too.
+    setMeasurements((previous) =>
+      previous.map((entry) => ({ ...entry, deletedAt: now, updatedAt: now })),
+    );
+    showUndo(strings.toast.deletedAll, () => {
+      setSavedVials(snapshot);
+      setMeasurements(measurementSnapshot);
+    });
   };
 
   const handleUpdateVial = (updated: SavedVial) => {
@@ -518,7 +541,38 @@ export default function App() {
     );
   };
 
-  const handleRestoreVials = (restored: SavedVial[], restoredOwners: Owner[]) => {
+  /** Logs one measurement for the selected person. */
+  const handleAddMeasurement = (draft: MeasurementDraft) => {
+    const now = new Date().toISOString();
+    setMeasurements((previous) => [
+      ...previous,
+      {
+        id: createMeasurementId(),
+        ownerId,
+        date: draft.date,
+        ...draft.fields,
+        updatedAt: now,
+      },
+    ]);
+  };
+
+  /** Soft-deletes one entry, so the removal is undoable like a vial deletion. */
+  const handleRemoveMeasurement = (id: string) => {
+    const snapshot = measurements;
+    const now = new Date().toISOString();
+    setMeasurements((previous) =>
+      previous.map((entry) =>
+        entry.id === id ? { ...entry, deletedAt: now, updatedAt: now } : entry,
+      ),
+    );
+    showUndo(strings.toast.measurementDeleted, () => setMeasurements(snapshot));
+  };
+
+  const handleRestoreVials = (
+    restored: SavedVial[],
+    restoredOwners: Owner[],
+    restoredMeasurements: Measurement[],
+  ) => {
     // Restoring is an explicit "bring these back": revive anything tombstoned
     // and stamp them as the newest copies so they win the merge.
     const now = new Date().toISOString();
@@ -526,6 +580,15 @@ export default function App() {
     setSavedVials((previous) => purgeTombstones(mergeVials(previous, revived)));
     // The people travel with the vials, so their stacks stay separate.
     setOwners((previous) => mergeOwners(previous, restoredOwners));
+    // The measurement log comes back the same way, on the same rule.
+    if (restoredMeasurements.length > 0) {
+      const revivedLog = restoredMeasurements.map((entry) => ({
+        ...entry,
+        deletedAt: undefined,
+        updatedAt: now,
+      }));
+      setMeasurements((previous) => mergeMeasurements(previous, revivedLog));
+    }
   };
 
   const handleSelectOwner = (id: string) => setActiveOwnerId(id);
@@ -641,6 +704,7 @@ export default function App() {
             <SavedVials
               vials={scopedVials}
               owners={owners}
+              measurements={scopedMeasurements}
               todayIso={todayIso}
               nowTime={nowTime}
               onUpdate={handleUpdateVial}
@@ -678,6 +742,13 @@ export default function App() {
               vialCounts={vialCounts}
               onRenameOwner={handleRenameOwner}
               onRemoveOwner={handleRemoveOwner}
+            />
+          ) : view === 'glp1' ? (
+            <Glp1Page
+              measurements={scopedMeasurements}
+              todayIso={todayIso}
+              onAdd={handleAddMeasurement}
+              onRemove={handleRemoveMeasurement}
             />
           ) : view === 'reference' ? (
             <ReferencePage vials={savedVials} todayIso={todayIso} />

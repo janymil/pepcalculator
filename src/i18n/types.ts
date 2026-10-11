@@ -1,4 +1,5 @@
 import type { ModeId, WarningCode } from '../lib/calc';
+import type { MeasureField } from '../lib/measure';
 import type { SiteId } from '../lib/sites';
 
 export type Lang = 'en' | 'sk' | 'es';
@@ -15,6 +16,18 @@ export interface ModeCopy {
 export interface FieldCopy {
   label: string;
   hint: string;
+}
+
+/** One titled step of a routine or a check list. */
+export interface StepCopy {
+  title: string;
+  body: string;
+}
+
+/** A device routine: its own heading and its ordered steps. */
+export interface RoutineCopy {
+  title: string;
+  steps: StepCopy[];
 }
 
 /**
@@ -80,7 +93,17 @@ export interface Strings {
     /** Shown under a field whose text is not a usable positive number. */
     invalidNumber: string;
   };
-  units: { mg: string; mcg: string; ml: string; /** International units (activity). */ IU: string };
+  units: {
+    mg: string;
+    mcg: string;
+    ml: string;
+    /** International units (activity). */
+    IU: string;
+    /** Centimetres — the unit a circumference is logged in. */
+    cm: string;
+    /** Kilograms — the unit weight is logged in. */
+    kg: string;
+  };
   disclaimer: { title: string; body: string; pointOfUse: string };
   firstRun: {
     title: string;
@@ -114,7 +137,14 @@ export interface Strings {
     /** Placeholder for the drawn-volume input. */
     volumePlaceholder: string;
   };
-  toast: { dismiss: string; vialDeleted: string; deletedAll: string; undo: string };
+  toast: {
+    dismiss: string;
+    vialDeleted: string;
+    /** Toast after removing one body-measurement entry. */
+    measurementDeleted: string;
+    deletedAll: string;
+    undo: string;
+  };
   danger: {
     title: string;
     note: string;
@@ -351,8 +381,10 @@ export interface Strings {
     calculator: string;
     vials: string;
     calendar: string;
+    /** Kept to five characters: this is the seventh tab in the phone bar. */
+    glp1: string;
     reference: string;
-    /** Kept short: the phone tab bar has to fit six of these. */
+    /** Kept short: the phone tab bar has to fit seven of these. */
     guide: string;
     settings: string;
   };
@@ -364,6 +396,66 @@ export interface Strings {
     open: string;
     /** How to save the video as a file. */
     saveHint: string;
+  };
+  /**
+   * The GLP-1 care page: how to use it, what to check first, what to follow and
+   * what to ask. Procedure, arithmetic and questions only — never a dose and
+   * never a brand. Every list here is copy, not code: the page renders these in
+   * order, so rewording or reordering a step is a dictionary change.
+   */
+  glp1: {
+    title: string;
+    subtitle: string;
+    /** The strong reminder, in the same voice as the Reference page. */
+    note: string;
+    routine: {
+      title: string;
+      /** Shown above both routines: the leaflet is the authority, not this. */
+      hint: string;
+      pen: RoutineCopy;
+      vial: RoutineCopy;
+    };
+    checks: {
+      title: string;
+      hint: string;
+      items: StepCopy[];
+    };
+    /**
+     * The measurement log. It stores what was measured and reports the change
+     * since the first entry — it holds no target, by design.
+     */
+    track: {
+      title: string;
+      subtitle: string;
+      /** How to measure so the numbers mean something. */
+      hint: string;
+      date: string;
+      /** Nudge that only what you measured needs filling in. */
+      optional: string;
+      add: string;
+      empty: string;
+      /** Heading over the list of entries. */
+      log: string;
+      /** Row label for the newest figure of a point. */
+      latest: string;
+      /** Heading over the change lines. */
+      since: string;
+      /** Shown for a point with only one entry. */
+      needsTwo: string;
+      /** The change line. Placeholders: `{from}`, `{to}`. */
+      change: string;
+      /** Accessible name for the remove button of an entry. `{date}` */
+      remove: string;
+      /** Chart label. `{field}` is a point's name. */
+      trend: string;
+    };
+    ask: {
+      title: string;
+      subtitle: string;
+      items: string[];
+    };
+    /** Names of the six measurement points, in `MEASURE_FIELDS` order. */
+    points: Record<MeasureField, string>;
   };
   kinds: {
     /** Accessible name for the kind filter. */

@@ -10,6 +10,7 @@
  * is deterministic and testable.
  */
 
+import { normalizeMeasurements, liveMeasurements, type Measurement } from './measure';
 import { mergeOwners, normalizeOwners, ownersFromVials, type Owner } from './owners';
 import { looksLikeSavedVial, liveVials, normalizeSavedVial, type SavedVial } from './vials';
 
@@ -22,30 +23,40 @@ export interface BackupFile {
   exportedAt: string;
   /** The people the vials belong to. Optional on files written before owners. */
   owners?: Owner[];
+  /**
+   * The body-measurement log. Optional on files written before it existed, and
+   * absent when the device never logged a measurement.
+   */
+  measurements?: Measurement[];
   vials: SavedVial[];
 }
 
 export type BackupError = 'invalidJson' | 'notABackup' | 'noVials';
 
 export type BackupParseResult =
-  | { ok: true; vials: SavedVial[]; owners: Owner[] }
+  | { ok: true; vials: SavedVial[]; owners: Owner[]; measurements: Measurement[] }
   | { ok: false; reason: BackupError };
 
 /**
  * Serialises the saved vials into a pretty-printed JSON backup. Soft-deleted
  * vials are left out — a backup should be a copy of what the user actually has.
- * The people list travels with them so stacks stay separated after a restore.
+ * The people list travels with them so stacks stay separated after a restore,
+ * and the measurement log rides along for the same reason: a restore that
+ * silently dropped it would lose data the user can see on screen.
  */
 export function serializeBackup(
   vials: SavedVial[],
   exportedAt: string,
   owners: Owner[] = [],
+  measurements: Measurement[] = [],
 ): string {
   const payload: BackupFile = {
     app: BACKUP_APP_ID,
     version: BACKUP_VERSION,
     exportedAt,
     owners: owners.length > 0 ? normalizeOwners(owners) : undefined,
+    measurements:
+      measurements.length > 0 ? normalizeMeasurements(liveMeasurements(measurements)) : undefined,
     vials: liveVials(vials),
   };
   return JSON.stringify(payload, null, 2);
@@ -78,7 +89,14 @@ export function parseBackup(text: string): BackupParseResult {
       : [];
   const implied = ownersFromVials(vials).map((id) => ({ id, name: '' }));
 
-  return { ok: true, vials, owners: mergeOwners(declared, implied) };
+  // The log is optional: an older file, or one from a device that never logged
+  // a measurement, simply has none.
+  return {
+    ok: true,
+    vials,
+    owners: mergeOwners(declared, implied),
+    measurements: normalizeMeasurements(candidate.measurements),
+  };
 }
 
 /** Filename for a download, e.g. `pepcalculator-backup-2026-10-10.json`. */

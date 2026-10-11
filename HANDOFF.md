@@ -7,7 +7,7 @@ continue without re-reading the whole history.
 
 ## What this is
 
-An **installable, offline-first web app** (six pages: Calculator · My vials · Calendar · Reference · Guide · Settings)
+An **installable, offline-first web app** (seven pages: Calculator · My vials · Calendar · GLP-1 · Reference · Guide · Settings)
 that turns a **desired dose** into the **exact amount to draw on a syringe** — for reconstituted
 **peptides** and ready-to-use **anabolic oils**. No accounts, everything runs in the browser and
 keeps working with no network. An optional tiny Node server adds **recovery-code sync** between
@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **391 passing / 36 files** |
-| Build | `npm run build` | ✅ ~391 kB JS / 119 kB gzip · ~49 kB CSS |
+| Tests | `npm test` | ✅ **419 passing / 38 files** |
+| Build | `npm run build` | ✅ ~413 kB JS / 126 kB gzip · ~52 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 9 scenes · 20 keys × 3 languages · 99 frames · timeline cap held |
 
 ## Run it
@@ -99,6 +99,7 @@ src/
 │  ├─ today.ts           pure: today's doses + the next dose (the Today card)
 │  ├─ supply.ts          pure: run-out dates, expiry waste, how many vials to reorder
 │  ├─ sites.ts           pure: the injection-site rotation, derived from the dose number
+│  ├─ measure.ts         pure: the body-measurement log (points, change since the first entry)
 │  ├─ owners.ts          pure: "whose stack" — people registry + strict per-person filtering
 │  ├─ pk.ts              pure: one-compartment half-life decay (reference chart)
 │  ├─ cost.ts            pure: cost per dose + plan cost (optional vial price)
@@ -114,7 +115,7 @@ src/
 │                        DoseCalendar, AgendaPage, KindFilterControl, SettingsPage, SyncPanel,
 │                        RemindersPanel, SegmentedControl, NumberField, Footer, Icon,
 │                        OwnerTabs, PeoplePanel, TodayDose, MobileSummaryBar, FirstRunCard,
-│                        ReferencePage, Toast, DangerZone
+│                        ReferencePage, Glp1Page, Toast, DangerZone
 ├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (timer → notification), useCountUp.ts
 ├─ styles/global.css     design tokens + ALL styling (data-theme / data-mode driven)
 ├─ App.tsx               state + wiring only
@@ -135,13 +136,28 @@ server/
 └─ data/sync.sqlite      created on first run — gitignored, this IS everyone's data
 ```
 
-**Six pages** (see `lib/views.ts`): `ViewTabs` switches between **Calculator** (`ModeTabs` →
+**Seven pages** (see `lib/views.ts`): `ViewTabs` switches between **Calculator** (`ModeTabs` →
 `CalculatorForm` + `ResultPanel` + `SaveVialForm`), **My vials** (`SavedVials`: list, kind filter,
-backup), **Calendar** (`AgendaPage`, every plan by day and hour), **Reference** (`ReferencePage`:
-static compound data + half-life charts), **Guide** (`GuidePage`: frames `public/explainer.html`,
-the animated explainer — see the note below) and **Settings** (`SettingsPage`: sync + reminders +
-your data). The page is mirrored in the URL hash (`#calendar`), so the back button and a
-PWA relaunch both work.
+backup), **Calendar** (`AgendaPage`, every plan by day and hour), **GLP-1** (`Glp1Page`: the device
+routines, the pre-use check, the body-measurement log and the prescriber questions), **Reference**
+(`ReferencePage`: static compound data + half-life charts), **Guide** (`GuidePage`: frames
+`public/explainer.html`, the animated explainer — see the note below) and **Settings**
+(`SettingsPage`: sync + reminders + your data). The page is mirrored in the URL hash (`#calendar`),
+so the back button and a PWA relaunch both work.
+
+**The GLP-1 page is copy, not a second engine.** `Glp1Page` renders four lists straight from the
+dictionary (`strings.glp1`): the pen routine, the vial routine, the pre-use checks and the questions
+to ask a prescriber — plus `lib/measure.ts` behind the log. **There is no dose anywhere on it, and no
+brand**: the page does procedure, the calculator does the numbers. Rewording a step is a dictionary
+change, and the i18n test holds all three languages to the same step count.
+
+**The body-measurement log is the only thing the app knows about the person.** `lib/measure.ts`
+stores dated circumferences (waist first) and weight, per owner, and reports the change since the
+**first entry that recorded that field** — its own baseline, because that is the only baseline it can
+honestly know. It carries **no target and no verdict**: a smaller waist and a larger one are both just
+the signed difference. Stored under `pepcalc.v1.measurements`, tombstoned on removal (with Undo),
+wiped by "Clear all data", and carried in the JSON backup — **not** in sync, which by design only ever
+moves the vials list.
 
 **The Guide page is a frame, not a port.** `public/explainer.html` is a self-contained canvas
 animation (no dependencies, ~1000 lines, its own three languages). Rather than reimplement it in
@@ -257,12 +273,15 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
     while the app is alive (open or backgrounded, including an installed PWA on Android).
     A fully closed app would need a push server, which this offline-first app deliberately
     doesn't have — the Reminders panel says so in plain words.
-11. **Six pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar`
-    + `reference` + `guide` + `settings`, and `App.tsx` mirrors the active one in the URL hash
+11. **Seven pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar` +
+    `glp1` + `reference` + `guide` + `settings`, and `App.tsx` mirrors the active one in the URL hash
     (`#calendar`) so back/forward and a PWA relaunch behave. Views are also kept in `localStorage`
     for the case where the hash is absent. `AgendaPage` renders entirely from `lib/agenda.ts` — no
-    date maths in the JSX. Below 880px the same `ViewTabs` becomes a fixed bottom bar; six tabs is
-    its practical limit (the longest two labels ellipsise at 390px, and every tab keeps its icon).
+    date maths in the JSX. Below 880px the same `ViewTabs` becomes a fixed bottom bar, which now
+    holds **seven** tabs — measured, not assumed: at a true 390px the bar is 375px with **51px per
+    tab and nothing overflowing** (inner width 375, offenders 0), and only the two longest labels
+    ellipsise. So `glp1` is labelled **`GLP-1`** on purpose: five characters, and one of the only two
+    labels that still fits unclipped.
 12. **Anabolics are first-class saved vials.** `SavedVial.kind` (`'peptide' | 'anabolic'`,
     absent on old records → `vialKind()` returns `'peptide'`) lets oils be saved from anabolic
     mode, appear in the calendar and be filtered. `vialStatus()` branches: peptides use
@@ -283,6 +302,13 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
     verdict, and the Reference card puts an honest sentence where the decay curve would go rather than
     inventing a dose to plot. Verified **by mutation**: drop the guard and the tests catch
     `"undefined undefined"` printed on the card.
+15. **The measurement log is local-only and backup-only — sync still moves vials and nothing else.**
+    `pepcalc.v1.measurements` is the one new storage key. It rides in `serializeBackup`/`parseBackup`
+    (an optional array on `BackupFile`, normalized on the way in, so a file written before it existed
+    simply has none) and it is wiped by "Clear all data" — but it is deliberately **not** in the sync
+    payload, because decision 6 is what keeps that merge simple enough to trust. If it is ever added
+    there, give it the same `updatedAt` + `deletedAt` treatment the vials have and use
+    `mergeMeasurements`, which is written and tested for exactly that.
 
 ---
 
@@ -535,16 +561,24 @@ the cross-references stay stable.
   policy), and its quality **cannot be verified in this environment** (no audio output), so audition
   it on a real device before shipping.
 
-- **A GLP-1 companion is proposed, not built** — see `PROPOSAL-glp1-companion.md`. Scope is settled to
-  **molecules only, no brands**: `tirzepatide` and `retatrutide`. Short version: the pen routine, the
-  pre-use check and a **body-measurement log** (which does not exist in any form today) are in character
-  and recommended; training and nutrition content should ship as *questions to ask a prescriber*, not as
-  instructions, because "not medical advice, it only does the maths" is the app's entire claim. The
-  proposal names the phases, the files and the tests. **One correction from it has already landed** — the
-  `retatrutide` row (key decision 14). Still open in it: whether `semaglutide` stays in the reference (it
-  is a third molecule now that the class is scoped to two; it is kept because dropping the row would stop
-  `matchCompound` matching existing vials named after it, taking their half-life plot with it), and a
-  `route` field to separate the reconstituted-vial figures from a prescribed pen.
+- **The GLP-1 companion is built — as a page, not a promise.** `PROPOSAL-glp1-companion.md` proposed it
+  and most of it now exists: the **GLP-1** tab (`Glp1Page` + `lib/measure.ts` + `pepcalc.v1.measurements`).
+  What shipped: the pen routine, the vial routine (these compounds are mostly vials, so both are there),
+  the six pre-use checks, the body-measurement log with its trend, and the prescriber questions —
+  training and nutrition deliberately as *questions*, because "not medical advice, it only does the
+  maths" is the app's entire claim. Still open from that proposal: **(a)** does `semaglutide` stay in
+  `lib/reference.ts`? It is a third molecule now that the class is scoped to `tirzepatide` +
+  `retatrutide`; it is kept because dropping the row would stop `matchCompound` matching existing vials
+  named after it, taking their half-life plot with them. **(b)** A `route` field to separate the
+  reconstituted-vial figures from a prescribed pen. **(c)** The routine is **not on the printed sheet**
+  yet — a checklist belongs on the fridge, and `PrintSheet` already exists. **(d)** The page is not
+  linked from a GLP-1 vial card, so someone drawing a dose never passes it.
+- **A backup exports only the person on screen.** `SavedVials` gets `scopedVials`, so `serializeBackup`
+  writes one person's vials (plus *all* owners, which is incoherent) — and the measurement log was
+  wired the same way on purpose, to match rather than to add a second convention. Restoring on a new
+  device therefore does not bring the other people back. The fix is one line in `App.tsx` (pass the
+  full `liveVials()` list and the full log); it is not done because it changes what existing backups
+  contain, and that is worth deciding deliberately.
 
 ## How to extend safely
 
