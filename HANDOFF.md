@@ -33,8 +33,8 @@ git init && git add -A && git commit -m "Initial commit"
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **186 passing / 17 files** |
-| Build | `npm run build` | ✅ 58 modules, ~306 kB JS / 94 kB gzip |
+| Tests | `npm test` | ✅ **224 passing / 22 files** |
+| Build | `npm run build` | ✅ 68 modules, ~328 kB JS / 100 kB gzip |
 
 ## Run it
 
@@ -83,7 +83,11 @@ src/
 │  ├─ sync.ts            recovery-code sync: code gen, salted SHA-256, HTTP client
 │  ├─ reminders.ts       pure: next dose across all plans (used by notifications)
 │  ├─ agenda.ts          pure: ALL plans by day & hour (the Calendar page)
-│  ├─ views.ts           pure: the two pages + URL-hash helpers (no router lib)
+│  ├─ today.ts           pure: today's doses + the next dose (the Today card)
+│  ├─ pk.ts              pure: one-compartment half-life decay (reference chart)
+│  ├─ cost.ts            pure: cost per dose + plan cost (optional vial price)
+│  ├─ reference.ts       static compound reference data — educational only, not advice
+│  ├─ views.ts           pure: the pages + URL-hash helpers (no router lib)
 │  └─ pwa.ts             guarded platform seam: SW registration, notification, install
 ├─ config/
 │  ├─ modes.ts           MODE REGISTRY — workflows + per-mode syringe setup
@@ -92,7 +96,8 @@ src/
 ├─ components/           Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel, SyringeVisual,
 │                        AlertList, SaveVialForm, SavedVials, VialCard, VialEditor, ScheduleForm,
 │                        DoseCalendar, AgendaPage, KindFilterControl, SettingsPage, SyncPanel,
-│                        RemindersPanel, SegmentedControl, NumberField, Footer
+│                        RemindersPanel, SegmentedControl, NumberField, Footer,
+│                        TodayDose, MobileSummaryBar, FirstRunCard, ReferencePage, Toast, DangerZone
 ├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (timer → notification)
 ├─ styles/global.css     design tokens + ALL styling (data-theme / data-mode driven)
 ├─ App.tsx               state + wiring only
@@ -280,10 +285,23 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 ## Open items / roadmap (priority order)
 
 **Done:** **`git init` + first commit**, **PWA + service worker** (installable, offline shell,
-dose reminders), the **Calendar page / global agenda**, the **four-page split**
-(Calculator · My vials · Calendar · Settings), **saved anabolics** with kind filters and
+dose reminders), the **Calendar page / global agenda**, the **page split**
+(Calculator · My vials · Calendar · Reference · Settings), **saved anabolics** with kind filters and
 per-vial calendar colours, and the **tombstone purge** (90-day retention, swept on open and
 after every merge, with the trade-off documented).
+
+**Improvement pass (all green, 224 tests):**
+
+- **Today card** — the next scheduled dose + one-tap load, on the Calculator (`lib/today.ts`).
+- **First-run welcome** with loadable examples, and the disclaimer repeated at point of use.
+- **Mobile sticky summary bar** so the live answer never scrolls off-screen on a phone.
+- **Undo** snackbar on delete, and a guarded **Clear all data** action in Settings.
+- **Reference sheet** (new page) with typical ranges/half-lives (`lib/reference.ts`) and a
+  half-life decay chart (`lib/pk.ts`).
+- **Cost per dose / plan cost** from an optional per-vial price (`lib/cost.ts`).
+- **Inverse mode** — a drawn volume back to a dose (`doseFromVolume` in `lib/calc.ts`).
+- **Persisted kind filter**, empty-state CTAs, `aria-live` result, dynamic `theme-color`,
+  larger tap targets and readable calendar pills.
 
 1. **Conflict awareness** — merges are silent last-write-wins; consider surfacing
    "changed on another device".
@@ -293,9 +311,10 @@ after every merge, with the trade-off documented).
    server (or Notification Triggers, where supported) would be needed for a closed app.
 5. **Print / export** — a physical vial label showing the expiry date, and a protocol PDF. The
    Calendar page is the natural place to hang an "export the protocol" button.
-6. **Persist the kind filters** — the All/Peptides/Anabolics choice is component state today; a
-   storage key would remember it between visits.
-7. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
+6. **Interval schedules & multi-compound plans** — `VialSchedule` supports daily / chosen
+   weekdays only; add `repeat: 'interval'` (+ `intervalDays`) and a split-dose model.
+7. **IU dose unit** — HGH/HCG/insulin need `'IU'` in `DoseUnit` with a `v2` storage migration.
+8. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
    Recovery-code sync was chosen **deliberately** instead of email/password.
 
 ## How to extend safely
@@ -314,6 +333,9 @@ after every merge, with the trade-off documented).
 - **New page**: add its id to `ViewId` + `VIEWS` in `lib/views.ts`, add the `views` copy to the
   dictionaries, add its icon to `components/ViewTabs.tsx`, and render it in `App.tsx`. The tab
   strip and the hash routing follow automatically.
+- **New reference compound**: append an entry to `COMPOUNDS` in `lib/reference.ts` (name, class,
+  typical range, water volumes, half-life, cadence). The Reference page and its decay chart
+  render from that list — no component changes needed.
 - **Always**: pure logic in `src/lib/` **with a unit test first**, then wire up the UI.
 
 ## Domain glossary

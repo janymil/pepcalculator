@@ -36,8 +36,15 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Installable & offline (PWA)** — add it to your home screen and it runs full-screen with no network. A hand-rolled service worker caches the app shell, so the calculator keeps working with no signal.
 - **Dose reminders** — turn reminders on and the app notifies you at the exact times of your saved plans (derived from the schedule — nothing to log). Reminders fire while the app is open or running in the background; a fully closed app would need a push server, which this offline-first app deliberately does not have.
 - **Calendar page (all peptides at once)** — a second page collects **every** saved plan in one view: a month grid showing **which days** carry a dose (each day lists its peptides as small **colour-coded pills**, with the hours), the **hours** for the selected day with the amount to draw, a "coming up" strip, and a summary of each plan (repeat pattern, times and end date). Each peptide keeps its own colour everywhere, and **only today** gets a coloured background. Lives in the URL (`#calendar`) so the browser back button works.
-- **Four pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, and **Settings** (sync + reminders). The page switcher sits at the top.
 - **Anabolics are saved too** — peptides and oils are both first-class saved vials: save an oil straight from anabolic mode and it appears on the Vials and Calendar pages, read in **mL** (no insulin units) and without a 28-day use-by. **All / Peptides / Anabolics** filters on both the list and the calendar keep them apart.
+- **Today card** — the Calculator opens with **your next scheduled dose** and exactly how much to draw, with one tap to load those numbers into the calculator. The most common action is no longer buried three pages deep.
+- **First-run welcome** — the sample numbers are clearly labelled as an example, and you can start from one with a tap or replace them with your own. The disclaimer is also repeated at the point of use, not only in the footer.
+- **Live answer on your phone** — on narrow screens a compact summary bar stays pinned to the bottom, so the dose you must draw never scrolls out of sight while you type.
+- **Inverse mode** — "I drew this much — what dose is that?" A toggle on the result panel turns a drawn volume back into a dose (`dose = concentration × volume`), for both peptides and oils.
+- **Cost per dose** — add an optional price (and currency) to a vial and the app shows the **cost per dose** and the **cost of finishing the whole plan**.
+- **Reference sheet** — a fifth page lists commonly cited **typical ranges, cadences and half-lives** for a set of peptides and anabolics, each with a small decay chart, every row stamped as educational only — never a target, never advice.
+- **Undo & safe clearing** — deleting a vial offers an **Undo** snackbar, and Settings has a guarded **Clear all data** action for the escape hatch the app used to lack.
+- **Five pages, everything in its place** — **Calculator** (the maths + "save this vial"), **My vials** (the saved list, filter and backup), **Calendar**, **Reference**, and **Settings** (sync + reminders + your data). The page switcher sits at the top.
 
 ---
 
@@ -84,10 +91,14 @@ src/
 │  ├─ sync.ts            # recovery-code sync: code, hash, merge client
 │  ├─ reminders.ts       # pure: the next dose across all saved plans
 │  ├─ agenda.ts          # pure: ALL plans by day & hour (the Calendar page)
-│  ├─ views.ts           # pure: the two pages + URL-hash helpers
+│  ├─ today.ts           # pure: which doses fall today / what is next (the Today card)
+│  ├─ pk.ts              # pure: one-compartment half-life decay for the reference chart
+│  ├─ cost.ts            # pure: cost per dose + plan cost from an optional vial price
+│  ├─ reference.ts       # static compound reference data (ranges, half-lives) — not advice
+│  ├─ views.ts           # pure: the pages + URL-hash helpers
 │  ├─ pwa.ts             # guarded service-worker + notification helpers
 │  ├─ dates.ts           # tiny dependency-free date helpers
-│  └─ format.ts          # formatting, input parsing, dates
+│  └─ format.ts          # formatting, input parsing, dates, money
 ├─ config/
 │  ├─ modes.ts           # MODE REGISTRY: workflows + per-mode syringe setup
 │  └─ defaults.ts        # default form values + storage keys
@@ -97,7 +108,9 @@ src/
 │  ├─ index.ts           # language detection + interpolation
 │  └─ I18nContext.tsx    # `useI18n()` hook
 ├─ components/           # Header, ViewTabs, ModeTabs, CalculatorForm, ResultPanel,
-│                        # SaveVialForm, SavedVials, VialCard, AgendaPage, SettingsPage, …
+│                        # TodayDose, MobileSummaryBar, FirstRunCard, ReferencePage,
+│                        # Toast, DangerZone, SaveVialForm, SavedVials, VialCard,
+│                        # AgendaPage, SettingsPage, …
 ├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts
 ├─ styles/global.css     # design tokens + all styling
 ├─ App.tsx               # state + wiring
@@ -130,10 +143,18 @@ Everything below was deliberately left easy to add.
 
 1. Add an id to `ModeId` and a `calculateXxx()` function in `src/lib/calc.ts`.
 2. Add one entry to `MODES` in `src/config/modes.ts` (icon, `measure` system and syringe sizes).
-3. Add the copy in `src/i18n/en.ts` and `src/i18n/sk.ts` (TypeScript will list what's missing).
+3. Add the copy in `src/i18n/en.ts`, `sk.ts` **and** `es.ts` (TypeScript will list what's missing).
 4. Render its fields in `src/components/CalculatorForm.tsx`.
 
 Tabs, headings and layout update themselves.
+
+### Add a new page
+
+Add its id to `ViewId` + `VIEWS` in `src/lib/views.ts`, add the `views` copy to all three dictionaries, add its icon to `src/components/ViewTabs.tsx`, and render it in `App.tsx` (the `#reference` page is a compact example). The tab strip and hash routing follow automatically.
+
+### Add a reference compound
+
+Append an entry to `COMPOUNDS` in `src/lib/reference.ts` — name, class, typical range, common water volumes, half-life and cadence. The Reference page and its decay chart render from the list.
 
 ### Add a language
 
@@ -141,9 +162,10 @@ Add a dictionary file, add its code to `Lang`, and register it in `src/i18n/inde
 
 ### Ideas already anticipated by the structure
 
-- Half-life / blood-level chart (the engine already returns every intermediate value).
+- ~~Half-life / blood-level chart~~ — done: `src/lib/pk.ts` + the chart on the Reference page.
 - True background reminders when the app is closed (Web Push or Notification Triggers).
 - Export or print a protocol — or a physical vial label with the expiry date.
+- New workflows such as HGH, HCG and insulin need an **IU** dose unit added to `DoseUnit` (with a `v2` storage migration); the mode registry is otherwise ready for them.
 - Multi-vial inventory for anabolic oils (the saved-vial model is generic).
 - Additional syringe types and pen devices.
 
