@@ -130,6 +130,7 @@ describe('log redaction', () => {
 
   it('leaves the rest of the path alone', () => {
     expect(logPath(`/api/sync/${key}`)).toBe('/api/sync/abcdef01…');
+    expect(logPath(`/api/push/${key}`)).toBe('/api/push/abcdef01…');
     expect(logPath('/api/health')).toBe('/api/health');
     expect(logPath('/api/sync/not-a-key')).toBe('/api/sync/not-a-key');
   });

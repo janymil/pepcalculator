@@ -60,6 +60,24 @@ export function isStandalone(): boolean {
   }
 }
 
+/**
+ * True for iOS / iPadOS — the one platform where Web Push only works once the
+ * site has been added to the Home Screen, so the UI has to say so.
+ */
+export function isIos(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  try {
+    const apple = /iphone|ipad|ipod/i.test(navigator.userAgent ?? '');
+    // iPadOS 13+ reports itself as a Mac, so ask about touch points too.
+    const iPadOs =
+      navigator.platform === 'MacIntel' &&
+      ((navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints ?? 0) > 1;
+    return apple || iPadOs;
+  } catch {
+    return false;
+  }
+}
+
 export interface DoseNotification {
   title: string;
   body: string;

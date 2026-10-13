@@ -4,8 +4,10 @@ import { useI18n } from '../i18n/I18nContext';
 import { useCountUp } from '../hooks/useCountUp';
 import type { CalcResult, DoseUnit, MeasureSystem } from '../lib/calc';
 import { fromBase } from '../lib/calc';
+import type { DerivationStep } from '../lib/derive';
 import { fmt, parseNumber } from '../lib/format';
 import { AlertList } from './AlertList';
+import { Derivation } from './Derivation';
 import { Icon } from './Icon';
 import { SyringeVisual } from './SyringeVisual';
 
@@ -30,6 +32,11 @@ interface ResultPanelProps {
   waterHint?: { waterMl: number; units: number } | null;
   /** Applies the suggested water volume back into the form. */
   onApplyWater?: (waterMl: number) => void;
+  /**
+   * The ordered working for the current answer (see `lib/derive.ts`). Empty, or
+   * omitted, when there is nothing to show — e.g. a withheld result.
+   */
+  derivation?: DerivationStep[];
 }
 
 interface StatItem {
@@ -47,6 +54,7 @@ export function ResultPanel({
   scaleLabel,
   waterHint,
   onApplyWater,
+  derivation,
 }: ResultPanelProps) {
   const { strings } = useI18n();
 
@@ -210,6 +218,11 @@ export function ResultPanel({
               </div>
             ))}
           </dl>
+
+          {/* The working, with the user's own numbers, so the answer can be checked. */}
+          {derivation && derivation.length > 0 ? (
+            <Derivation steps={derivation} baseUnitLabel={baseUnitLabel} />
+          ) : null}
         </>
       ) : (
         <div className="empty">

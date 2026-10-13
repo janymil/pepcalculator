@@ -1,5 +1,6 @@
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
+import type { PushStatus } from '../hooks/usePushReminders';
 import { addDays } from '../lib/dates';
 import { formatDate } from '../lib/format';
 import type { NotificationPermissionState } from '../lib/pwa';
@@ -10,6 +11,8 @@ interface RemindersPanelProps {
   permission: NotificationPermissionState;
   /** The next dose across all scheduled vials, or null when there is none. */
   next: UpcomingDose | null;
+  /** How the server-side (app-closed) reminders are doing. */
+  pushStatus: PushStatus;
   todayIso: string;
   /** True when running as an installed PWA. */
   installed: boolean;
@@ -25,6 +28,7 @@ export function RemindersPanel({
   enabled,
   permission,
   next,
+  pushStatus,
   todayIso,
   installed,
   onToggle,
@@ -39,6 +43,19 @@ export function RemindersPanel({
     if (permission === 'unsupported') return copy.permissionUnsupported;
     return copy.permissionDefault;
   };
+
+  /** The background (server) reminder line, or '' when there is nothing to say. */
+  const pushNote = (): string => {
+    if (pushStatus === 'active') return copy.pushActive;
+    if (pushStatus === 'needs-code') return copy.pushNeedsCode;
+    if (pushStatus === 'unsupported') return copy.pushUnsupported;
+    if (pushStatus === 'blocked') return copy.pushBlocked;
+    if (pushStatus === 'inactive') return copy.pushInactive;
+    if (pushStatus === 'error') return copy.pushError;
+    return '';
+  };
+
+  const pushMessage = enabled ? pushNote() : '';
 
   const dayLabel = next
     ? next.date === todayIso
@@ -76,6 +93,16 @@ export function RemindersPanel({
       <p className={`reminders__status${permission === 'denied' ? ' is-error' : ''}`}>
         {permissionNote()}
       </p>
+
+      {pushMessage ? (
+        <p
+          className={`reminders__status${
+            pushStatus === 'error' || pushStatus === 'blocked' ? ' is-error' : ''
+          }`}
+        >
+          {pushMessage}
+        </p>
+      ) : null}
 
       {enabled && permission === 'granted' && (
         <p className="reminders__next">

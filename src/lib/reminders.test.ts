@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_PUSH_QUEUE,
   MAX_TIMER_MS,
+  PUSH_HORIZON_DAYS,
   millisUntil,
+  pushQueue,
   reminderKey,
   slotDate,
   timerDelay,
@@ -132,3 +135,62 @@ describe('reminderKey', () => {
     );
   });
 });
+
+describe('pushQueue', () => {
+  const title = 'Time for your dose';
+  const body = (name: string, time: string) => `${name} · ${time}`;
+
+  it('lists one entry per future dose, soonest first', () => {
+    const vials = [makeVial({ schedule: makeSchedule() })]; // daily 09:00, two weeks
+    const now = new Date(2024, 0, 1, 8, 0, 0, 0);
+    const queue = pushQueue(vials, now, title, body);
+
+    expect(queue).toHaveLength(14);
+    expect(queue[0]).toEqual({
+      at: slotDate('2024-01-01', '09:00').toISOString(),
+      title,
+      body: 'BPC-157 · 09:00',
+      tag: 'dose:v1:2024-01-01:09:00',
+    });
+
+    const times = queue.map((entry) => Date.parse(entry.at));
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+  });
+
+  it('skips a dose whose time has already passed today', () => {
+    const vials = [makeVial({ schedule: makeSchedule() })];
+    const now = new Date(2024, 0, 1, 10, 0, 0, 0);
+    expect(pushQueue(vials, now, title, body)[0].tag).toBe('dose:v1:2024-01-02:09:00');
+  });
+
+  it('ignores vials with no schedule, and tombstoned vials', () => {
+    const dead = tombstoneVial(makeVial({ schedule: makeSchedule() }), '2024-01-01T00:00:00Z');
+    const now = new Date(2024, 0, 1, 8, 0, 0, 0);
+    expect(pushQueue([makeVial()], now, title, body)).toEqual([]);
+    expect(pushQueue([dead], now, title, body)).toEqual([]);
+  });
+
+  it('bounds an ongoing plan by the horizon, and the whole queue by its cap', () => {
+    const now = new Date(2024, 0, 1, 8, 0, 0, 0);
+    const ongoing = (id: string) =>
+      makeVial({
+        id,
+        schedule: makeSchedule({
+          times: ['08:00', '12:00', '16:00', '20:00'],
+          durationUnit: 'ongoing',
+          durationValue: 0,
+        }),
+      });
+
+    // One dose a day for 60 days.
+    const gentle = makeVial({
+      id: 'g',
+      schedule: makeSchedule({ durationUnit: 'ongoing', durationValue: 0 }),
+    });
+    expect(pushQueue([gentle], now, title, body)).toHaveLength(PUSH_HORIZON_DAYS);
+
+    // Two four-times-a-day plans overflow the cap.
+    expect(pushQueue([ongoing('a'), ongoing('b')], now, title, body)).toHaveLength(MAX_PUSH_QUEUE);
+  });
+});
+

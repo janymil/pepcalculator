@@ -52,6 +52,27 @@ export type SyringeTypeId = 'U100' | 'U40' | 'U50';
 export type WarningSeverity = 'error' | 'warning' | 'info';
 
 /**
+ * The engine's verdict on its own arithmetic.
+ *  - `ok`       — two independent arrangements agreed, so the answer is assured.
+ *  - `mismatch` — they disagreed, so the answer is withheld and `internalMismatch`
+ *                 is raised. This should never happen; if it ever does, the user is
+ *                 told rather than handed a number the app cannot stand behind.
+ *  - `skipped`  — nothing to check (inputs incomplete), or a workflow with only one
+ *                 honest route (an oil's `volume = dose ÷ concentration`).
+ */
+export type SelfCheck = 'ok' | 'mismatch' | 'skipped';
+
+/**
+ * True when two ways of computing the same figure agree to within floating-point
+ * error. The tolerance is **relative** — scaled by the larger value — so a tiny
+ * 0.02 mL draw is not flagged by an epsilon meant for mL-sized numbers.
+ */
+export function selfCheckAgrees(a: number, b: number): boolean {
+  const scale = Math.max(1, Math.abs(a), Math.abs(b));
+  return Math.abs(a - b) <= 1e-9 * scale;
+}
+
+/**
  * Machine-readable warning codes. The engine returns codes (not text) so the
  * UI can translate them via the i18n dictionaries.
  */
@@ -65,7 +86,8 @@ export type WarningCode =
   | 'exceedsSyringe'
   | 'doseTooSmall'
   | 'doseTooSmallClicks'
-  | 'doseTooSmallVolume';
+  | 'doseTooSmallVolume'
+  | 'internalMismatch';
 
 export interface CalcWarning {
   code: WarningCode;
@@ -111,6 +133,12 @@ export interface CalcResult {
    */
   doseFromVolume: number | null;
   warnings: CalcWarning[];
+  /**
+   * The engine's own consistency verdict — see `SelfCheck`. `ok` means two
+   * independent arrangements of the arithmetic agreed; `skipped` means there was
+   * nothing to cross-check, and no assurance is implied.
+   */
+  selfCheck: SelfCheck;
 }
 
 export interface SyringeType {
@@ -184,6 +212,11 @@ interface AssembleArgs {
    * withheld rather than computed from a made-up conversion.
    */
   unitMismatch?: boolean;
+  /**
+   * Millilitres the vial was dissolved in — reconstituted workflows only. Lets
+   * the self-check reach the answer a second, independent way.
+   */
+  waterMl?: number;
   /** Inverse mode: a volume the user actually drew, in mL. */
   inverseVolumeMl?: number;
   /** Inverse mode: the unit to express `doseFromVolume` in. */
@@ -255,6 +288,21 @@ function assemble(args: AssembleArgs): CalcResult {
     }
   }
 
+  // The engine checks its own work before it answers (see `computeSelfCheck`).
+  const selfCheck = computeSelfCheck({
+    ready,
+    waterMl: args.waterMl,
+    totalVialBase,
+    doseBase,
+    units,
+    volumeMl,
+    unitsPerMl,
+    concentrationPerMl,
+  });
+  if (selfCheck === 'mismatch') {
+    warnings.push({ code: 'internalMismatch', severity: 'error' });
+  }
+
   const ok = ready && !warnings.some((w) => w.severity === 'error');
 
   return {
@@ -270,7 +318,43 @@ function assemble(args: AssembleArgs): CalcResult {
     dosesPerVial,
     doseFromVolume,
     warnings,
+    selfCheck,
   };
+}
+
+/**
+ * The engine's own consistency check. A reconstituted vial can be reached two
+ * independent ways — concentration-then-volume (what the UI shows) and a bare
+ * ratio of the amounts — so if the two disagree the answer is withheld. A
+ * labelled workflow (an oil or a pen) has only one honest route, so it is
+ * `skipped` rather than faking a second one. Pairs with `selfCheckAgrees`.
+ */
+function computeSelfCheck(input: {
+  ready: boolean;
+  waterMl?: number;
+  totalVialBase: number | null;
+  doseBase: number;
+  units: number;
+  volumeMl: number;
+  unitsPerMl: number;
+  concentrationPerMl: number;
+}): SelfCheck {
+  const { ready, doseBase, units, volumeMl, unitsPerMl, concentrationPerMl } = input;
+  if (!ready) return 'skipped';
+
+  const waterMl = input.waterMl ?? 0;
+  const totalVialBase = input.totalVialBase;
+
+  if (isPositive(waterMl) && totalVialBase !== null && isPositive(totalVialBase)) {
+    // Route 2: the dose's fraction of the vial, times the units the whole vial
+    // holds. A different arrangement from the primary (concentration → volume),
+    // so a coding slip in one is not mirrored in the other.
+    const independentUnits = (doseBase / totalVialBase) * (waterMl * unitsPerMl);
+    return selfCheckAgrees(units, independentUnits) ? 'ok' : 'mismatch';
+  }
+
+  // Labelled: nothing to cross-check but the inverse — dose = concentration × volume.
+  return selfCheckAgrees(concentrationPerMl * volumeMl, doseBase) ? 'skipped' : 'mismatch';
 }
 
 export interface ReconstitutedInput {
@@ -339,6 +423,7 @@ function reconstituted(input: ReconstitutedInput, measure: MeasureSystem): CalcR
     warnings,
     measure,
     unitMismatch,
+    waterMl: isPositive(input.waterMl) ? input.waterMl : undefined,
     inverseVolumeMl: input.inverseVolumeMl,
     inverseDoseUnit: input.inverseDoseUnit,
   });

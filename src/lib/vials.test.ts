@@ -226,6 +226,39 @@ describe('looksLikeSavedVial / normalizeSavedVial', () => {
     expect(normalized.syringeType).toBe('U100');
     expect(normalized.syringeCapacityMl).toBe(1);
   });
+
+  it('leaves a vial that nobody shares without a shares list at all', () => {
+    // Not an empty array: a record saved by one person has to stay byte-for-byte
+    // what it always was, or every sync would see a change that never happened.
+    expect(normalizeSavedVial(makeVial()).shares).toBeUndefined();
+    expect(normalizeSavedVial({ ...makeVial(), shares: [] }).shares).toBeUndefined();
+  });
+
+  it('sanitises the people a vial is shared with', () => {
+    const normalized = normalizeSavedVial({
+      ...makeVial(),
+      shares: [
+        { ownerId: 'ana', from: '2026-10-20', doseAmount: 500, doseUnit: 'mcg' },
+        { ownerId: 'me', from: '2026-10-20' },
+        { ownerId: 'ana', from: '2026-10-25' },
+        { ownerId: '' },
+        null,
+      ],
+    });
+
+    expect(normalized.shares).toEqual([
+      { ownerId: 'ana', from: '2026-10-20', doseAmount: 500, doseUnit: 'mcg' },
+    ]);
+  });
+
+  it('treats the mix date as the earliest a share can start', () => {
+    const normalized = normalizeSavedVial({
+      ...makeVial(),
+      shares: [{ ownerId: 'ana', from: '2020-01-01' }],
+    });
+
+    expect(normalized.shares?.[0].from).toBe('2026-10-10');
+  });
 });
 
 /** 250 mg/mL oil, dosed at 250 mg (1 mL per dose) in a 10 mL vial. */

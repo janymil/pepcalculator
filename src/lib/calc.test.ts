@@ -4,6 +4,7 @@ import {
   calculateHormone,
   calculatePeptide,
   fromBase,
+  selfCheckAgrees,
   suggestWaterMl,
   toBase,
   unitFamily,
@@ -497,6 +498,55 @@ describe('calculateAnabolic as a pen (dialled in clicks)', () => {
 
     expect(result.clicks).toBe(0);
     expect(result.clicksPerMl).toBe(0);
+  });
+});
+
+describe('self-check', () => {
+  it('agrees with itself on a normal reconstituted case', () => {
+    const result = calculatePeptide({
+      vialAmount: 5,
+      vialUnit: 'mg',
+      waterMl: 2,
+      doseAmount: 250,
+      doseUnit: 'mcg',
+      ...syringe(),
+    });
+
+    expect(result.selfCheck).toBe('ok');
+    expect(result.warnings.map((warning) => warning.code)).not.toContain('internalMismatch');
+  });
+
+  it('uses a relative tolerance, so a tiny draw is not flagged', () => {
+    // 2 units on a U-100 barrel is 0.02 mL — an absolute epsilon meant for mL
+    // draws would wrongly call that a mismatch.
+    expect(selfCheckAgrees(0.02, 0.0200000001)).toBe(true);
+    expect(selfCheckAgrees(10, 10.000001)).toBe(false);
+  });
+
+  it('marks a labelled workflow as skipped — there is only one honest route', () => {
+    const result = calculateAnabolic({
+      concentrationMgPerMl: 250,
+      doseAmount: 500,
+      doseUnit: 'mg',
+      vialMl: 10,
+      syringeType: 'U100',
+      syringeCapacityMl: 3,
+    });
+
+    expect(result.selfCheck).toBe('skipped');
+  });
+
+  it('is skipped while the inputs are still incomplete', () => {
+    const result = calculatePeptide({
+      vialAmount: 0,
+      vialUnit: 'mg',
+      waterMl: 0,
+      doseAmount: 0,
+      doseUnit: 'mg',
+      ...syringe(),
+    });
+
+    expect(result.selfCheck).toBe('skipped');
   });
 });
 

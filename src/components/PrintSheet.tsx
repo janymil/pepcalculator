@@ -15,6 +15,7 @@ import {
   type IntervalPresetId,
   type VialSchedule,
 } from '../lib/schedule';
+import { viewVial } from '../lib/shares';
 import { kindMeasure, vialKind, vialStatus, type SavedVial } from '../lib/vials';
 
 interface PrintSheetProps {
@@ -23,6 +24,11 @@ interface PrintSheetProps {
   /** Display name of the selected person, for the "prepared for" line. */
   ownerName: string;
   todayIso: string;
+  /**
+   * The person the sheet is printed for. A bottle they share prints *their* dose
+   * and *their* days — the copy on the fridge has to match the person holding it.
+   */
+  viewerId: string;
 }
 
 const INTERVAL_COPY: Record<IntervalPresetId, keyof Strings['schedule']> = {
@@ -55,12 +61,15 @@ function repeatLabel(schedule: VialSchedule, strings: Strings, locale: string): 
  * the saved plans — nothing is retyped — which means the copy in the fridge
  * cannot disagree with the app.
  */
-export function PrintSheet({ vials, ownerName, todayIso }: PrintSheetProps) {
+export function PrintSheet({ vials, ownerName, todayIso, viewerId }: PrintSheetProps) {
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
   const copy = strings.print;
 
-  const planned = vials.filter((vial) => vial.schedule);
+  // Every row is this person's own reading of the bottle, shared or not.
+  const planned = vials
+    .filter((vial) => vial.schedule)
+    .map((vial) => viewVial(vial, viewerId));
   if (planned.length === 0) return null;
 
   const totalVials = planned.reduce((sum, vial) => {

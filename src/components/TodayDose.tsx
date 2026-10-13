@@ -6,6 +6,7 @@ import { fmt, formatDate } from '../lib/format';
 import { elapsedDoses } from '../lib/schedule';
 import { nextSite } from '../lib/sites';
 import { nextSession } from '../lib/session';
+import { viewVial } from '../lib/shares';
 import type { TodayDose } from '../lib/today';
 import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { type SavedVial } from '../lib/vials';
@@ -16,18 +17,32 @@ interface TodayDoseProps {
   vials: SavedVial[];
   todayIso: string;
   nowTime: string;
+  /**
+   * The person reading the card. A bottle shared with them is drawn on *their*
+   * days, at *their* hours and at *their* dose.
+   */
+  viewerId: string;
   onLoad: (vial: SavedVial) => void;
   onAddDose: (id: string) => void;
 }
 
 /** The single most important card: "what do I draw next, and how much?". */
-export function TodayDoseCard({ vials, todayIso, nowTime, onLoad, onAddDose }: TodayDoseProps) {
+export function TodayDoseCard({
+  vials,
+  todayIso,
+  nowTime,
+  viewerId,
+  onLoad,
+  onAddDose,
+}: TodayDoseProps) {
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
   const copy = strings.today;
   const [checking, setChecking] = useState(false);
 
-  const session = nextSession(vials, todayIso, nowTime, 7);
+  // A shared bottle is drawn on this person's days, at this person's dose.
+  const plans = vials.map((vial) => viewVial(vial, viewerId));
+  const session = nextSession(plans, todayIso, nowTime, 7);
   if (!session) return null;
 
   // The dose this card has always shown, plus the rest of the sitting: a stack can

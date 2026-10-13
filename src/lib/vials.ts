@@ -17,6 +17,8 @@ import {
   type SyringeTypeId,
 } from './calc';
 import { addDays, daysBetween, toIsoDate } from './dates';
+import { DEFAULT_OWNER_ID } from './owners';
+import { normalizeShares, type VialShare } from './shares';
 import type { VialSchedule } from './schedule';
 
 /**
@@ -78,9 +80,19 @@ export interface SavedVial {
   device?: VialDevice;
   /** Pen only: how many dial clicks make one millilitre. */
   clicksPerMl?: number;
-  /** The dose this vial is being used for. */
+  /**
+   * The dose this vial is being used for — **the owner's** dose. Anyone else
+   * drawing from the bottle keeps their own in `shares`.
+   */
   doseAmount: number;
   doseUnit: DoseUnit;
+  /**
+   * Other people who draw from the same bottle (see `lib/shares.ts`). Each entry
+   * carries the day they joined and, optionally, their own dose and cadence.
+   * Absent on every vial saved before sharing existed, and then the vial is one
+   * person's, exactly as it was.
+   */
+  shares?: VialShare[];
   /**
    * Optional price paid for the whole vial, in `currency`. Used to show
    * cost-per-dose and what a plan will cost. Absent on older records.
@@ -287,6 +299,12 @@ export function looksLikeSavedVial(value: unknown): boolean {
 /** Fills in fields an older or hand-edited payload might be missing. */
 export function normalizeSavedVial(value: unknown): SavedVial {
   const vial = value as Record<string, unknown>;
+  const reconstitutedOn = typeof vial.reconstitutedOn === 'string' ? vial.reconstitutedOn : '';
+  const ownerId =
+    typeof vial.ownerId === 'string' && vial.ownerId.trim() !== '' ? vial.ownerId : undefined;
+  // Someone sharing the bottle is a person, so the list is sanitised the same way
+  // the vial's own numbers are: unusable entries are dropped, never guessed at.
+  const shares = normalizeShares(vial.shares, ownerId ?? DEFAULT_OWNER_ID, reconstitutedOn);
   return {
     ...(vial as unknown as SavedVial),
     kind: vial.kind === 'anabolic' ? 'anabolic' : 'peptide',
@@ -304,7 +322,8 @@ export function normalizeSavedVial(value: unknown): SavedVial {
         : undefined,
     price: typeof vial.price === 'number' && vial.price > 0 ? vial.price : undefined,
     currency: typeof vial.currency === 'string' && vial.currency ? vial.currency : undefined,
-    ownerId: typeof vial.ownerId === 'string' && vial.ownerId.trim() !== '' ? vial.ownerId : undefined,
+    ownerId,
+    shares: shares.length > 0 ? shares : undefined,
   };
 }
 

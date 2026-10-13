@@ -1,8 +1,10 @@
 # PepCalculator sync server
 
-A **zero-dependency** Node service that stores one JSON blob per sync code, so
-the same vials follow you between your phone and your computer — with no email,
-no password and no account.
+A Node service that stores one JSON blob per sync code, so the same vials follow
+you between your phone and your computer — with no email, no password and no
+account. It also delivers **dose reminders while the app is closed** over Web
+Push; that is the only part needing a dependency (`web-push`, loaded lazily), and
+it stays dormant until you set VAPID keys.
 
 ## Run it locally
 
@@ -26,6 +28,10 @@ into the server field (default `http://localhost:8787`).
 | `RATE_WINDOW_MS` | `60000` | The rate-limit window |
 | `TRUST_PROXY` | off | Honour `X-Forwarded-For`. Set to `1` **only** behind a proxy you control |
 | `LOG_REQUESTS` | on | One log line per request; `0` turns it off |
+| `VAPID_PUBLIC_KEY` | – | Web Push public key (`npm run vapid`). Push is **off** until this and the private key are set |
+| `VAPID_PRIVATE_KEY` | – | Web Push private key. Keep it secret, keep it forever |
+| `VAPID_SUBJECT` | `mailto:admin@example.com` | Contact `mailto:`/URL sent to the push service |
+| `PUSH_INTERVAL_MS` | `30000` | How often the scheduler checks for a due dose |
 
 ```bash
 PORT=9000 ALLOWED_ORIGIN=https://your-app.example npm run server
@@ -39,10 +45,11 @@ The server warns loudly at startup when `ALLOWED_ORIGIN` is still `*`.
 200 PUT /api/sync/aaaaaaaa… 3ms ::1
 403 GET /api/sync/aaaaaaaa… 1ms ::1 origin=https://evil.example
 429 GET /api/sync/aaaaaaaa… 1ms ::1
+200 PUT /api/push/aaaaaaaa… 3ms ::1
 ```
 
-The sync key is shortened to eight characters: a log identifies *which record* was
-touched without holding anything usable as a credential.
+The sync (and push) key is shortened to eight characters: a log identifies
+*which record* was touched without holding anything usable as a credential.
 
 ## Hardening
 
@@ -74,9 +81,9 @@ docker run -d --name pepcalc-sync -p 127.0.0.1:8787:8787 \
 
 Or `docker compose up -d` with the included `docker-compose.yml` (which binds to
 loopback on purpose — put a TLS reverse proxy in front). The image is
-`node:22-alpine` plus two files: there is no dependency install step, because the
-server uses only Node built-ins. The database lives on the `/data` volume, and the
-container has a `HEALTHCHECK` hitting `/api/health`.
+`node:22-alpine`; the only install step is `web-push`, and it is only ever loaded
+when VAPID keys are set (see **Push** below). The database lives on the `/data`
+volume, and the container has a `HEALTHCHECK` hitting `/api/health`.
 
 ## API
 
@@ -85,9 +92,41 @@ container has a `HEALTHCHECK` hitting `/api/health`.
 | `GET` | `/api/health` | – | `{ ok: true }` |
 | `GET` | `/api/sync/:key` | – | `{ payload, updatedAt }` or `404` |
 | `PUT` | `/api/sync/:key` | `{ payload: string }` | `{ updatedAt }` |
+| `GET` | `/api/push/pubkey` | – | `{ publicKey }` (VAPID public key, or `null`) |
+| `PUT` | `/api/push/:key` | `{ subscription, queue }` | `{ scheduled, updatedAt }` |
+| `DELETE` | `/api/push/:key` | – | `{ ok: true }` |
 
 `:key` is the **SHA-256 hex digest** of the user's sync code (64 chars). The
-server never receives the code itself.
+server never receives the code itself — and the push record uses the **same key**,
+so there is nothing new to create.
+
+## Push (reminders while the app is closed)
+
+A plain web page can only run a timer while it is alive. To notify you at a dose
+time with the app shut, the app uploads its upcoming doses here and the server
+pushes each one at the right moment.
+
+- **Generate keys once:** `npm run vapid`, then set `VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY` (and `VAPID_SUBJECT`). Use the **same pair forever** — every
+  device's subscription is signed with it. With no keys, push is off and the
+  server behaves exactly like the old sync-only service (and never imports
+  `web-push`).
+- **What the app sends:** a subscription (`endpoint` + keys) and a `queue` of
+  upcoming notifications, each an absolute UTC instant plus the **already
+  localised** title/body. The schedule maths never leaves the app, so a push
+  cannot disagree with the calendar, and the service worker stays language-free.
+- **What the server does:** `server/push.mjs` holds the pure helpers and a
+  scheduler that, every `PUSH_INTERVAL_MS`, sends whatever is due and stores the
+  rest. It drops a subscription the push service reports as gone (404/410) and
+  retries anything else, so a brief outage cannot lose a dose.
+- **Platform reality:** desktop and Android receive a push with the browser
+  closed, once the site has been opened and notification permission granted. On
+  **iOS it only works for a site added to the Home Screen** — Web Push there needs
+  an installed PWA. And a device that never opened the app cannot be reached:
+  there is no subscription to send to.
+
+The stored queue is bounded (a horizon of ~60 days and a cap of 500 entries) so an
+"ongoing" plan can never grow the record without limit.
 
 ## Hosting
 

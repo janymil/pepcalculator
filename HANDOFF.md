@@ -45,8 +45,8 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `npm run typecheck` | ✅ strict, exit 0 |
-| Tests | `npm test` | ✅ **473 passing / 41 files** (includes the sync server) |
-| Build | `npm run build` | ✅ ~420 kB JS / 128 kB gzip · ~54 kB CSS |
+| Tests | `npm test` | ✅ **603 passing / 50 files** (includes the push-enabled sync server + the QR encoder) |
+| Build | `npm run build` | ✅ ~456 kB JS / 139 kB gzip · ~57 kB CSS |
 | Explainer | `node demo\check.mjs` | ✅ 12 scenes · 28 keys × 3 languages · 132 frames · timeline cap held |
 
 ## Run it
@@ -54,7 +54,7 @@ After changes: `git add -A && git commit -m "…" && git push` (or VS Code's Sou
 ```bash
 npm install
 npm run dev        # app      → http://localhost:8137
-npm run server     # sync API → http://localhost:8787   (optional)
+npm run server     # sync + push API → http://localhost:8787   (optional)
 npm test           # vitest run
 npm run icons      # regenerate public/icons/*.png (only when the icon changes)
 ```
@@ -74,7 +74,9 @@ Ports are pinned in `vite.config.ts` (dev **8137**, preview **8138**, `strictPor
   everything is hand-rolled on purpose.
 - **Vitest 5**, environment `node`. Tests render full trees with
   `react-dom/server`'s `renderToString` — **no jsdom, no testing-library**. Keep it that way.
-- Server is **zero-dependency**: Node built-ins only (`node:http`, `node:sqlite`). Node 22+.
+- Server runs on Node 22+ built-ins only (`node:http`, `node:sqlite`) — the single exception is
+  `web-push`, which is **lazy-imported** and only ever loaded to deliver reminders (i.e. only
+  when VAPID keys are configured).
 - All logic lives in **pure, UI-free modules** under `src/lib/`. Components never do maths.
 - Every string goes through i18n in **three languages: `en`, `sk`, `es`**.
 
@@ -94,7 +96,7 @@ src/
 │  ├─ format.ts          number parsing/formatting, localized dates & weekday names
 │  ├─ backup.ts          JSON export/import of vials
 │  ├─ sync.ts            recovery-code sync: code gen, salted SHA-256, HTTP client
-│  ├─ reminders.ts       pure: next dose across all plans (used by notifications)
+│  ├─ reminders.ts       pure: next dose across all plans + the push queue builder
 │  ├─ agenda.ts          pure: ALL plans by day & hour (the Calendar page)
 │  ├─ today.ts           pure: today's doses + the next dose (the Today card)
 │  ├─ session.ts         pure: doses that share a date AND a time — a sitting, not a line
@@ -106,7 +108,10 @@ src/
 │  ├─ cost.ts            pure: cost per dose + plan cost (optional vial price)
 │  ├─ reference.ts       static compound reference data — educational only, not advice
 │  ├─ views.ts           pure: the pages + URL-hash helpers (no router lib)
-│  └─ pwa.ts             guarded platform seam: SW registration, notification, install
+│  ├─ pwa.ts             guarded platform seam: SW registration, notification, install
+│  ├─ push.ts            guarded platform seam: Web Push subscribe / upload / forget
+│  ├─ qr.ts              hand-rolled QR encoder (byte mode, EC M) + SVG path
+│  └─ pair.ts            pairing payload: build/parse the `#pair=` link
 ├─ config/
 │  ├─ modes.ts           MODE REGISTRY — workflows + per-mode syringe setup
 │  └─ defaults.ts        default form values, storage keys, DEFAULT_SYNC_SERVER
@@ -116,8 +121,9 @@ src/
 │                        DoseCalendar, AgendaPage, KindFilterControl, SettingsPage, SyncPanel,
 │                        RemindersPanel, SegmentedControl, NumberField, Footer, Icon,
 │                        OwnerTabs, PeoplePanel, TodayDose, MobileSummaryBar, FirstRunCard,
-│                        ReferencePage, Glp1Page, Toast, DangerZone
-├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (timer → notification), useCountUp.ts
+│                        ReferencePage, Glp1Page, Toast, DangerZone, PairPanel, PairNotice
+├─ hooks/                useLocalStorage.ts, useDoseReminders.ts (local timer),
+│                        usePushReminders.ts (mirrors the queue to the server), useCountUp.ts
 ├─ styles/global.css     design tokens + ALL styling (data-theme / data-mode driven)
 ├─ App.tsx               state + wiring only
 └─ main.tsx
@@ -132,7 +138,10 @@ scripts/
 └─ generate-icons.mjs    zero-dep PNG icon generator (node:zlib only)
 
 server/
-├─ server.mjs            zero-dependency sync API (GET/PUT /api/sync/:key)
+├─ server.mjs            sync API (GET/PUT /api/sync/:key) + push registration
+│                        (GET /api/push/pubkey, PUT/DELETE /api/push/:key)
+├─ push.mjs             pure push helpers + the delivery scheduler (injectable)
+├─ webpush.mjs          the one lazy `web-push` import (the only runtime dep)
 ├─ README.md             config, hosting, security model
 └─ data/sync.sqlite      created on first run — gitignored, this IS everyone's data
 ```
@@ -213,6 +222,31 @@ volume (mL) = dose ÷ (mg per mL from the label)
 `mg ⇄ mcg` is handled by `toMg` / `fromMg`. The engine returns **codes, not text**
 (`CalcWarning` + `WarningCode`) so the UI can translate them.
 
+## The trust bundle (shipped) — show the maths, check itself, prove it
+
+The differentiator is not "offline" (copyable) but **trust** (not copyable): the app never asks
+you to take a number on faith. Three features, one idea, all obeying the repo rules (pure logic
+in `src/lib/`, three languages, no new dependency). See `PROPOSAL-trust-bundle.md`.
+
+- **Show the maths** — `src/lib/derive.ts` (`buildDerivation`) turns a finished `CalcResult` into
+  ordered, machine-readable steps (`concentration → volume → units`, or `volume → clicks` for a
+  pen, or a lone `volume` for an oil). It returns `[]` whenever `!result.ok`, so working is never
+  shown for a withheld answer. `components/Derivation.tsx` renders them inside a `<details>` (open
+  by default) under the stats; `App.tsx` builds the steps and passes `derivation` to `ResultPanel`.
+  The engine already returned every intermediate, so this is presentation only.
+- **Check itself** — `computeSelfCheck` inside `assemble()` in `src/lib/calc.ts`. A reconstituted
+  vial is reached two independent ways (concentration-then-volume, and a bare ratio of amounts);
+  if they disagree the answer is withheld via a new `WarningCode: 'internalMismatch'` (error
+  severity — the existing `ok = ready && no error warnings` rule does the withholding). A labelled
+  workflow (oil / pen) has only **one** honest route, so it is marked `'skipped'` rather than
+  faking a second: `selfCheck: 'ok' | 'mismatch' | 'skipped'` sits on `CalcResult`. Tolerance is
+  **relative** (`selfCheckAgrees`, scaled by the larger value) so a 0.02 mL draw is not flagged.
+- **Prove it** — `src/lib/workedExamples.ts` is the single source of truth for the canonical cases.
+  `calc.test.ts` (via `workedExamples.test.ts`) runs every one through the engine, and the
+  Reference page's **Verified examples** tab renders the same list; the footer's `proof.line` uses
+  `WORKED_EXAMPLES.length`, so the number can never drift. Settings gained a plain, factual
+  **Privacy** card (no fake "0 requests" gauge — it cannot be made truthful, so it is refused).
+
 ## Data model
 
 ```ts
@@ -286,10 +320,11 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 10. **PWA is hand-rolled — still zero runtime deps.** `public/sw.js` precaches the shell and
     does stale-while-revalidate for the hashed assets; it never touches cross-origin requests
     (the sync server). Icons are drawn by `scripts/generate-icons.mjs` (`npm run icons`), so
-    there is no opaque binary asset. **Reminders are a browser timer, not push:** they fire
-    while the app is alive (open or backgrounded, including an installed PWA on Android).
-    A fully closed app would need a push server, which this offline-first app deliberately
-    doesn't have — the Reminders panel says so in plain words.
+    there is no opaque binary asset. Reminders work two ways: a **local timer** fires while the
+    app is alive, and — once a sync code exists — the app mirrors its upcoming doses to the
+    server (`server/push.mjs` + `src/hooks/usePushReminders.ts`), which delivers them with the
+    app **closed**. The schedule maths stays client-side; the server stores only a queue of
+    pre-rendered notifications, so the worker stays language-free. The panel names the active mode.
 11. **Seven pages, no router library.** `lib/views.ts` models `calculator` + `vials` + `calendar` +
     `glp1` + `reference` + `guide` + `settings`, and `App.tsx` mirrors the active one in the URL hash
     (`#calendar`) so back/forward and a PWA relaunch behave. Views are also kept in `localStorage`
@@ -531,8 +566,8 @@ Guide page:**
    "changed on another device".
 2. **Server hardening** — rate limiting, `ALLOWED_ORIGIN` locked to a real origin, request logs.
 3. **Deploy** — Dockerfile for the server + host config; static app to any HTTPS host.
-4. **True background reminders** — the current timer only fires while the app is alive. A push
-   server (or Notification Triggers, where supported) would be needed for a closed app.
+4. ~~**True background reminders**~~ — **shipped**: Web Push. The client mirrors its upcoming
+   doses to `server/push.mjs`, which delivers them while the app is closed.
 5. **IU dose unit** — HGH/HCG/insulin need `'IU'` in `DoseUnit` with a `v2` storage migration.
 6. **Pen devices / GLP-1** — a third `MeasureSystem` (clicks per dose), plus **titration phases**
    for step-up protocols: a `phases[]` model carrying a dose per window. This is the biggest
@@ -544,9 +579,9 @@ Guide page:**
    (colour is currently the only differentiator in places).
 10. **Draw-mode check card** — a full-screen, arm's-length confirmation before injecting.
 11. **Unit converter** — mg ↔ mcg ↔ IU, mL ↔ units per scale, mg/mL ↔ %.
-12. **QR code for sync pairing** — typing a 120-bit code is the roughest part of the UX. A
-    hand-rolled encoder is possible, but it needs published spec vectors to verify against,
-    because no QR decoder is available here.
+12. ~~**QR code for sync pairing**~~ — **shipped:** `src/lib/qr.ts` (a hand-rolled encoder, verified by
+    decoding its own output with `jsqr` in `qr.test.ts`) + `src/lib/pair.ts` (the payload) + `PairPanel`
+    / `PairNotice`. The phone's camera scans a URL, so no in-app scanner is needed.
 13. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
     Recovery-code sync was chosen **deliberately** instead of email/password.
 
@@ -560,10 +595,9 @@ The numbered roadmap above is the **current** list: items **1, 5, 6, 7, 8, 9, 10
 the round described under "Open items" (see the entries for sync conflicts, IU, pens + titration,
 the protocol plot, readability mode, the draw check and the converter) — the numbers are kept so
 the cross-references stay stable. **7** (multi-compound sessions) shipped later, as `lib/session.ts`
-plus the "also at this time" block on the Today card and the `also` list on the check card. Still
-unbuilt from the numbered list: **4** (true background reminders) and **12** (QR
-pairing), each for the reason given below. **2** (server hardening) and **3**
-(deploy) shipped afterwards — see their entries under "Still open".
+plus the "also at this time" block on the Today card and the `also` list on the check card. Every
+numbered item has now shipped — **12** (QR pairing), **2** (server hardening), **3**
+(deploy) and **4** (true background reminders) after the first round; see their entries.
 
 - **Server hardening (roadmap 2) — shipped.** `server/guard.mjs` holds every
   decision as a pure function (origin list, sliding-window rate limiter with a
@@ -582,19 +616,32 @@ pairing), each for the reason given below. **2** (server hardening) and **3**
   otherwise every server test times out at Node's 5 s keep-alive instead of
   failing honestly.
 - **Deploy (roadmap 3) — shipped as files, unbuilt here.** `Dockerfile`
-  (`node:22-alpine` + two files, no install step because the server is
-  zero-dependency), `.dockerignore`, and `docker-compose.yml` that binds to
+  (`node:22-alpine`; its one install step is `web-push`, used only to deliver
+  reminders), `.dockerignore`, and `docker-compose.yml` that binds to
   loopback and expects a TLS reverse proxy. **Not verified by building**: there is
   no Docker on this machine, so the image is written and reviewed, not run. The
   server-run half *is* verified (see above).
-- **QR pairing** — deliberately **not shipped** in this round. It needs a full QR encoder
-  (versions, error correction, masking, Reed–Solomon) and there is **no decoder available in this
-  environment to verify the output against**, so a produced symbol could not be checked by
-  scanning it. The risky half of the work is not the encoder, it is *trusting* it. If it is
-  picked up later: implement it against the published ISO/IEC 18004 vectors (the 1-M `01234567`
-  example's nine data codewords and ten EC codewords are printed in the spec) **and** verify a
-  real symbol with a real scanner before shipping. Anything less is a pairing feature nobody can
-  debug.
+- **True background reminders (roadmap 4) — shipped.** `server/push.mjs` holds the pure helpers
+  (`isValidSubscription`, `normalizeQueue`, `dueEntries`) and a scheduler with an **injected**
+  store and sender, so it is tested without a socket (`server/push.test.mjs`, 12 tests) and over
+  real HTTP (`server/server.test.mjs`, the push block). The server stores a subscription plus a
+  `queue` of pre-rendered notifications under the **same SHA-256 key as the vials** — no new
+  identity. `web-push` is imported lazily (`server/webpush.mjs`), so a server with no VAPID keys
+  stays dependency-free and never loads it. The client mirrors its doses on every change
+  (`src/hooks/usePushReminders.ts`) and forgets them when reminders are switched off. **Honest
+  edges:** iOS needs the site added to the Home Screen, and a device that never opened the app
+  cannot be reached (no subscription exists) — both stated in the panel and `server/README.md`.
+- **QR pairing (roadmap 12) — shipped, after being refused once.** `src/lib/qr.ts` is a hand-rolled
+  encoder (byte mode, EC level M, versions 1–10, auto-mask; a faithful port of the reference
+  algorithm). It is verified the way the refusal demanded: `src/lib/qr.test.ts` rasterises the matrix
+  and reads it back with **`jsqr`, a real decoder, as a dev-only dependency** — so a symbol a decoder
+  can read *is* a real symbol. `src/lib/pair.ts` builds/parses the `#pair=` payload (base64url JSON,
+  the code kept in the URL **hash** so it never reaches a server). The pairing panel draws the QR from
+  a pure SVG path; `App.tsx` adopts the payload on open, syncs, clears the hash, and shows
+  `PairNotice` — whose **one tap** enables reminders and raises the permission prompt (browsers only
+  prompt on a gesture, so a tap is the honest maximum). **The insight that unblocked it:** the QR
+  holds a **URL**, so the phone's camera app scans it — no in-app scanner, no `BarcodeDetector`, works
+  on iOS and Android alike.
 - **Verify the printed sheet by actually printing it** — the last unverified surface in the app.
   `@media print` can only be confirmed at a printer, not in a headless browser.
 - **The explainer is a feature tour now, not just a first touch.** It was 9 scenes (~55 s) on the

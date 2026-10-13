@@ -20,6 +20,8 @@ import {
 } from '../lib/schedule';
 import type { VialSupply } from '../lib/supply';
 import { formatRange, matchCompound, rangeAppliesTo, rangeHint, type RangeVerdict } from '../lib/reference';
+import { ownerName, vialOwnerId, type Owner } from '../lib/owners';
+import { viewVial, participantIds } from '../lib/shares';
 import { kindMeasure, vialKind, vialStatus, type SavedVial } from '../lib/vials';
 import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { DoseCalendar } from './DoseCalendar';
@@ -47,6 +49,14 @@ export interface VialCardProps {
    * where someone about to use one should land.
    */
   onOpenGlp1?: () => void;
+  /** Everyone on this device, so a shared bottle can name the people on it. */
+  owners: Owner[];
+  /**
+   * The person reading this card. Their dose and cadence are what the card
+   * shows; the bottle's own numbers — how much is left, when it expires — are
+   * the same for everybody.
+   */
+  viewerId: string;
 }
 
 /**
@@ -55,6 +65,10 @@ export interface VialCardProps {
  * The headline is always "draw X units", so the reconstitution ratio never has
  * to be remembered. Everything about progress is derived from the schedule, so
  * there is nothing to log after an injection.
+ *
+ * A bottle that is shared is one bottle with one plan per person: this card is
+ * rendered for the person looking at it (see `viewVial`), and only that bottle's
+ * owner can change it — a sharer reads it, draws from it, and nothing more.
  */
 export function VialCard({
   vial,
@@ -69,12 +83,17 @@ export function VialCard({
   supply,
   ratioMismatch,
   onOpenGlp1,
+  owners,
+  viewerId,
 }: VialCardProps) {
   const { strings } = useI18n();
   // The card is a scannable summary by default; the detail expands on demand.
   const [expanded, setExpanded] = useState(false);
-  const status = vialStatus(vial, todayIso);
-  const schedule = vial.schedule;
+  /** The bottle as *this* person sees it: their dose, their cadence. */
+  const view = viewVial(vial, viewerId);
+  const ownedByViewer = vialOwnerId(vial) === viewerId;
+  const status = vialStatus(view, todayIso);
+  const schedule = view.schedule;
   const kind = vialKind(vial);
   const anabolic = kind === 'anabolic';
   const color = vialColor(vial.id);
@@ -85,10 +104,12 @@ export function VialCard({
 
   // A step-up plan changes the dose as it goes, so everything shown here is
   // *today's* step rather than the vial's first dose.
-  const phasedDose = schedule ? (phaseDoseOn(schedule, todayIso) ?? vial.doseAmount) : vial.doseAmount;
+  const phasedDose = schedule
+    ? (phaseDoseOn(schedule, todayIso) ?? view.doseAmount)
+    : view.doseAmount;
   const doseVolumeMl =
     status.concentrationPerMl > 0
-      ? toBase(phasedDose, vial.doseUnit) / status.concentrationPerMl
+      ? toBase(phasedDose, view.doseUnit) / status.concentrationPerMl
       : status.volumePerDoseMl;
   const doseUnits = doseVolumeMl * unitsPerMlOf(vial.syringeType);
   const doseClicks = doseVolumeMl * (vial.clicksPerMl ?? 0);
@@ -156,6 +177,24 @@ export function VialCard({
 
   const barPercent = Math.max(0, Math.min(100, Math.round(percent)));
 
+  /**
+   * Sharing, from whoever is reading the card. "Shared with" names the *other*
+   * people, so it reads correctly on both sides: the owner sees the people they
+   * share with, a sharer sees whose bottle it is.
+   */
+  const nameOf = (id: string) => ownerName(owners, id).trim() || strings.people.me;
+  const othersOnBottle = participantIds(vial).filter((id) => id !== viewerId);
+  const sharedNames = othersOnBottle.map(nameOf).join(', ');
+  // What is left for each of them, in their own dose — the owner's side only,
+  // because it is the owner who has to know whether anybody needs a new vial.
+  const sharedDetails = (supply?.shares ?? [])
+    .map((entry) =>
+      `${nameOf(entry.ownerId)} ${interpolate(strings.shares.since, {
+        date: formatDate(entry.from, locale),
+      })} · ${interpolate(strings.shares.dosesFor, { count: Math.floor(entry.dosesLeft) })}`,
+    )
+    .join(' · ');
+
   return (
     <li className="vial">
       <div className="vial__head">
@@ -199,6 +238,20 @@ export function VialCard({
           </span>
         )}
       </div>
+
+      {othersOnBottle.length > 0 ? (
+        <p className="vial__shared">
+          {interpolate(strings.shares.sharedWith, { names: sharedNames })}
+          {sharedDetails ? <span className="vial__shared-detail">{sharedDetails}</span> : null}
+        </p>
+      ) : null}
+
+      {/* A sharer can read the bottle and draw from it; only its owner changes it. */}
+      {ownedByViewer ? null : (
+        <p className="vial__note vial__note--info">
+          {interpolate(strings.shares.ownerEdit, { name: nameOf(vialOwnerId(vial)) })}
+        </p>
+      )}
 
       {/*
         The one thing a GLP-1 user should not have to go looking for. It sits
@@ -332,7 +385,7 @@ export function VialCard({
                 key={step.start}
               >
                 <span className="steps__dose">
-                  {fmt.mass(step.phase.doseAmount)} {vial.doseUnit}
+                  {fmt.mass(step.phase.doseAmount)} {view.doseUnit}
                 </span>
                 <span className="steps__dates">
                   {formatDate(step.start, locale)}
@@ -367,34 +420,44 @@ export function VialCard({
       ) : null}
 
       <div className="vial__actions">
-        <button type="button" className="btn btn--sm" onClick={() => onLoad(vial)}>
+        {/* Loading this person's own view, so the calculator gets *their* dose. */}
+        <button type="button" className="btn btn--sm" onClick={() => onLoad(view)}>
           {strings.vials.load}
         </button>
-        <button type="button" className="btn btn--sm" onClick={() => onEdit(vial)}>
-          {strings.edit.title}
-        </button>
-        {schedule ? null : (
+        {/*
+          Editing and deleting belong to the person who mixed the bottle: a
+          sharer must never be able to rewrite the owner's numbers, and a vial
+          nobody owns any more is not this person's to remove.
+        */}
+        {ownedByViewer ? (
           <>
-            <button type="button" className="btn btn--sm" onClick={() => onAddDose(vial.id)}>
-              {strings.vials.addDose}
+            <button type="button" className="btn btn--sm" onClick={() => onEdit(vial)}>
+              {strings.edit.title}
             </button>
+            {schedule ? null : (
+              <>
+                <button type="button" className="btn btn--sm" onClick={() => onAddDose(vial.id)}>
+                  {strings.vials.addDose}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  disabled={status.dosesTaken === 0}
+                  onClick={() => onRemoveDose(vial.id)}
+                >
+                  {strings.vials.removeDose}
+                </button>
+              </>
+            )}
             <button
               type="button"
-              className="btn btn--sm btn--ghost"
-              disabled={status.dosesTaken === 0}
-              onClick={() => onRemoveDose(vial.id)}
+              className="btn btn--sm btn--ghost btn--danger"
+              onClick={() => onDelete(vial.id)}
             >
-              {strings.vials.removeDose}
+              {strings.vials.delete}
             </button>
           </>
-        )}
-        <button
-          type="button"
-          className="btn btn--sm btn--ghost btn--danger"
-          onClick={() => onDelete(vial.id)}
-        >
-          {strings.vials.delete}
-        </button>
+        ) : null}
       </div>
         </div>
       ) : null}

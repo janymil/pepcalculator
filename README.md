@@ -31,6 +31,9 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Syringe aware, per workflow** — peptides are drawn with an **insulin syringe**, so you pick the scale (**U-100 / U-40 / U-50**) and the size (0.3–3 mL) and the app answers in **units**. Anabolic oils are drawn with a **plain mL syringe** (1–10 mL), so the answer is simply the **volume in mL** — no insulin units involved. Either way, it warns if the dose won't fit in one syringe.
 - **Live results** — headline units, volume, concentration, total in vial and doses per vial, plus a syringe illustration that fills proportionally.
 - **Smart warnings** — dose larger than the vial, volume larger than the syringe, or a dose so small it's hard to measure accurately.
+- **Shows its work** — every answer prints the arithmetic that produced it, with your own numbers (`1 mg ÷ 2 mL = 500 mcg/mL → 250 mcg ÷ 500 mcg/mL = 0.5 mL → 50 units`), so you can check it before you draw. It is the line a nurse writes on a sticky note, not a black box. (`lib/derive.ts`, the **How this was worked out** panel under the result.)
+- **Checks itself** — a reconstituted answer is computed two independent ways; if they ever disagree, the app shows neither and says so rather than handing you a number it cannot stand behind. (`selfCheck` in `lib/calc.ts`.)
+- **Verifiable by design** — the Reference sheet's **Verified examples** tab lists the exact cases the build is tested against, and the footer names how many. The proof cannot drift from reality, because the list the user reads *is* the list the tests run.
 - **English / Slovak / Spanish** with automatic language detection, and a **light / dark** theme.
 - **Remembers your numbers** in the browser (localStorage) and updates everything as you type.
 - **Saved vials** — save a reconstitution (name, amounts, date) and the app remembers the ratio forever, so it can always show **"draw X units"** — no more guessing whether that vial was mixed with 1 mL or 2 mL. Includes the **28-day expiry** and one-click reload into the calculator.
@@ -53,8 +56,9 @@ Anabolics need **no reconstitution**, so the app asks for the label concentratio
 - **Dose context** — a vial whose name matches a compound in the reference list shows where your dose sits against the commonly cited range. Context only, never advice.
 - **Backup & restore** — download every vial as a JSON file and merge it back on any device. Because everything lives in the browser, this protects you from cleared cookies (or Safari's 7-day eviction) and doubles as data portability.
 - **Sync between devices (recovery code)** — no email, no password. The app generates one long random code; type it on your phone and the same vials — and your body-measurement log — come across. Runs against the tiny included Node server (`npm run server`). Edits push **automatically** about 1.5 s after you make them, and **deletions travel too** thanks to soft-delete tombstones — which are then swept away automatically after 90 days (`TOMBSTONE_TTL_DAYS`), so the stored payload never grows forever.
+- **Pair a phone with a QR code** — Settings shows a QR code; your phone's **camera app** scans it, the app opens with your sync code and server already set, and your vials and plans arrive by themselves — then a one-tap prompt turns on reminders. The code travels only in the URL fragment, never to a server, and is cleared as soon as the page reads it. (The QR encoder is hand-rolled and verified by decoding its own output with a real decoder in the tests.)
 - **Installable & offline (PWA)** — add it to your home screen and it runs full-screen with no network. A hand-rolled service worker caches the app shell, so the calculator keeps working with no signal.
-- **Dose reminders** — turn reminders on and the app notifies you at the exact times of your saved plans (derived from the schedule — nothing to log). Reminders fire while the app is open or running in the background; a fully closed app would need a push server, which this offline-first app deliberately does not have.
+- **Dose reminders — even while the app is closed** — turn reminders on and the app notifies you at the exact times of your saved plans (derived from the schedule — nothing to log). While the app is open a local timer fires; add a **sync code** and the same times are mirrored to your server, so the reminder still arrives **when the app is closed** — on desktop and Android out of the box, and on iPhone once the app is **added to the Home Screen** (Web Push there requires an installed PWA). Background delivery needs the included push-enabled server; leave it off and nothing leaves the device.
 - **Calendar page (all peptides at once)** — a second page collects **every** saved plan in one view: a month grid showing **which days** carry a dose (each day lists its peptides as small **colour-coded pills**, with the hours), the **hours** for the selected day with the amount to draw, a "coming up" strip, and a summary of each plan (repeat pattern, times and end date). Each peptide keeps its own colour everywhere, and **only today** gets a coloured background. Lives in the URL (`#calendar`) so the browser back button works.
 - **Anabolics are saved too** — peptides and oils are both first-class saved vials: save an oil straight from anabolic mode and it appears on the Vials and Calendar pages, read in **mL** (no insulin units) and without a 28-day use-by. **All / Peptides / Anabolics** filters on both the list and the calendar keep them apart.
 - **Two compounds at one moment** — a stack often means two bottles at the same sitting (a peptide and an oil, say), so the Today card names the whole sitting — *"Also at this time: Testosterone E — 1 mL"* — and the pre-draw check card lists every vial that has to be drawn, so one trip to the drawer covers all of them. Nothing new to log: the sitting is derived from the plans, like everything else.
@@ -88,10 +92,12 @@ Several features are easy to miss because they only appear once they have someth
 | **Print a protocol + vial labels** | **My vials** → **Print protocol & labels** (top-right) |
 | Backup, restore, encrypt a backup | **My vials** → the *Backup* card at the bottom |
 | Calendar of every plan, "coming up" | **Calendar** |
-| Compound ranges, the **converter**, **your protocol plot** | **Reference** → the *Compounds / Converter / Your protocol* tabs |
+| Compound ranges, the **converter**, **your protocol plot**, the **worked examples** | **Reference** → the *Compounds / Converter / Your protocol / Verified examples* tabs |
+| **See the maths** behind an answer | **Calculator** → the **How this was worked out** panel under the result |
 | Sync (recovery code, conflict notice) | **Settings** → *Sync* |
 | Dose reminders | **Settings** → *Reminders* |
 | **Larger text + non-colour vial markers** | **Settings** → *Display* |
+| The **privacy promise** and how answers are checked | **Settings** → *Privacy* |
 | **The 55-second explainer video** | **Guide** (its own page) — or `public/explainer.html` standalone |
 
 If a feature seems to be missing, it is usually waiting for data: the supply outlook needs a vial
@@ -125,7 +131,7 @@ git clone https://github.com/janymil/pepcalculator.git   # private repo — need
 cd pepcalculator
 npm install
 npm run dev        # app on http://localhost:8137
-npm run server     # optional: recovery-code sync on http://localhost:8787
+npm run server     # optional: recovery-code sync + push on http://localhost:8787
 ```
 
 Other scripts:
@@ -143,7 +149,7 @@ npm run icons      # regenerate the PWA icons in public/icons/ (only if you chan
 
 ### Deploying
 
-1. **Server:** host `server/server.mjs` on anything running Node 22+ (Render, Railway, Fly, a VPS) — or use the included **`Dockerfile` / `docker-compose.yml`**, which is `node:22-alpine` plus two files with no dependency install. Set `PORT`, `DB_PATH` **on a persistent volume**, and `ALLOWED_ORIGIN` to your app's URL (a comma-separated list works). `server/README.md` documents the rest: `RATE_LIMIT`, `RATE_WINDOW_MS`, `TRUST_PROXY`, `LOG_REQUESTS`.
+1. **Server:** host `server/server.mjs` on anything running Node 22+ (Render, Railway, Fly, a VPS) — or use the included **`Dockerfile` / `docker-compose.yml`** (`node:22-alpine`; the only runtime dependency is `web-push`, loaded solely to deliver reminders and never touched unless VAPID keys are set). Set `PORT`, `DB_PATH` **on a persistent volume**, and `ALLOWED_ORIGIN` to your app's URL (a comma-separated list works). For closed-app reminders, run `npm run vapid` and set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (plus `VAPID_SUBJECT`). `server/README.md` documents the rest: `RATE_LIMIT`, `RATE_WINDOW_MS`, `TRUST_PROXY`, `LOG_REQUESTS`, `PUSH_INTERVAL_MS`.
 2. **App:** host `dist/` on any HTTPS host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). HTTPS is required for sync, because `crypto.subtle` only exists in a secure context.
 3. **Point the app at the server:** copy `.env.example` to `.env`, set `VITE_SYNC_SERVER=https://your-sync-host`, then `npm run build`. The URL is baked into the bundle so new devices pick it up with no typing.
 
@@ -185,14 +191,14 @@ src/
 │                        # OwnerTabs, PeoplePanel, TodayDose, MobileSummaryBar, FirstRunCard,
 │                        # ReferencePage, Toast, DangerZone, SaveVialForm, SavedVials,
 │                        # VialCard, AgendaPage, SettingsPage, …
-├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts, useCountUp.ts
+├─ hooks/                # useLocalStorage.ts, useDoseReminders.ts, usePushReminders.ts, useCountUp.ts
 ├─ styles/global.css     # design tokens + all styling
 ├─ App.tsx               # state + wiring
 └─ main.tsx
 
 public/                  # copied verbatim to the site root (PWA assets)
 ├─ manifest.webmanifest
-├─ sw.js                 # hand-rolled service worker (offline shell + notifications)
+├─ sw.js                 # hand-rolled service worker (offline shell, notifications, push)
 └─ icons/*.png           # generated by `npm run icons`
 
 scripts/
@@ -238,7 +244,7 @@ Add a dictionary file, add its code to `Lang`, and register it in `src/i18n/inde
 ### Ideas already anticipated by the structure
 
 - ~~Half-life / blood-level chart~~ — done: `src/lib/pk.ts` + the chart on the Reference page.
-- True background reminders when the app is closed (Web Push or Notification Triggers).
+- ~~True background reminders when the app is closed~~ — done: Web Push (`server/push.mjs` + `src/hooks/usePushReminders.ts`), delivered with the app shut.
 - ~~Export or print a protocol~~ — done: `PrintSheet.tsx` renders the protocol page and the vial stickers. ~~Interval schedules~~ — done: `repeat: 'interval'`.
 - Titration phases (a step-up plan that changes the dose after N weeks) and pen devices, for GLP-1 users.
 - New workflows such as HGH, HCG and insulin need an **IU** dose unit added to `DoseUnit` (with a `v2` storage migration); the mode registry is otherwise ready for them.

@@ -43,7 +43,7 @@ function makeVial(overrides: Partial<SavedVial> = {}): SavedVial {
 function render(vials: SavedVial[]): string {
   return renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
-      <AgendaPage vials={vials} todayIso={MONDAY} nowTime="07:00" />
+      <AgendaPage vials={vials} todayIso={MONDAY} nowTime="07:00" viewerId="me" />
     </I18nProvider>,
   );
 }

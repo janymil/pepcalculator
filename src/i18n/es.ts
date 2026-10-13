@@ -91,6 +91,14 @@ export const es: Strings = {
     syringeReading: 'En una jeringa {scale}',
   },
   syringeVisual: { ariaLabel: 'Jeringa llenada hasta el volumen calculado' },
+  derivation: {
+    title: 'Cómo se ha calculado',
+    toggle: 'Ver los cálculos',
+    concentration: '{vial} {unit} ÷ {water} mL = {conc} {unit}/mL',
+    volume: '{dose} {unit} ÷ {conc} {unit}/mL = {volume} mL',
+    units: '{volume} mL × {perMl} unidades/mL = {units} unidades',
+    clicks: '{volume} mL × {perMl} clics/mL = {count} clics',
+  },
   warnings: {
     mixedUnits:
       'El vial está etiquetado en {vialUnit}, pero la dosis está en {doseUnit}. Son tipos de unidad distintos: elige la que aparece impresa en tu vial.',
@@ -108,6 +116,8 @@ export const es: Strings = {
       'Solo unos {units} unidades — es muy difícil medirlo con precisión. Usar más agua hace que cada dosis sea mayor y más fácil de leer.',
     doseTooSmallVolume:
       'Solo unos {volume} mL — es muy difícil medirlo con precisión con una jeringa de aceite. Revisa bien la dosis y las marcas de la jeringa.',
+    internalMismatch:
+      'Las dos formas de calcularlo dieron resultados distintos, así que la app no muestra ninguno. Revisa tus datos o pregunta a un farmacéutico.',
   },
   actions: { reset: 'Restablecer', useWater: 'Usar {water} mL' },
   validation: { invalidNumber: 'Introduce un número mayor que 0.' },
@@ -200,6 +210,20 @@ export const es: Strings = {
     sortNewest: 'Más recientes',
     sortName: 'Nombre',
     sortExpiry: 'Caducidad',
+  },
+  shares: {
+    title: 'Comparto este vial',
+    hint: 'Todos los que marques pinchan del mismo vial. Lo que queda cuenta las dosis de todos, no solo las tuyas, y los días de cada uno pueden ser distintos.',
+    with: 'Compartir con',
+    from: 'Compartido desde',
+    samePlan: 'El mismo plan que el mío',
+    dose: 'Dosis por inyección',
+    theirPlan: 'Su plan',
+    sharedWith: 'Compartido con {names}',
+    since: 'desde {date}',
+    dosesFor: 'Quedan {count} para esa persona',
+    ownerEdit: 'Solo {name} puede cambiar este vial y su plan.',
+    addPeople: 'Para compartir hace falta otra persona: añádela antes en Ajustes.',
   },
   schedule: {
     title: '¿Cuándo lo tomas?',
@@ -340,8 +364,7 @@ export const es: Strings = {
   },
   reminders: {
     title: 'Recordatorios de dosis',
-    intro:
-      'Recibe una notificación en este dispositivo cuando toque una dosis. La app calcula las horas a partir de tus planes guardados: no se envía nada a ningún sitio.',
+    intro: 'Una notificación cuando toque una dosis, calculada a partir de tus planes guardados.',
     enable: 'Activar recordatorios',
     disable: 'Desactivar recordatorios',
     allow: 'Permitir notificaciones',
@@ -356,9 +379,38 @@ export const es: Strings = {
     tomorrow: 'Mañana',
     installedHint:
       'Consejo: instala la app (Añadir a pantalla de inicio) para que los recordatorios sean más fiables.',
-    keepOpenHint: 'Los recordatorios aparecen mientras la app está abierta o en segundo plano.',
+    keepOpenHint:
+      'Sin servidor, los recordatorios solo aparecen mientras la app está abierta o en segundo plano.',
     notifyTitle: 'Hora de tu dosis',
     notifyBody: '{name} · {time}',
+    pushActive: 'Entrega en segundo plano: los recordatorios llegan aunque la app esté cerrada.',
+    pushNeedsCode:
+      'Para recibir recordatorios con la app cerrada, primero crea un código de sincronización arriba: es el único identificador que el servidor necesita para llegar a este dispositivo.',
+    pushUnsupported:
+      'Este navegador no puede entregar recordatorios con la app cerrada. Instala la app o ábrela en Chrome, Edge o Firefox.',
+    pushBlocked:
+      'Los recordatorios en segundo plano están bloqueados. Permite las notificaciones en los ajustes del navegador o del sistema.',
+    pushInactive: 'Permite las notificaciones para recibir recordatorios con la app cerrada.',
+    pushError:
+      'Los recordatorios en segundo plano aún no están configurados: revisa el servidor de sincronización de arriba.',
+  },
+  pair: {
+    title: 'Emparejar un teléfono',
+    needCode:
+      'Primero crea un código de sincronización arriba: el código QR lo lleva, así no tienes que escribirlo.',
+    intro:
+      'Escanea este código con la cámara del teléfono. Abre la app con tu código y tu servidor ya listos y sincroniza tus viales y planes.',
+    copyLink: 'Copiar enlace',
+    copied: 'Copiado',
+    steps:
+      'En el teléfono: abre la cámara, apunta al código y toca el enlace que aparece. Lo demás llega solo, sin escribir nada.',
+    noticeTitle: 'Teléfono emparejado',
+    noticeBody:
+      'Tus viales y planes se están sincronizando. Activa los recordatorios para que te avise cuando toque una dosis, incluso con la app cerrada.',
+    noticeInstalled:
+      'En iPhone, toca primero Compartir → Añadir a pantalla de inicio y luego activa los recordatorios.',
+    noticeEnable: 'Activar recordatorios',
+    noticeDismiss: 'Ahora no',
   },
   views: {
     label: 'Páginas',
@@ -527,6 +579,20 @@ export const es: Strings = {
     atTimes: 'Horas: {times}',
     more: '+{count}',
   },
+  proof: {
+    line: 'Cada cifra se comprueba con {count} ejemplos resueltos, que se ejecutan en cada compilación.',
+    tab: 'Ejemplos verificados',
+    title: 'Ejemplos verificados',
+    subtitle: 'Los casos exactos con los que se prueba esta app: puedes rehacer cualquiera a mano.',
+    hint: 'Cada fila es un caso que se ejecuta en cada cambio. El cálculo se muestra, para que puedas comprobarlo tú mismo.',
+    examples: {
+      peptideStandard: '5 mg en 2 mL, una dosis de 250 mcg',
+      peptideHighDose: '10 mg en 3 mL, una dosis de 1 mg',
+      hormoneIU: '10 UI en 2 mL, una dosis de 2 UI',
+      anabolicOil: 'Un aceite a 250 mg/mL, una dosis de 500 mg',
+      glp1Pen: 'Una pluma a 1 mg/mL, una dosis de 0,25 mg',
+    },
+  },
   settings: {
     title: 'Ajustes',
     subtitle:
@@ -535,6 +601,11 @@ export const es: Strings = {
     readable: 'Texto más grande y marcas extra',
     readableHint:
       'Aumenta toda la escala tipográfica y añade rayas a cada punto de vial, para que nunca haya que distinguir dos viales solo por el color.',
+    privacy: 'Privacidad',
+    privacyBody:
+      'Sin cuenta, sin nube, sin analítica. Tus datos se quedan en este navegador y la app no hace ninguna petición de red salvo la sincronización — y, si activas los recordatorios, el registro push que permite que lleguen con la app cerrada — siempre solo a la dirección que indiques.',
+    privacyProof:
+      'Cada resultado se comprueba; los ejemplos con los que se prueba están en la página Referencia.',
   },
   reference: {
     title: 'Referencia',

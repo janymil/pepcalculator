@@ -91,6 +91,14 @@ export const sk: Strings = {
     syringeReading: 'Na {scale} striekačke',
   },
   syringeVisual: { ariaLabel: 'Striekačka naplnená po vypočítaný objem' },
+  derivation: {
+    title: 'Ako sa to vypočítalo',
+    toggle: 'Zobraziť výpočet',
+    concentration: '{vial} {unit} ÷ {water} mL = {conc} {unit}/mL',
+    volume: '{dose} {unit} ÷ {conc} {unit}/mL = {volume} mL',
+    units: '{volume} mL × {perMl} jednotiek/mL = {units} jednotiek',
+    clicks: '{volume} mL × {perMl} kliknutí/mL = {count} kliknutí',
+  },
   warnings: {
     mixedUnits:
       'Fľaštička je označená v {vialUnit}, ale dávka je v {doseUnit}. Sú to rôzne druhy jednotiek — vyberte tú, ktorá je vytlačená na vašej fľaštičke.',
@@ -108,6 +116,8 @@ export const sk: Strings = {
       'Len približne {units} jednotiek — veľmi ťažké presne odmerať. Viac vody zväčší dávku a uľahčí odčítanie.',
     doseTooSmallVolume:
       'Len približne {volume} mL — veľmi ťažké presne odmerať olejovou striekačkou. Skontrolujte dávku aj dieliky na striekačke.',
+    internalMismatch:
+      'Dva spôsoby výpočtu dali odlišné výsledky, preto aplikácia žiadny neuvádza. Skontrolujte svoje hodnoty alebo sa opýtajte lekárnika.',
   },
   actions: { reset: 'Vymazať', useWater: 'Použiť {water} mL' },
   validation: { invalidNumber: 'Zadajte číslo väčšie ako 0.' },
@@ -200,6 +210,20 @@ export const sk: Strings = {
     sortNewest: 'Najnovšie',
     sortName: 'Podľa názvu',
     sortExpiry: 'Exspirácia',
+  },
+  shares: {
+    title: 'Fľaštičku zdieľam',
+    hint: 'Každý, koho označíte, ťahá z tej istej fľaštičky. To, čo v nej zostáva, počíta dávky všetkých — nie len vaše — a dni, kedy ju ktorý z vás použije, sa môžu líšiť.',
+    with: 'Zdieľať s',
+    from: 'Zdieľané od',
+    samePlan: 'Rovnaký plán ako môj',
+    dose: 'Dávka na injekciu',
+    theirPlan: 'Jej/jeho plán',
+    sharedWith: 'Zdieľané s {names}',
+    since: 'od {date}',
+    dosesFor: 'Zostáva {count} pre túto osobu',
+    ownerEdit: 'Fľaštičku a jej plán môže zmeniť len {name}.',
+    addPeople: 'Na zdieľanie potrebujete osobu, s ktorou ju zdieľate — najprv ju pridajte v Nastaveniach.',
   },
   schedule: {
     title: 'Kedy to užívate?',
@@ -340,8 +364,7 @@ export const sk: Strings = {
   },
   reminders: {
     title: 'Pripomienky dávok',
-    intro:
-      'Dostanete upozornenie v tomto zariadení, keď je čas na dávku. Časy aplikácia odvodí z vašich uložených plánov — nič sa nikam neposiela.',
+    intro: 'Upozornenie, keď je čas na dávku — časy aplikácia odvodí z vašich uložených plánov.',
     enable: 'Zapnúť pripomienky',
     disable: 'Vypnúť pripomienky',
     allow: 'Povoliť upozornenia',
@@ -354,9 +377,38 @@ export const sk: Strings = {
     today: 'Dnes',
     tomorrow: 'Zajtra',
     installedHint: 'Tip: nainštalujte aplikáciu (Pridať na plochu), aby boli pripomienky spoľahlivejšie.',
-    keepOpenHint: 'Pripomienky sa zobrazujú, keď je aplikácia otvorená alebo beží na pozadí.',
+    keepOpenHint:
+      'Bez servera sa pripomienky zobrazujú len vtedy, keď je aplikácia otvorená alebo beží na pozadí.',
     notifyTitle: 'Čas na dávku',
     notifyBody: '{name} · {time}',
+    pushActive: 'Doručené na pozadí: pripomienky prídu aj keď je aplikácia zatvorená.',
+    pushNeedsCode:
+      'Aby pripomienky chodili aj pri zatvorenej aplikácii, najprv vytvorte synchronizačný kód vyššie — je to jediný identifikátor, ktorý server potrebuje, aby sa dostal k tomuto zariadeniu.',
+    pushUnsupported:
+      'Tento prehliadač nevie doručiť pripomienky pri zatvorenej aplikácii. Nainštalujte aplikáciu alebo ju otvorte v Chrome, Edge či Firefoxe.',
+    pushBlocked:
+      'Pripomienky na pozadí sú zablokované. Povoľte upozornenia v nastaveniach prehliadača alebo systému.',
+    pushInactive: 'Povoľte upozornenia, aby pripomienky chodili aj pri zatvorenej aplikácii.',
+    pushError:
+      'Pripomienky na pozadí sa zatiaľ nepodarilo nastaviť — skontrolujte server synchronizácie vyššie.',
+  },
+  pair: {
+    title: 'Prepojiť telefón',
+    needCode:
+      'Najprv vyššie vytvorte synchronizačný kód — QR kód ho prenáša, takže ho nemusíte písať.',
+    intro:
+      'Naskenujte tento kód kamerou telefónu. Otvorí aplikáciu s hotovým kódom aj serverom a synchronizuje vaše fľaštičky a plány.',
+    copyLink: 'Kopírovať odkaz',
+    copied: 'Skopírované',
+    steps:
+      'Na telefóne: otvorte kameru, namierte na kód a kliknite na zobrazený odkaz. Zvyšok prebehne sám — bez písania.',
+    noticeTitle: 'Telefón prepojený',
+    noticeBody:
+      'Vaše fľaštičky a plány sa synchronizujú. Zapnite pripomienky, aby ste dostali upozornenie, keď je čas na dávku — aj pri zatvorenej aplikácii.',
+    noticeInstalled:
+      'Na iPhone najprv klepnite na Zdieľať → Pridať na plochu a potom zapnite pripomienky.',
+    noticeEnable: 'Zapnúť pripomienky',
+    noticeDismiss: 'Teraz nie',
   },
   views: {
     label: 'Stránky',
@@ -525,6 +577,20 @@ export const sk: Strings = {
     atTimes: 'Časy: {times}',
     more: '+{count}',
   },
+  proof: {
+    line: 'Každý údaj je overený na {count} vzorových príkladoch, ktoré sa spúšťajú pri každom zostavení.',
+    tab: 'Overené príklady',
+    title: 'Overené príklady',
+    subtitle: 'Presne tie prípady, na ktorých je táto aplikácia testovaná — ktorýkoľvek si môžete prepočítať ručne.',
+    hint: 'Každý riadok je prípad, ktorý sa spúšťa pri každej zmene. Výpočet je zobrazený, takže si ho môžete overiť sami.',
+    examples: {
+      peptideStandard: '5 mg v 2 mL, dávka 250 mcg',
+      peptideHighDose: '10 mg v 3 mL, dávka 1 mg',
+      hormoneIU: '10 IU v 2 mL, dávka 2 IU',
+      anabolicOil: 'Olej 250 mg/mL, dávka 500 mg',
+      glp1Pen: 'Pero 1 mg/mL, dávka 0,25 mg',
+    },
+  },
   settings: {
     title: 'Nastavenia',
     subtitle:
@@ -533,6 +599,11 @@ export const sk: Strings = {
     readable: 'Väčšie písmo a ďalšie označenia',
     readableHint:
       'Zväčší celú škálu písma a pridá na každú bodku fľaštičky prúžky, aby sa dve fľaštičky nikdy nemuseli rozlišovať len podľa farby.',
+    privacy: 'Súkromie',
+    privacyBody:
+      'Žiadny účet, žiadny cloud, žiadna analytika. Vaše hodnoty zostávajú v tomto prehliadači a aplikácia neodošle žiadnu sieťovú požiadavku okrem synchronizácie — a ak zapnete pripomienky, tak aj registrácie push, vďaka ktorej prídu aj pri zatvorenej aplikácii — vždy len na adresu, ktorú zadáte.',
+    privacyProof:
+      'Každý výsledok sa overuje; vzorové príklady, na ktorých je testovaný, sú na stránke Prehľad.',
   },
   reference: {
     title: 'Prehľad',

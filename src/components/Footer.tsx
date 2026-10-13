@@ -1,4 +1,6 @@
+import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
+import { WORKED_EXAMPLES } from '../lib/workedExamples';
 import { Icon } from './Icon';
 
 /** Safety disclaimer + a small note about where the data lives. */
@@ -19,6 +21,11 @@ export function Footer() {
 
       <p className="app-footer__note">
         {strings.footer.note} <span className="app-footer__version">{strings.footer.version}</span>
+      </p>
+
+      {/* The proof line: the count is the length of the list the tests run against. */}
+      <p className="app-footer__proof">
+        {interpolate(strings.proof.line, { count: WORKED_EXAMPLES.length })}
       </p>
     </footer>
   );

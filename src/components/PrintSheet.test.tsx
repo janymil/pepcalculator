@@ -9,7 +9,7 @@ import { PrintSheet } from './PrintSheet';
 const render = (vials: SavedVial[]) =>
   renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
-      <PrintSheet vials={vials} ownerName="Kim" todayIso="2026-01-05" />
+      <PrintSheet vials={vials} ownerName="Kim" todayIso="2026-01-05" viewerId="me" />
     </I18nProvider>,
   );
 

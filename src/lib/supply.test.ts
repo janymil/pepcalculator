@@ -197,3 +197,114 @@ describe('buildSupply', () => {
     expect(vialSupply(flat, '2026-01-05', '08:00').runOutOn).toBe('2026-02-13');
   });
 });
+
+/** 5 mg in 2 mL -> 2.5 mg/mL; 250 mcg = 0.25 mg = 0.1 mL, so 20 doses a vial. */
+describe('a shared bottle', () => {
+  const ana = { ownerId: 'ana', from: '2026-01-15', doseAmount: 500, doseUnit: 'mcg' as const };
+
+  it('counts a sharer’s doses only from the day they joined', () => {
+    // One 250 mcg dose a day from 5 Jan; Ana joins on the 15th at 500 mcg a day.
+    const vial = makeVial({
+      schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing'),
+      shares: [ana],
+    });
+
+    // The ten days before she joined (5–14 Jan) are the owner's alone: 2.5 mg of
+    // the 5 mg is gone, and not one drop of it is charged to her.
+    const supply = vialSupply(vial, '2026-01-15', '07:00');
+    expect(supply.remainingBase).toBeCloseTo(2.5, 9);
+    expect(supply.volumeLeftMl).toBeCloseTo(1, 9);
+  });
+
+  it('reads the same bottle in each person’s own dose', () => {
+    const vial = makeVial({
+      schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing'),
+      shares: [ana],
+    });
+
+    // 2.5 mg left is ten of the owner's doses and five of Ana's — one bottle, two
+    // honest answers to "how many injections is that?".
+    expect(vialSupply(vial, '2026-01-15', '07:00', 'me').dosesLeft).toBeCloseTo(10, 9);
+    expect(vialSupply(vial, '2026-01-15', '07:00', 'ana').dosesLeft).toBeCloseTo(5, 9);
+
+    const [entry] = vialSupply(vial, '2026-01-15', '07:00').shares;
+    expect(entry).toMatchObject({ ownerId: 'ana', from: '2026-01-15', doseAmount: 500 });
+    expect(entry.dosesLeft).toBeCloseTo(5, 9);
+  });
+
+  it('runs out sooner once somebody else draws from it', () => {
+    const alone = makeVial({ schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing') });
+    const shared = makeVial({
+      schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing'),
+      shares: [{ ownerId: 'ana', from: '2026-01-15', doseAmount: 250, doseUnit: 'mcg' }],
+    });
+
+    // Alone, 2.5 mg is ten days of one dose — the 24th. Two of you empty it in
+    // five, which is the whole reason the old number was wrong.
+    expect(vialSupply(alone, '2026-01-15', '07:00').runOutOn).toBe('2026-01-24');
+    expect(vialSupply(shared, '2026-01-15', '07:00').runOutOn).toBe('2026-01-19');
+  });
+
+  it('follows the owner’s cadence re-anchored to the day they joined', () => {
+    // Same once-a-day plan, but starting on the 10th instead of the 5th.
+    const vial = makeVial({
+      schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing'),
+      shares: [{ ownerId: 'ana', from: '2026-01-10' }],
+    });
+
+    // By the 12th the owner has taken 5–11 Jan (7 doses) and Ana 10–11 Jan (2).
+    // Nine doses of 0.25 mg is 2.25 mg gone; counting only the owner's would have
+    // left 3.25 mg in a bottle holding 2.75.
+    const supply = vialSupply(vial, '2026-01-12', '07:00');
+    expect(supply.remainingBase).toBeCloseTo(5 - 9 * 0.25, 9);
+    expect(supply.remainingBase).not.toBeCloseTo(5 - 7 * 0.25, 9);
+  });
+
+  it('leaves a vial nobody shares exactly as it was', () => {
+    const alone = makeVial({ schedule: daily(['09:00']) });
+
+    expect(vialSupply({ ...alone, shares: undefined }, '2026-01-10', '08:00')).toMatchObject({
+      runOutOn: vialSupply(alone, '2026-01-10', '08:00').runOutOn,
+      dosesLeft: vialSupply(alone, '2026-01-10', '08:00').dosesLeft,
+      shares: [],
+    });
+  });
+
+  it('leaves out a sharer whose dose cannot be measured against the bottle', () => {
+    // An IU vial cannot honour a dose written in mg, so it is skipped rather
+    // than converted into a number nobody can draw.
+    const hormone = makeVial({
+      kind: 'hormone',
+      vialUnit: 'IU',
+      doseAmount: 250,
+      doseUnit: 'IU',
+      schedule: daily(['09:00'], '2026-01-05', 0, 'ongoing'),
+    });
+    const wrongUnits = {
+      ...hormone,
+      shares: [{ ownerId: 'ana', from: '2026-01-10', doseAmount: 5, doseUnit: 'mg' as const }],
+    };
+
+    expect(vialSupply(wrongUnits, '2026-01-12', '07:00').remainingBase).toBeCloseTo(
+      vialSupply(hormone, '2026-01-12', '07:00').remainingBase,
+      9,
+    );
+  });
+
+  it('reorders more vials when two people are emptying the bottle', () => {
+    const alone = buildSupply([makeVial({ schedule: daily(['09:00']) })], '2026-01-05', '08:00');
+    const shared = buildSupply(
+      [
+        makeVial({
+          schedule: daily(['09:00']),
+          shares: [{ ownerId: 'ana', from: '2026-01-05', doseAmount: 250, doseUnit: 'mcg' }],
+        }),
+      ],
+      '2026-01-05',
+      '08:00',
+    );
+
+    expect(shared.vialsToReorder).toBeGreaterThan(alone.vialsToReorder);
+  });
+});
+

@@ -1,5 +1,9 @@
 import { useState } from 'react';
+import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
+import type { Strings } from '../i18n/types';
+import type { CalcResult, ModeId } from '../lib/calc';
+import { fmt } from '../lib/format';
 import {
   COMPOUNDS,
   formatRange,
@@ -8,6 +12,7 @@ import {
   type RangedCompound,
 } from '../lib/reference';
 import type { SavedVial } from '../lib/vials';
+import { WORKED_EXAMPLES, runExample } from '../lib/workedExamples';
 import { PkChart } from './PkChart';
 import { ProtocolPlot } from './ProtocolPlot';
 import { UnitConverter } from './UnitConverter';
@@ -19,7 +24,17 @@ interface ReferencePageProps {
 }
 
 /** Which part of the sheet is open. */
-type ReferenceSection = 'compounds' | 'converter' | 'plot';
+type ReferenceSection = 'compounds' | 'converter' | 'plot' | 'examples';
+
+/**
+ * How a draw reads on the device, in the words each workflow uses: a pen dials
+ * clicks, a peptide barrel is read in graduations, everything else in mL.
+ */
+function drawText(mode: ModeId, result: CalcResult, strings: Strings): string {
+  if (mode === 'glp1') return `${fmt.count(result.clicks)} ${strings.results.clicksWord}`;
+  if (mode === 'peptide') return `${fmt.units(result.units)} ${strings.results.unitsWord}`;
+  return `${fmt.volume(result.volumeMl)} ${strings.units.ml}`;
+}
 
 /**
  * The decay curve for a compound's *typical* dose range — the reference version
@@ -69,6 +84,7 @@ export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
     { id: 'compounds', label: copy.tabCompounds },
     { id: 'converter', label: copy.tabConverter },
     { id: 'plot', label: copy.tabPlot },
+    { id: 'examples', label: strings.proof.tab },
   ];
 
   return (
@@ -98,6 +114,30 @@ export function ReferencePage({ vials, todayIso }: ReferencePageProps) {
 
       {section === 'converter' ? <UnitConverter /> : null}
       {section === 'plot' ? <ProtocolPlot vials={vials} todayIso={todayIso} /> : null}
+
+      {section === 'examples' ? (
+        <div className="proof">
+          <p className="field__hint">{strings.proof.hint}</p>
+          <ul className="ref__list">
+            {WORKED_EXAMPLES.map((example) => {
+              const result = runExample(example);
+              return (
+                <li className="ref__row" key={example.id}>
+                  <div className="ref__head">
+                    <h3 className="ref__name">{strings.proof.examples[example.id]}</h3>
+                    <span className="ref__range">
+                      <strong>{drawText(example.mode, result, strings)}</strong>
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="ref__note">
+            {interpolate(strings.proof.line, { count: WORKED_EXAMPLES.length })}
+          </p>
+        </div>
+      ) : null}
 
         {section === 'compounds' ? (
           <>

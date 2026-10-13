@@ -91,6 +91,14 @@ export const en: Strings = {
     syringeReading: 'On a {scale} syringe',
   },
   syringeVisual: { ariaLabel: 'Syringe filled to the calculated volume' },
+  derivation: {
+    title: 'How this was worked out',
+    toggle: 'Show the maths',
+    concentration: '{vial} {unit} ÷ {water} mL = {conc} {unit}/mL',
+    volume: '{dose} {unit} ÷ {conc} {unit}/mL = {volume} mL',
+    units: '{volume} mL × {perMl} units/mL = {units} units',
+    clicks: '{volume} mL × {perMl} clicks/mL = {count} clicks',
+  },
   warnings: {
     mixedUnits:
       'The vial is labelled in {vialUnit} but the dose is in {doseUnit}. Those are different kinds of unit — pick the one printed on your vial.',
@@ -108,6 +116,8 @@ export const en: Strings = {
       'Only about {units} units — that is very hard to measure accurately. Using more water makes each dose bigger and easier to read.',
     doseTooSmallVolume:
       'Only about {volume} mL — that is very hard to measure accurately with an oil syringe. Double-check the dose and the graduations on your syringe.',
+    internalMismatch:
+      'The two ways of working this out gave different answers, so the app is not showing one. Check your entries, or ask a pharmacist.',
   },
   actions: { reset: 'Reset', useWater: 'Use {water} mL' },
   validation: { invalidNumber: 'Enter a number greater than 0.' },
@@ -200,6 +210,20 @@ export const en: Strings = {
     sortNewest: 'Newest',
     sortName: 'Name',
     sortExpiry: 'Expiry',
+  },
+  shares: {
+    title: 'This vial is shared',
+    hint: 'Anyone you tick draws from the same bottle. What is left in it counts everybody’s doses, not just yours — and the days each of you uses it can differ.',
+    with: 'Share with',
+    from: 'Shared from',
+    samePlan: 'Same plan as mine',
+    dose: 'Dose per injection',
+    theirPlan: 'Their plan',
+    sharedWith: 'Shared with {names}',
+    since: 'from {date}',
+    dosesFor: '{count} left for them',
+    ownerEdit: 'Only {name} can change this bottle and its plan.',
+    addPeople: 'Sharing needs somebody to share with — add a person in Settings first.',
   },
   schedule: {
     title: 'When do you take it?',
@@ -340,8 +364,7 @@ export const en: Strings = {
   },
   reminders: {
     title: 'Dose reminders',
-    intro:
-      'Get a notification on this device when a dose is due. The app works out the times from your saved plans — nothing is sent anywhere.',
+    intro: 'A notification when a dose is due, worked out from your saved plans.',
     enable: 'Turn reminders on',
     disable: 'Turn reminders off',
     allow: 'Allow notifications',
@@ -354,9 +377,36 @@ export const en: Strings = {
     today: 'Today',
     tomorrow: 'Tomorrow',
     installedHint: 'Tip: install the app (Add to Home Screen) so reminders are more reliable.',
-    keepOpenHint: 'Reminders appear while the app is open or running in the background.',
+    keepOpenHint: 'With no server set up, reminders appear only while the app is open or in the background.',
     notifyTitle: 'Time for your dose',
     notifyBody: '{name} · {time}',
+    pushActive: 'Delivered in the background: reminders arrive even when the app is closed.',
+    pushNeedsCode:
+      'To get reminders while the app is closed, first create a sync code above — it is the one identifier the server needs to reach this device.',
+    pushUnsupported:
+      'This browser cannot deliver reminders while the app is closed. Install the app, or open it in Chrome, Edge or Firefox.',
+    pushBlocked:
+      'Background reminders are blocked. Allow notifications in your browser or system settings.',
+    pushInactive: 'Allow notifications to receive reminders while the app is closed.',
+    pushError: 'Background reminders are not set up yet — check the sync server above.',
+  },
+  pair: {
+    title: 'Pair a phone',
+    needCode:
+      'Create a sync code above first — the QR code carries it, so you never have to type it.',
+    intro:
+      'Scan this with your phone camera. It opens the app with your code and server already set, then syncs your vials and plans.',
+    copyLink: 'Copy link',
+    copied: 'Copied',
+    steps:
+      'On the phone: open the camera, point it at the code and tap the link it shows. Everything then arrives by itself — no typing.',
+    noticeTitle: 'Phone paired',
+    noticeBody:
+      'Your vials and plans are syncing. Turn on reminders so you are told when a dose is due — even with the app closed.',
+    noticeInstalled:
+      'On iPhone, first tap Share → Add to Home Screen, then turn on reminders.',
+    noticeEnable: 'Turn on reminders',
+    noticeDismiss: 'Not now',
   },
   views: {
     label: 'Pages',
@@ -525,6 +575,20 @@ export const en: Strings = {
     atTimes: 'Times: {times}',
     more: '+{count}',
   },
+  proof: {
+    line: 'Every figure is checked against {count} worked examples, run on every build.',
+    tab: 'Verified examples',
+    title: 'Verified examples',
+    subtitle: 'The exact cases this app is tested against — you can redo any of them by hand.',
+    hint: 'Each row is a case the build runs on every change. The working is shown, so you can check it yourself.',
+    examples: {
+      peptideStandard: '5 mg in 2 mL, a 250 mcg dose',
+      peptideHighDose: '10 mg in 3 mL, a 1 mg dose',
+      hormoneIU: '10 IU in 2 mL, a 2 IU dose',
+      anabolicOil: 'An oil at 250 mg/mL, a 500 mg dose',
+      glp1Pen: 'A pen at 1 mg/mL, a 0.25 mg dose',
+    },
+  },
   settings: {
     title: 'Settings',
     subtitle: 'Sync between devices and dose reminders. Everything else stays on this device.',
@@ -532,6 +596,11 @@ export const en: Strings = {
     readable: 'Larger text and extra markers',
     readableHint:
       'Steps the whole type scale up and adds a stripe pattern to every vial dot, so two vials never have to be told apart by colour alone.',
+    privacy: 'Privacy',
+    privacyBody:
+      'No account, no cloud, no analytics. Your numbers stay in this browser, and the app makes no network request except sync — and, if you switch on reminders, the push registration that lets them arrive while the app is closed — both only to the address you enter.',
+    privacyProof:
+      'Every answer is checked; the worked examples it is tested against are on the Reference page.',
   },
   reference: {
     title: 'Reference',

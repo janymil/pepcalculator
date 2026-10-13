@@ -22,6 +22,7 @@ const html = renderToString(
       remindersEnabled={false}
       permission="default"
       nextReminder={null}
+      pushStatus="off"
       todayIso="2024-01-01"
       installed={false}
       onToggleReminders={() => {}}
@@ -46,5 +47,10 @@ describe('SettingsPage (server render smoke test)', () => {
   it('explains how long deleted vials are remembered before the sweep', () => {
     // `{days}` must be interpolated with the tombstone retention window.
     expect(html).toContain('hidden marker for 90 days');
+  });
+
+  it('states the privacy promise plainly', () => {
+    expect(html).toContain(DICTIONARIES.en.settings.privacy);
+    expect(html).toContain(DICTIONARIES.en.settings.privacyBody);
   });
 });

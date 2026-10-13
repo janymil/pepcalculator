@@ -8,6 +8,7 @@ import {
   type CalcResult,
   type MeasureSystem,
 } from '../lib/calc';
+import { buildDerivation } from '../lib/derive';
 import { ResultPanel } from './ResultPanel';
 
 /** Renders the panel in a fixed language so assertions are deterministic. */
@@ -69,5 +70,35 @@ describe('ResultPanel readout', () => {
     expect(html).toMatch(/hero__unit"[^>]*>mL</);
     expect(html).not.toMatch(/hero__number"[^>]*>200</);
     expect(html).not.toContain('units');
+  });
+
+  it('shows the working, with the user’s own numbers, when a derivation is given', () => {
+    const result = calculatePeptide({
+      vialAmount: 5,
+      vialUnit: 'mg',
+      waterMl: 2,
+      doseAmount: 250,
+      doseUnit: 'mcg',
+      syringeType: 'U100',
+      syringeCapacityMl: 1,
+    });
+    const derivation = buildDerivation(result, { mode: 'peptide', waterMl: 2 });
+
+    const html = renderToString(
+      <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
+        <ResultPanel
+          result={result}
+          capacityMl={1}
+          measure="insulin"
+          doseUnit="mcg"
+          baseUnitLabel="mg"
+          derivation={derivation}
+        />
+      </I18nProvider>,
+    );
+
+    expect(html).toContain('derivation');
+    expect(html).toContain('5 mg ÷ 2 mL = 2.5 mg/mL');
+    expect(html).toContain('0.1 mL × 100 units/mL = 10 units');
   });
 });

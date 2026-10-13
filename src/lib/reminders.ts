@@ -9,8 +9,8 @@
  * of here makes the interesting part (ordering, caps, "is it over?") testable.
  */
 
-import { parseIsoDate } from './dates';
-import { nextDose } from './schedule';
+import { addDays, parseIsoDate, toIsoDate } from './dates';
+import { nextDose, planEndDate, timesOnDay } from './schedule';
 import { liveVials, type SavedVial } from './vials';
 
 export interface UpcomingDose {
@@ -73,4 +73,69 @@ export function timerDelay(dose: UpcomingDose, now: Date): number {
  * (rather than stacks) if the same dose somehow fires twice. */
 export function reminderKey(dose: UpcomingDose): string {
   return `dose:${dose.vialId}:${dose.date}:${dose.time}`;
+}
+
+/* ---------- the push queue (reminders that arrive with the app closed) ---------- */
+
+/** How far ahead the server queue is filled, and how many entries it may hold. */
+export const PUSH_HORIZON_DAYS = 60;
+export const MAX_PUSH_QUEUE = 300;
+
+/**
+ * One notification the push server should deliver: an absolute UTC instant plus
+ * the text, already rendered in the user's language. The service worker shows it
+ * verbatim, which is what keeps the worker language-free (see `public/sw.js`).
+ */
+export interface PushScheduleEntry {
+  at: string;
+  title: string;
+  body: string;
+  tag: string;
+}
+
+/**
+ * Every dose still ahead of `now`, up to `PUSH_HORIZON_DAYS` away, as the queue
+ * a push server should deliver.
+ *
+ * The instants are the plan's own clock times on the plan's own dose days — the
+ * same `timesOnDay` the calendar uses — so a push can never disagree with the
+ * app. The list is capped by horizon and count, so an "ongoing" plan cannot
+ * build an unbounded payload.
+ */
+export function pushQueue(
+  vials: SavedVial[],
+  now: Date,
+  title: string,
+  body: (vialName: string, time: string) => string,
+): PushScheduleEntry[] {
+  const entries: PushScheduleEntry[] = [];
+  const todayIso = toIsoDate(now);
+  const horizonEnd = addDays(todayIso, PUSH_HORIZON_DAYS - 1);
+
+  for (const vial of liveVials(vials)) {
+    const schedule = vial.schedule;
+    if (!schedule) continue;
+
+    const planEnd = planEndDate(schedule);
+    const last = planEnd !== null && planEnd < horizonEnd ? planEnd : horizonEnd;
+    let cursor = todayIso < schedule.startsOn ? schedule.startsOn : todayIso;
+
+    for (let day = 0; day <= PUSH_HORIZON_DAYS && cursor <= last; day += 1) {
+      for (const time of timesOnDay(schedule, cursor)) {
+        // Fires at the dose's own clock time; anything already past is skipped.
+        const at = slotDate(cursor, time);
+        if (at.getTime() <= now.getTime()) continue;
+        entries.push({
+          at: at.toISOString(),
+          title,
+          body: body(vial.name || '', time),
+          tag: reminderKey({ vialId: vial.id, name: vial.name, date: cursor, time }),
+        });
+      }
+      cursor = addDays(cursor, 1);
+    }
+  }
+
+  entries.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+  return entries.slice(0, MAX_PUSH_QUEUE);
 }

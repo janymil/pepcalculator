@@ -112,3 +112,43 @@ self.addEventListener('message', (event) => {
     });
   }
 });
+
+/**
+ * A Web Push arrived — including while the app was closed. The server already
+ * holds the rendered text (the app localised it before uploading), so this
+ * handler just shows it and the worker stays language-free.
+ */
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {};
+  }
+
+  const title = typeof payload.title === 'string' && payload.title ? payload.title : 'PepCalculator';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: typeof payload.body === 'string' ? payload.body : '',
+      tag: typeof payload.tag === 'string' && payload.tag ? payload.tag : 'dose',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      renotify: true,
+      data: { url: '/' },
+    }),
+  );
+});
+
+/** Tapping a notification focuses the app, or opens it when it is closed. */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) return client.focus();
+      }
+      return self.clients.openWindow ? self.clients.openWindow(target) : undefined;
+    }),
+  );
+});

@@ -673,6 +673,75 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- result: the working ("show the maths") ---------- */
+.derivation {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.derivation__summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.derivation__summary::-webkit-details-marker {
+  display: none;
+}
+
+.derivation__title {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.derivation__toggle {
+  font-size: var(--fs-sm);
+  color: var(--accent-strong);
+}
+
+.derivation__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+}
+
+.derivation__step {
+  margin: 0;
+}
+
+/* Monospace + tabular figures, so the columns of numbers line up like working. */
+.derivation__formula {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+
+/* ---------- the proof: footer line + verified examples ---------- */
+.proof {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.app-footer__proof {
+  margin: 6px 0 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
 /* ---------- empty state ---------- */
 .empty {
   display: flex;
@@ -1135,6 +1204,84 @@ body {
   border-left: 3px solid var(--warn);
 }
 
+/* ---------- sharing a vial ---------- */
+.share {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.share__legend {
+  padding: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.share__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share__row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.share__person,
+.share__same {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+}
+
+.share__person {
+  font-weight: 600;
+}
+
+/* One person's own plan sits under their name rather than beside it, so a
+   long cadence never squeezes the checkbox out of reach. */
+.share__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 24px;
+}
+
+.share__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.share__dose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share__dose .field__input {
+  max-width: 120px;
+}
+
+.share__empty {
+  margin: 0;
+}
+
 /* ---------- dose calendar ---------- */
 .calendar {
   display: flex;
@@ -1515,6 +1662,73 @@ body {
   max-width: 74ch;
   font-size: var(--fs-xs);
   color: var(--text-faint);
+}
+
+/* ---------- phone pairing (QR) ---------- */
+.pair {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+
+.pair__title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pair__code {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+/* The white plate is drawn inside the SVG; the theme colours the page, not the symbol. */
+.pair__qr {
+  width: min(240px, 68vw);
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+/* The banner shown right after a phone is paired. */
+.pair-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.pair-notice__body {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pair-notice__title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+
+.pair-notice__text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.pair-notice__actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* ---------- dose reminders ---------- */
@@ -3404,6 +3618,20 @@ body {
   background: var(--danger-soft);
   border-left-color: var(--danger);
   font-weight: 600;
+}
+/* "Shared with Ana…" — the line that says the bottle is not only yours. */
+.vial__shared {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.vial__shared-detail {
+  opacity: 0.85;
 }
 
 .backup__notice--warn {

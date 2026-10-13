@@ -1,6 +1,7 @@
 import type { ModeId, WarningCode } from '../lib/calc';
 import type { MeasureField } from '../lib/measure';
 import type { SiteId } from '../lib/sites';
+import type { WorkedExampleId } from '../lib/workedExamples';
 
 export type Lang = 'en' | 'sk' | 'es';
 
@@ -94,6 +95,23 @@ export interface Strings {
     syringeReading: string;
   };
   syringeVisual: { ariaLabel: string };
+  /**
+   * The "working" shown under the result: the arithmetic that produced it, with
+   * the user's own numbers. Rendered from `lib/derive.ts` steps.
+   */
+  derivation: {
+    title: string;
+    /** Summary toggle label. */
+    toggle: string;
+    /** `{vial}` `{unit}` `{water}` `{conc}` */
+    concentration: string;
+    /** `{dose}` `{unit}` `{conc}` `{volume}` */
+    volume: string;
+    /** `{volume}` `{perMl}` `{units}` */
+    units: string;
+    /** `{volume}` `{perMl}` `{count}` */
+    clicks: string;
+  };
   warnings: Record<WarningCode, string>;
   actions: { reset: string; /** Applies the suggested water volume. `{water}` */ useWater: string };
   validation: {
@@ -210,6 +228,33 @@ export interface Strings {
     sortNewest: string;
     sortName: string;
     sortExpiry: string;
+  };
+  /** More than one person drawing from the same bottle (see `lib/shares.ts`). */
+  shares: {
+    /** Toggle on the save/edit form: "this vial is shared". */
+    title: string;
+    /** What sharing means — including that everyone's doses count against it. */
+    hint: string;
+    /** Heading above the list of people to share with. */
+    with: string;
+    /** Date label: the day sharing starts. */
+    from: string;
+    /** Checkbox on a share: follow the owner's dose and cadence. */
+    samePlan: string;
+    /** Dose label for a sharer who sets their own. */
+    dose: string;
+    /** Heading above a sharer's own dose plan. */
+    theirPlan: string;
+    /** On the vial card: "Shared with {names}". */
+    sharedWith: string;
+    /** On the vial card, beside a shared person: "from {date}". */
+    since: string;
+    /** On the vial card: how many doses are left *for that person*. `{count}` */
+    dosesFor: string;
+    /** A sharer's view: only the owner can change the bottle. `{name}` */
+    ownerEdit: string;
+    /** Shown when there is nobody else to share with yet. */
+    addPeople: string;
   };
   schedule: {
     title: string;
@@ -396,6 +441,28 @@ export interface Strings {
     notifyTitle: string;
     /** Body of the OS notification. */
     notifyBody: string;
+    /** Background (Web Push) status, shown under the reminder switch. */
+    pushActive: string;
+    pushNeedsCode: string;
+    pushUnsupported: string;
+    pushBlocked: string;
+    pushInactive: string;
+    pushError: string;
+  };
+  pair: {
+    title: string;
+    /** Shown when there is no sync code yet: the QR carries one. */
+    needCode: string;
+    intro: string;
+    copyLink: string;
+    copied: string;
+    steps: string;
+    noticeTitle: string;
+    noticeBody: string;
+    /** iOS, not installed: pushing needs the app on the home screen. */
+    noticeInstalled: string;
+    noticeEnable: string;
+    noticeDismiss: string;
   };
   views: {
     /** Accessible name for the page switcher. */
@@ -533,6 +600,22 @@ export interface Strings {
     /** Overflow marker inside a day cell, e.g. "+{count}". */
     more: string;
   };
+  /**
+   * The "provable" half of the trust bundle: a short claim in the footer, and the
+   * worked examples the build checks against — shown on the Reference page as a
+   * "Verified examples" section.
+   */
+  proof: {
+    /** Footer line. `{count}` is the number of worked examples. */
+    line: string;
+    /** Reference-section tab label. */
+    tab: string;
+    title: string;
+    subtitle: string;
+    hint: string;
+    /** A human label per worked example, keyed by its id. */
+    examples: Record<WorkedExampleId, string>;
+  };
   settings: {
     title: string;
     subtitle: string;
@@ -540,6 +623,10 @@ export interface Strings {
     display: string;
     readable: string;
     readableHint: string;
+    /** Heading of the privacy card. */
+    privacy: string;
+    privacyBody: string;
+    privacyProof: string;
   };
   reference: {
     title: string;

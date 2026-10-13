@@ -2,17 +2,23 @@
 #
 #   docker build -t pepcalculator-sync .
 #   docker run -d -p 8787:8787 -v sync-data:/data \
-#     -e ALLOWED_ORIGIN=https://your-app.example pepcalculator-sync
+#     -e ALLOWED_ORIGIN=https://your-app.example \
+#     -e VAPID_PUBLIC_KEY=... -e VAPID_PRIVATE_KEY=... \
+#     pepcalculator-sync
 #
-# There is no `npm install` step: the server is **zero-dependency** (Node built-ins
-# only), so this image is the runtime plus three files.
+# `web-push` is the one runtime dependency, and only the push sender imports it —
+# with no VAPID keys nothing ever loads it, so a sync-only server needs nothing
+# installed. The install keeps the image self-contained for closed-app reminders.
 FROM node:22-alpine
 
 WORKDIR /app
 
-# `server/guard.mjs` holds the origin rule and the rate limiter, `server.mjs` the
+# `guard.mjs` holds the origin rule and the rate limiter, `push.mjs` the scheduler
+# and its pure helpers, `webpush.mjs` the lazy `web-push` call, `server.mjs` the
 # wiring. Nothing else is needed at runtime.
-COPY server/guard.mjs server/server.mjs ./
+COPY server/guard.mjs server/push.mjs server/webpush.mjs server/server.mjs ./
+
+RUN npm install --no-save --omit=dev web-push
 
 # The database is *data*, so it lives on a volume rather than in the image.
 # `node:sqlite` prints an experimental warning; the npm script silences it and so

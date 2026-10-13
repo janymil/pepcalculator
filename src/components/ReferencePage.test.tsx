@@ -84,4 +84,9 @@ describe('ReferencePage (server render smoke test)', () => {
     // The row must not print a range it does not have.
     expect(html).not.toContain('undefined');
   });
+
+  it('offers a "Verified examples" tab, backed by the worked examples', () => {
+    // The tab is reachable without switching; its list is the same one the tests run.
+    expect(html).toContain(DICTIONARIES.en.proof.tab);
+  });
 });

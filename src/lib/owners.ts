@@ -68,6 +68,40 @@ export function filterByOwner<T extends { ownerId?: string }>(vials: T[], ownerI
   return vials.filter((vial) => vialOwnerId(vial) === ownerId);
 }
 
+/**
+ * The narrowest view of a vial that sharing needs: who owns it, and who else
+ * draws from it. Kept structural so this module stays dependency-free — a
+ * `VialShare` satisfies it without being imported.
+ */
+interface ParticipantVial {
+  ownerId?: string;
+  shares?: { ownerId?: string }[];
+}
+
+/**
+ * Every person drawing from a vial: its owner first, then anybody it is shared
+ * with. Unusable entries are skipped, so a hand-edited payload cannot invent a
+ * person with no id.
+ */
+export function vialParticipantIds(vial: ParticipantVial): string[] {
+  const ids = [vialOwnerId(vial)];
+  for (const entry of vial.shares ?? []) {
+    if (!entry || typeof entry.ownerId !== 'string') continue;
+    const id = entry.ownerId.trim();
+    if (id !== '' && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+/**
+ * The vials one person actually draws from — their own **and** any shared with
+ * them. This is what the views render: a shared bottle belongs in both stacks,
+ * which is the whole point of sharing it.
+ */
+export function filterByParticipant<T extends ParticipantVial>(vials: T[], ownerId: string): T[] {
+  return vials.filter((vial) => vialParticipantIds(vial).includes(ownerId));
+}
+
 /** The selected owner id, falling back to the first person when it no longer exists. */
 export function resolveOwnerId(owners: Owner[], ownerId: string): string {
   if (owners.some((owner) => owner.id === ownerId)) return ownerId;
@@ -93,21 +127,28 @@ export function ownerName(owners: Owner[], id: string): string {
   return owners.find((owner) => owner.id === id)?.name ?? id;
 }
 
-/** How many live (non-deleted) vials a person still holds — guards removal. */
-export function countVialsForOwner<T extends { ownerId?: string; deletedAt?: string }>(
+/**
+ * How many live (non-deleted) vials a person is tied to — guards removal, and
+ * feeds the count in Settings. A vial they only *share* counts too: removing
+ * them would otherwise silently drop their claim on somebody else's bottle.
+ */
+export function countVialsForOwner<T extends ParticipantVial & { deletedAt?: string }>(
   vials: T[],
   ownerId: string,
 ): number {
-  return vials.filter((vial) => !vial.deletedAt && vialOwnerId(vial) === ownerId).length;
+  return vials.filter(
+    (vial) => !vial.deletedAt && vialParticipantIds(vial).includes(ownerId),
+  ).length;
 }
 
 /**
  * How many people should be created when a backup/sync introduces vials whose
- * owner is missing locally (e.g. the other device added someone). Keeps the
- * person list in step with the vials it contains.
+ * owner is missing locally (e.g. the other device added someone) — including
+ * people who only appear as somebody a vial is *shared with*. Keeps the person
+ * list in step with the vials it contains.
  */
-export function ownersFromVials<T extends { ownerId?: string }>(vials: T[]): string[] {
+export function ownersFromVials<T extends ParticipantVial>(vials: T[]): string[] {
   const ids = new Set<string>();
-  for (const vial of vials) ids.add(vialOwnerId(vial));
+  for (const vial of vials) for (const id of vialParticipantIds(vial)) ids.add(id);
   return [...ids];
 }

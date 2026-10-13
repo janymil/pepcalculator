@@ -13,6 +13,7 @@ import {
 import { addDays, addMonths, toIsoDate } from '../lib/dates';
 import { fmt, formatDate, monthLabel, weekdayShort } from '../lib/format';
 import { normalizeTimes, planEndDate } from '../lib/schedule';
+import { viewVial } from '../lib/shares';
 import { filterVialsByKind, type KindFilter, type SavedVial } from '../lib/vials';
 import { vialColor, vialDotStyle } from '../lib/vialColors';
 import { Icon } from './Icon';
@@ -29,6 +30,11 @@ interface AgendaPageProps {
   vials: SavedVial[];
   todayIso: string;
   nowTime: string;
+  /**
+   * The person reading this page. A vial shared with them is drawn on *their*
+   * days and at *their* hours — the same bottle, a different plan.
+   */
+  viewerId: string;
   /** Jumps to the calculator from the empty state. */
   onGoToCalculator?: () => void;
 }
@@ -45,7 +51,7 @@ function pillLabel(name: string, fallback: string): string {
  * `lib/vialColors.ts`), so the pills inside a day are recognisable at a glance;
  * only **today** gets a coloured background, the other days just carry pills.
  */
-export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: AgendaPageProps) {
+export function AgendaPage({ vials, todayIso, nowTime, viewerId, onGoToCalculator }: AgendaPageProps) {
   const { lang, strings } = useI18n();
   const locale = LOCALES[lang];
 
@@ -54,24 +60,27 @@ export function AgendaPage({ vials, todayIso, nowTime, onGoToCalculator }: Agend
   const [selectedIso, setSelectedIso] = useState(todayIso);
 
   const visible = useMemo(() => filterVialsByKind(vials, filter), [vials, filter]);
-  const hasPlan = hasAnyPlan(visible);
+  // The plans as *this* person uses them: a shared bottle keeps the owner's
+  // strength but takes the sharer's own days, hours and dose.
+  const views = useMemo(() => visible.map((vial) => viewVial(vial, viewerId)), [visible, viewerId]);
+  const hasPlan = hasAnyPlan(views);
 
   const year = Number(cursorIso.slice(0, 4));
   const monthIndex = Number(cursorIso.slice(5, 7)) - 1;
 
   const month = useMemo(
-    () => agendaForMonth(visible, year, monthIndex, todayIso),
-    [visible, year, monthIndex, todayIso],
+    () => agendaForMonth(views, year, monthIndex, todayIso),
+    [views, year, monthIndex, todayIso],
   );
   const selected = useMemo(
-    () => agendaForDay(visible, selectedIso, todayIso),
-    [visible, selectedIso, todayIso],
+    () => agendaForDay(views, selectedIso, todayIso),
+    [views, selectedIso, todayIso],
   );
   const upcoming = useMemo(
-    () => upcomingDays(visible, todayIso, nowTime, UPCOMING_DAYS, todayIso),
-    [visible, todayIso, nowTime],
+    () => upcomingDays(views, todayIso, nowTime, UPCOMING_DAYS, todayIso),
+    [views, todayIso, nowTime],
   );
-  const plans = useMemo(() => scheduledVials(visible), [visible]);
+  const plans = useMemo(() => scheduledVials(views), [views]);
 
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const lead = (new Date(year, monthIndex, 1).getDay() + 6) % 7;

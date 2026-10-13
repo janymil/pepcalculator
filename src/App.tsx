@@ -31,27 +31,33 @@ import {
 import { DEFAULT_MODE, modeMeta, resolveCapacity } from './config/modes';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useDoseReminders } from './hooks/useDoseReminders';
+import { usePushReminders } from './hooks/usePushReminders';
 import { DICTIONARIES, detectLang, interpolate } from './i18n';
 import { I18nProvider } from './i18n/I18nContext';
 import type { Lang } from './i18n/types';
 import { calculateAnabolic, calculateHormone, calculatePeptide, suggestWaterMl, unitsPerMlOf, SYRINGE_TYPES, type ModeId } from './lib/calc';
+import { buildDerivation } from './lib/derive';
 import { parseNumber } from './lib/format';
 import { createMeasurementId, liveMeasurements, mergeMeasurements, type Measurement } from './lib/measure';
 import { toIsoDate } from './lib/dates';
 import type { VialSchedule } from './lib/schedule';
-import { isStandalone } from './lib/pwa';
+import { isIos, isStandalone } from './lib/pwa';
+import type { VialShare } from './lib/shares';
 import { syncWithServer, pushVials, type SyncFailure } from './lib/sync';
+import { parsePairHash } from './lib/pair';
 import { hashForView, viewFromHash, type ViewId } from './lib/views';
+import { PairNotice } from './components/PairNotice';
 import {
   DEFAULT_OWNER_ID,
   countVialsForOwner,
   createOwnerId,
   defaultOwners,
   filterByOwner,
+  filterByParticipant,
   mergeOwners,
   ownerName,
   resolveOwnerId,
-  vialOwnerId,
+  vialParticipantIds,
   type Owner,
 } from './lib/owners';
 import {
@@ -160,6 +166,8 @@ export default function App() {
 
   // Read once (matchMedia): true when the app runs as an installed PWA.
   const [installed] = useState(() => isStandalone());
+  /** Set when this tab was opened by scanning a pairing QR code. */
+  const [pairNotice, setPairNotice] = useState(false);
 
   // Two guards that keep the background push honest: exactly what we last sent,
   // and never two syncs running at once.
@@ -172,19 +180,30 @@ export default function App() {
   // ---- whose stack is on screen -------------------------------------------
   // The selected person, resolved so it can never point at someone removed.
   const ownerId = resolveOwnerId(owners, activeOwnerId);
-  /** Every view (vials, calendar, today) renders from this, never from the mix. */
-  const scopedVials = useMemo(() => filterByOwner(liveVialList, ownerId), [liveVialList, ownerId]);
+  /**
+   * Every view (vials, calendar, today, print) renders from this. It is the
+   * person's own vials **plus** any bottle shared with them — a shared bottle
+   * belongs in both stacks, which is the whole point of sharing it. Each view
+   * then resolves *whose* plan is in force (see `lib/shares.ts`).
+   */
+  const scopedVials = useMemo(
+    () => filterByParticipant(liveVialList, ownerId),
+    [liveVialList, ownerId],
+  );
   /** The measurement log for the selected person, removals hidden. */
   const scopedMeasurements = useMemo(
     () => filterByOwner(liveMeasurements(measurements), ownerId),
     [measurements, ownerId],
   );
-  /** Live vial counts per person — shown in Settings, and guards removal. */
+  /**
+   * Live vial counts per person — shown in Settings, and guards removal. A vial
+   * someone only *shares* counts for them too, because removing the person would
+   * otherwise silently drop their claim on somebody else's bottle.
+   */
   const vialCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const vial of liveVialList) {
-      const key = vialOwnerId(vial);
-      counts[key] = (counts[key] ?? 0) + 1;
+      for (const id of vialParticipantIds(vial)) counts[id] = (counts[id] ?? 0) + 1;
     }
     return counts;
   }, [liveVialList]);
@@ -231,6 +250,24 @@ export default function App() {
       interpolate(strings.reminders.notifyBody, { name: name || strings.vials.untitled, time }),
   });
 
+  /*
+   * With a sync code, the same dose times are mirrored to the server so the
+   * reminder still arrives when the app is closed — the local timer above only
+   * fires while this page is alive (see `usePushReminders` / `server/push.mjs`).
+   */
+  const push = usePushReminders({
+    vials: liveVialList,
+    now,
+    enabled: remindersEnabled,
+    permission: reminders.permission,
+    syncCode,
+    serverUrl: syncServer,
+    lang,
+    title: strings.reminders.notifyTitle,
+    body: (name, time) =>
+      interpolate(strings.reminders.notifyBody, { name: name || strings.vials.untitled, time }),
+  });
+
   // Keep the <html> element in sync so CSS variables and a11y match the UI.
   useEffect(() => {
     const root = document.documentElement;
@@ -265,6 +302,35 @@ export default function App() {
     setView(next);
     const hash = hashForView(next);
     if (window.location.hash !== hash) window.location.hash = hash;
+  };
+
+  /*
+   * A pairing link carries the sync code in the URL hash, which never reaches a
+   * server. If one is present when the app opens, adopt it, let the sync effect
+   * pull the vials, and offer to turn reminders on. The hash is then rewritten
+   * so the code is not left sitting in the address bar or in history.
+   */
+  useEffect(() => {
+    const payload = parsePairHash(window.location.hash);
+    if (!payload) return;
+
+    setSyncCode(payload.code);
+    if (payload.server) setSyncServer(payload.server);
+    setView('vials');
+    setPairNotice(true);
+    window.history.replaceState(null, '', `${window.location.pathname}${hashForView('vials')}`);
+    // Runs once, on open. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * The pairing banner's single tap: reminders on, permission asked — one
+   * gesture, because that is the only kind a browser accepts here.
+   */
+  const handleEnableReminders = () => {
+    setRemindersEnabled(true);
+    reminders.requestPermission();
+    setPairNotice(false);
   };
 
   /*
@@ -348,6 +414,13 @@ export default function App() {
     return mode === 'hormone' ? calculateHormone(input) : calculatePeptide(input);
   }, [mode, peptide, hormone, glp1, anabolic, labelled, syringe, capacityMl, reconstituted, pen]);
 
+  // The "working" under the result: the same arithmetic the engine ran, as ordered
+  // steps the UI renders with the user's own numbers.
+  const derivation = useMemo(
+    () => buildDerivation(result, { mode, waterMl: parseNumber(reconstituted.waterMl) }),
+    [result, mode, reconstituted.waterMl],
+  );
+
   /*
    * The "hard to measure" warning is only useful with a fix attached, so when
    * that warning fires we look for a water volume that would make the draw
@@ -399,9 +472,14 @@ export default function App() {
     name: string,
     startedOn: string,
     schedule: VialSchedule,
-    cost?: { price?: number; currency?: string },
+    cost: { price?: number; currency?: string } | undefined,
+    shares: VialShare[],
   ) => {
     if (!canSaveCurrentVial) return;
+
+    // The person who owns it cannot share it with themselves — the form is built
+    // from the person on screen, and that person can be switched while it is open.
+    const others = shares.filter((share) => share.ownerId !== ownerId);
 
     const base = {
       id: createVialId(),
@@ -413,6 +491,10 @@ export default function App() {
       syringeType: syringe.type,
       syringeCapacityMl: capacityMl,
       schedule,
+      // Whoever else draws from the bottle (plus the day each of them joined).
+      // Absent — not an empty list — when nobody does, so a vial saved by one
+      // person is byte-for-byte what it always was.
+      shares: others.length > 0 ? others : undefined,
       price: cost?.price,
       currency: cost?.currency,
       updatedAt: new Date().toISOString(),
@@ -685,6 +767,9 @@ export default function App() {
   // loads an example, dismisses it, or saves their first vial.
   const showFirstRun = !firstRunDone && liveVialList.length === 0;
 
+  // iPhone/iPad: push only works once the app is on the Home Screen.
+  const needsInstall = !installed && isIos();
+
   return (
     <I18nProvider value={{ lang, setLang, strings }}>
       <div className="app">
@@ -703,18 +788,28 @@ export default function App() {
 
           <ViewTabs view={view} onChange={changeView} />
 
+          {pairNotice ? (
+            <PairNotice
+              needsInstall={needsInstall}
+              onEnable={handleEnableReminders}
+              onDismiss={() => setPairNotice(false)}
+            />
+          ) : null}
+
           <div className="view-enter" key={view}>
             {view === 'calendar' ? (
             <AgendaPage
               vials={scopedVials}
               todayIso={todayIso}
               nowTime={nowTime}
+              viewerId={ownerId}
               onGoToCalculator={() => changeView('calculator')}
             />
           ) : view === 'vials' ? (
             <SavedVials
               vials={scopedVials}
               owners={owners}
+              viewerId={ownerId}
               measurements={scopedMeasurements}
               /* A backup copies the whole device, not the stack on screen. */
               allVials={liveVialList}
@@ -747,6 +842,7 @@ export default function App() {
               remindersEnabled={remindersEnabled}
               permission={reminders.permission}
               nextReminder={reminders.next}
+              pushStatus={push.status}
               todayIso={todayIso}
               installed={installed}
               onToggleReminders={setRemindersEnabled}
@@ -779,6 +875,7 @@ export default function App() {
                 vials={scopedVials}
                 todayIso={todayIso}
                 nowTime={nowTime}
+                viewerId={ownerId}
                 onLoad={handleLoadVial}
                 onAddDose={handleAddDose}
               />
@@ -815,6 +912,7 @@ export default function App() {
                       : reconstituted.doseUnit
                   }
                   baseUnitLabel={baseUnitLabel}
+                  derivation={derivation}
                   scaleLabel={
                     mode === 'hormone'
                       ? (SYRINGE_TYPES.find((type) => type.id === syringe.type)?.label ?? 'U-100')
@@ -833,7 +931,25 @@ export default function App() {
               </div>
 
               {canSaveCurrentVial ? (
-                <SaveVialForm kind={mode} todayIso={todayIso} onSave={handleSaveVial} />
+                <SaveVialForm
+                  kind={mode}
+                  todayIso={todayIso}
+                  owners={owners}
+                  ownerId={ownerId}
+                  // The dose being described right now, so a sharer's own plan
+                  // starts from a real number rather than a blank.
+                  doseAmount={parseNumber(
+                    mode === 'anabolic' || mode === 'glp1'
+                      ? labelled.doseAmount
+                      : reconstituted.doseAmount,
+                  )}
+                  doseUnit={
+                    mode === 'anabolic' || mode === 'glp1'
+                      ? labelled.doseUnit
+                      : reconstituted.doseUnit
+                  }
+                  onSave={handleSaveVial}
+                />
               ) : null}
             </>
           )}
@@ -861,7 +977,12 @@ export default function App() {
        * print` hides `.app` and reveals this, which keeps every screen style out
        * of the printout without a portal or a second document.
        */}
-      <PrintSheet vials={scopedVials} ownerName={ownerLabel} todayIso={todayIso} />
+      <PrintSheet
+        vials={scopedVials}
+        ownerName={ownerLabel}
+        todayIso={todayIso}
+        viewerId={ownerId}
+      />
     </I18nProvider>
   );
 }

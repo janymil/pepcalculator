@@ -7,7 +7,8 @@ import { backupFileName, decryptBackup, encryptBackup, isEncryptedBackup, parseB
 import { daysBetween } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
 import type { Measurement } from '../lib/measure';
-import type { Owner } from '../lib/owners';
+import { vialOwnerId, type Owner } from '../lib/owners';
+import { viewVial } from '../lib/shares';
 import { TIMES_PER_DAY_PRESETS, type VialSchedule } from '../lib/schedule';
 import { buildSupply } from '../lib/supply';
 import {
@@ -51,6 +52,8 @@ interface SavedVialsProps {
   vials: SavedVial[];
   /** The people, so a backup keeps the stacks separate. */
   owners: Owner[];
+  /** The person reading this page — a shared bottle shows *their* plan. */
+  viewerId: string;
   /**
    * The body-measurement log, so a backup carries it and a restore brings it
    * back. Optional: the backup is the only feature on this page that uses it.
@@ -91,6 +94,7 @@ function VialCardLegacy({
   onRemoveDose,
   onDelete,
   onOpenGlp1,
+  viewerId,
 }: {
   vial: SavedVial;
   locale: string;
@@ -100,9 +104,13 @@ function VialCardLegacy({
   onRemoveDose: (id: string) => void;
   onDelete: (id: string) => void;
   onOpenGlp1?: () => void;
+  /** The person reading this card — a sharer reads the bottle, never edits it. */
+  viewerId: string;
 }) {
   const { strings } = useI18n();
-  const status = vialStatus(vial);
+  const view = viewVial(vial, viewerId);
+  const ownedByViewer = vialOwnerId(vial) === viewerId;
+  const status = vialStatus(view);
   const kind = vialKind(vial);
   const anabolic = kind === 'anabolic';
   const color = vialColor(vial.id);
@@ -183,35 +191,40 @@ function VialCardLegacy({
       </p>
 
       <div className="vial__actions">
-        <button type="button" className="btn btn--sm" onClick={() => onLoad(vial)}>
+        <button type="button" className="btn btn--sm" onClick={() => onLoad(view)}>
           {strings.vials.load}
         </button>
-        <button type="button" className="btn btn--sm" onClick={() => onEdit(vial)}>
-          {strings.edit.title}
-        </button>
-        <button type="button" className="btn btn--sm" onClick={() => onAddDose(vial.id)}>
-          {strings.vials.addDose}
-        </button>
-        <button
-          type="button"
-          className="btn btn--sm btn--ghost"
-          disabled={status.dosesTaken === 0}
-          onClick={() => onRemoveDose(vial.id)}
-        >
-          {strings.vials.removeDose}
-        </button>
+        {/* A sharer reads this bottle and draws from it; they never rewrite it. */}
+        {ownedByViewer ? (
+          <>
+            <button type="button" className="btn btn--sm" onClick={() => onEdit(vial)}>
+              {strings.edit.title}
+            </button>
+            <button type="button" className="btn btn--sm" onClick={() => onAddDose(vial.id)}>
+              {strings.vials.addDose}
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost"
+              disabled={status.dosesTaken === 0}
+              onClick={() => onRemoveDose(vial.id)}
+            >
+              {strings.vials.removeDose}
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost btn--danger"
+              onClick={() => onDelete(vial.id)}
+            >
+              {strings.vials.delete}
+            </button>
+          </>
+        ) : null}
         {kind === 'glp1' && onOpenGlp1 ? (
           <button type="button" className="btn btn--sm btn--ghost" onClick={onOpenGlp1}>
             {strings.glp1.openPage}
           </button>
         ) : null}
-        <button
-          type="button"
-          className="btn btn--sm btn--ghost btn--danger"
-          onClick={() => onDelete(vial.id)}
-        >
-          {strings.vials.delete}
-        </button>
       </div>
     </li>
   );
@@ -225,6 +238,7 @@ function VialCardLegacy({
 export function SavedVials({
   vials,
   owners,
+  viewerId,
   measurements = [],
   allVials,
   allMeasurements,
@@ -251,7 +265,10 @@ export function SavedVials({
   const visible = sortVials(searchVials(filterVialsByKind(vials, filter), query), sort, todayIso);
 
   // The stack-level outlook for the selected person, computed once per render.
-  const supply = useMemo(() => buildSupply(vials, todayIso, nowTime), [vials, todayIso, nowTime]);
+  const supply = useMemo(
+    () => buildSupply(vials, todayIso, nowTime, viewerId),
+    [vials, todayIso, nowTime, viewerId],
+  );
   const supplyById = useMemo(
     () => new Map(supply.vials.map((row) => [row.vial.id, row])),
     [supply],
@@ -451,12 +468,16 @@ export function SavedVials({
       ) : (
         <ul className="vials">
           {visible.map((vial) => {
-            if (vial.id === editingId) {
+            // Only the bottle's owner can be editing it — a sharer has no edit
+            // button, and this guard means a stale `editingId` cannot become one.
+            if (vial.id === editingId && vialOwnerId(vial) === viewerId) {
               return (
                 <li className="vial" key={vial.id}>
                   <VialEditor
                     vial={vial}
                     fallbackSchedule={INITIAL_SCHEDULE}
+                    owners={owners}
+                    todayIso={todayIso}
                     onSave={handleSaveEdit}
                     onCancel={() => setEditingId(null)}
                   />
@@ -479,6 +500,8 @@ export function SavedVials({
                 supply={supplyById.get(vial.id)}
                 ratioMismatch={ratioOutliers.has(vial.id)}
                 onOpenGlp1={onOpenGlp1}
+                owners={owners}
+                viewerId={viewerId}
               />
             ) : (
               <VialCardLegacy
@@ -491,6 +514,7 @@ export function SavedVials({
                 onRemoveDose={onRemoveDose}
                 onDelete={onDelete}
                 onOpenGlp1={onOpenGlp1}
+                viewerId={viewerId}
               />
             );
           })}

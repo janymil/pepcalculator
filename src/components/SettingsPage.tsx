@@ -1,5 +1,6 @@
 import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
+import type { PushStatus } from '../hooks/usePushReminders';
 import type { NotificationPermissionState } from '../lib/pwa';
 import type { Owner } from '../lib/owners';
 import type { UpcomingDose } from '../lib/reminders';
@@ -29,6 +30,8 @@ interface SettingsPageProps {
   remindersEnabled: boolean;
   permission: NotificationPermissionState;
   nextReminder: UpcomingDose | null;
+  /** How the server-side (app-closed) reminders are doing. */
+  pushStatus: PushStatus;
   todayIso: string;
   installed: boolean;
   onToggleReminders: (enabled: boolean) => void;
@@ -64,6 +67,7 @@ export function SettingsPage({
   remindersEnabled,
   permission,
   nextReminder,
+  pushStatus,
   todayIso,
   installed,
   onToggleReminders,
@@ -121,10 +125,18 @@ export function SettingsPage({
         <p className="field__hint">{strings.settings.readableHint}</p>
       </section>
 
+      {/* Plain, factual, and narrow — the claim is exactly what the app does. */}
+      <section className="card">
+        <h2 className="card__title">{strings.settings.privacy}</h2>
+        <p className="field__hint">{strings.settings.privacyBody}</p>
+        <p className="field__hint">{strings.settings.privacyProof}</p>
+      </section>
+
       <RemindersPanel
         enabled={remindersEnabled}
         permission={permission}
         next={nextReminder}
+        pushStatus={pushStatus}
         todayIso={todayIso}
         installed={installed}
         onToggle={onToggleReminders}

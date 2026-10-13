@@ -21,6 +21,12 @@ services:
       # Only behind a proxy you control, which overwrites X-Forwarded-For.
       TRUST_PROXY: '1'
       LOG_REQUESTS: '1'
+      # Web Push (closed-app reminders). Generate with `npm run vapid` and keep
+      # the pair forever. Leave both empty and the server is sync-only.
+      VAPID_PUBLIC_KEY: ''
+      VAPID_PRIVATE_KEY: ''
+      VAPID_SUBJECT: mailto:you@example.com
+      PUSH_INTERVAL_MS: '30000'
     volumes:
       - sync-data:/data
 

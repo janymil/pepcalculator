@@ -22,7 +22,7 @@ line names the code rather than a promise.
 | 1 | **Conflict awareness** — surface "changed on another device" instead of silent last-write-wins | **Shipped** | `mergeWithConflicts` in `src/lib/sync.ts`; Settings reports how many edits were resolved newest-wins |
 | 2 | **Server hardening** — rate limiting, `ALLOWED_ORIGIN` locked, request logs | **Shipped** | `server/guard.mjs` + `createSyncServer()` in `server/server.mjs`: 403 for a foreign origin, 429 + `Retry-After`, one redacted log line per call. 27 tests (14 unit + 13 over real HTTP) |
 | 3 | **Deploy** — Dockerfile, host config, static app anywhere | **Shipped, unbuilt here** | `Dockerfile`, `.dockerignore`, `docker-compose.yml`. **No Docker on this machine**, so the image is written and reviewed, never built |
-| 4 | **True background reminders** — fire while the app is closed | **Open** | Needs Web Push plus a subscription store on the server. The current timer is honest about firing only while the page is alive |
+| 4 | **True background reminders** — fire while the app is closed | **Shipped** | Web Push: `server/push.mjs` (scheduler) + `server/webpush.mjs` (lazy `web-push`) + `src/lib/push.ts` + `src/hooks/usePushReminders.ts` + a `push` handler in `public/sw.js`. The client uploads its upcoming doses as a pre-rendered queue; the server delivers them with the app closed. VAPID keys via `npm run vapid`. Tested (pure + HTTP) but **not run against a live push service here** |
 | 5 | **IU dose unit** — HGH/HCG/insulin | **Shipped** | `DoseUnit 'IU'` + base-unit families in `src/lib/calc.ts`; HGH/HCG is its own workflow; no `v2` migration was needed |
 | 6 | **Pen devices / GLP-1** — clicks, plus titration phases | **Shipped** | `MeasureSystem 'clicks'`, `DEFAULT_CLICKS_PER_ML`, `DosePhase[]` in `src/lib/schedule.ts` — drawn on the card, in the supply outlook and on the printed sheet |
 | 7 | **Multi-compound plans** — draw two compounds in one session | **Shipped** | `src/lib/session.ts` — `groupSessions` / `nextSession`; the Today card says "Also at this time", the check card lists every bottle |
@@ -57,21 +57,44 @@ line names the code rather than a promise.
 | Measurement sync | **Shipped** | `SyncPayload.measurements` is an *optional* field, merged with `mergeMeasurements` on the vials' rule (union by id, newest wins, removals as tombstones). Optional on both ends on purpose: an older record has no log, which merges as "nothing to add", never as a deletion. Verified end-to-end against a live server |
 | Verify the printed sheet by actually printing it | **Waiting on you** | `@media print` can only be confirmed at a printer. Rendering it to PDF here gave a 2-page sheet (protocol + labels, then the GLP-1 checklist) — as far as this machine goes |
 
+## G · Shared vials — one bottle, one plan per person
+
+**What.** A household draws from one bottle. Two people, one vial: the powder, the water,
+the strength and the use-by date are the same for everybody, but the dose and the days need
+not be. Asked for by the user, who was right about both halves of the gap: the second person
+could not even *see* the vial, and "how much is left" only ever subtracted one person's doses.
+
+| Item | Status | Where it is |
+| --- | --- | --- |
+| The model: one bottle, a plan per person | **Shipped** | `SavedVial.shares: VialShare[]` in `src/lib/shares.ts` — `{ ownerId, from, doseAmount?, doseUnit?, schedule? }`. Absent on every record saved before this, so nothing regresses |
+| "Shared from *when*" | **Shipped** | `VialShare.from`. A share is a time-bounded claim, not a property of the bottle — the user's own case (alone for four injections, then joined) is the reason it exists. Clamped so a share can never predate the mix date |
+| Ask at save time, and edit later | **Shipped** | `components/ShareForm.tsx`, used by both `SaveVialForm` (save the numbers in the calculator) and `VialEditor` (join a bottle already in use) |
+| The owner writes the sharer's plan | **Shipped** | "Same plan as mine" stores *only* the start date, so a later change to the owner's plan carries the sharer. Untick it and the owner fills in their dose and cadence |
+| The vial appears in her stack | **Shipped** | `filterByParticipant` in `src/lib/owners.ts`; the card says "Shared with …", and only the bottle's owner gets Edit/Delete |
+| "Koľko vo vial zostalo" is finally right | **Shipped** | `usedBase` / `runOutDate` / `extraVialsFor` in `src/lib/supply.ts` sum **every** participant's draws. `remainingBase` is one number for the bottle; `dosesLeft` is per person |
+| Her dose and cadence, everywhere | **Shipped** | `viewVial(vial, viewerId)` resolves *whose* plan is in force once, so Today, Calendar, Supply, the printed sheet and the vial card are right for that person without knowing about shares |
+| A person who only shares is not deletable | **Shipped** | `countVialsForOwner` counts shares; `ownersFromVials` creates a sharer the device has not met, so a backup or sync never orphans one |
+| Sharer sets her *own* plan from her tab | **Open** | Asked for, then withdrawn in favour of "the owner writes it" (her tab is read-only). Additive whenever it is wanted: the same `VialShare` object plus a write path — no migration |
+| Reminders for a shared bottle | **Open** | `useDoseReminders` still runs off every person's vials, so a sharer's own cadence does not drive the timer. Device-level notifications, and out of scope here |
+| Splitting the vial's cost between people | **Open** | `cost.ts` still prices the bottle once. Honest, but a household would like to see their half |
+| A "shared until" date | **Open** | With no injection log anywhere, removing a share rewrites past consumption. One more optional field would make history stable |
+| The Reference page's protocol plot | **Open** | `ReferencePage` is handed *every* person's vials, so a shared bottle plots at its owner's dose. Pre-existing — that page was never person-scoped — and left alone rather than half-fixed |
+
+
 ## D · What was refused, and the reasoning
 
 - **A brand → clicks/mg table.** It contradicts a documented decision (`0e7d37c`): dial resolution
   is an input (`DEFAULT_CLICKS_PER_ML`). A brand table is a table that goes stale, and going stale
   here means a wrong dose.
-- **A QR code for pairing** (roadmap 12). The original note said a hand-rolled encoder could not be
-  verified without a decoder. That half is now surmountable — published ISO/IEC 18004 vectors can be
-  fetched and checked, and could verify an encoder. It is refused for a **better** reason: **the app
-  has no scanner.** `BarcodeDetector` exists in Chromium only, so on Safari and Firefox a symbol we
-  draw could not be read back by the app at all; the user would need a third-party scanner, which
-  merely displays the code to type by hand. And a QR of the sync code makes a secret *more* visible
-  (shoulder-surfing a screen), not less. The honest fix for "typing the code is rough" is the
-  affordance that already exists: copy the code, or restore from a file backup. If QR ever comes
-  back, the shape is **scan-first** on a Chromium device — a pairing payload, `BarcodeDetector`, and
-  a typed fallback — never a symbol nobody can read.
+- **A QR code for pairing** (roadmap 12) — **refused at first, then shipped, for a better reason than it
+  was refused.** The original objection was real: the app has no scanner, and `BarcodeDetector` is
+  Chromium-only, so a symbol we drew could not be read back on Safari or Firefox. The way out was to
+  stop treating the QR as data the app reads: it holds a **URL**, so the **phone's own camera app**
+  scans it and opens the link. No in-app scanner, no camera permission, works on iOS and Android. The
+  encoder is hand-rolled (`src/lib/qr.ts`) and verified by decoding its own output with a real decoder
+  (`jsqr`, a dev-only dependency) in `qr.test.ts` — the "trusting it" half that was missing before.
+  The remaining cost is honest and stated in the UI: a QR of the sync code makes the secret *visible*,
+  so it lives only in the URL hash (never sent to a server) and is cleared the moment the page reads it.
 - **Automated training/diet guidance** (GLP-1 Phase 4). Questions to a prescriber instead.
 - **Manual "I took a dose" logging.** Rejected by the user as unrealistic; adherence is derived from
   the schedule, so there is nothing to log after injecting.
@@ -80,6 +103,17 @@ line names the code rather than a promise.
 
 | Item | What it would take |
 | --- | --- |
-| True background reminders (roadmap 4) | Bigger than it looks: the server would have to own the **schedule** to know when to push (a dose time is plan + the user's timezone, and today that logic is pure client-side in `lib/schedule.ts`). Plus a Web Push subscription store, VAPID keys and a `push` handler in `sw.js`. **Unverifiable here** anyway: it needs a real push service and a real device |
 | `semaglutide` | One word from you: keep, or remove |
 | Printing on paper | A printer |
+
+## F · The trust bundle (`PROPOSAL-trust-bundle.md`)
+
+The differentiator is **trust**, not offline — the app never asks you to take a number on faith.
+One proposal, three shipped parts, all pure-logic + three languages + no new dependency.
+
+| Item | Status | Where it is / why not |
+| --- | --- | --- |
+| **A — Show the maths** | **Shipped** | `src/lib/derive.ts` (`buildDerivation`, steps as data) + `components/Derivation.tsx`, wired into `ResultPanel` via `App.tsx`. Renders the arithmetic with the user's own numbers under the result; empty when the answer is withheld |
+| **B — Two routes, or it refuses** | **Shipped** | `computeSelfCheck` + `selfCheckAgrees` in `src/lib/calc.ts`; `CalcResult.selfCheck: 'ok' \| 'mismatch' \| 'skipped'`; new `WarningCode 'internalMismatch'` withholds a mismatched answer. An oil/pen has one honest route, so it is honestly `'skipped'` rather than faking a second |
+| **C — Provable privacy** | **Shipped** | `src/lib/workedExamples.ts` (one list read by the tests **and** the Reference "Verified examples" tab); footer proof line (`{count}` = the list length); Settings → *Privacy* card. A live "0 requests" gauge was **refused** — it cannot be made truthful |
+| Verified examples as a **live** gauge of requests | **Refused** | A counter cannot see service-worker or same-origin traffic, so it would lie. The worked-examples page is the honest proof instead |

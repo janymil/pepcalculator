@@ -12,14 +12,17 @@
 
 import { addDays, daysBetween } from './dates';
 import { isLowStock } from './cost';
-import { toBase } from './calc';
+import { toBase, unitsCompatible, type DoseUnit } from './calc';
+import { vialOwnerId } from './owners';
 import {
   countDoseDays,
   phaseDoseOn,
   planEndDate,
   timesOnDay,
   timesPerDay,
+  type VialSchedule,
 } from './schedule';
+import { shareDose, shareDoseUnit, shareFor, shareSchedule, sharesOf } from './shares';
 import { liveVials, vialStatus, type SavedVial, type VialStatus } from './vials';
 
 /** A vial with this many doses or fewer reads as "running low". */
@@ -33,18 +36,25 @@ const RUNOUT_HORIZON_DAYS = 4000;
 
 export interface VialSupply {
   vial: SavedVial;
-  /** Injections left at the *current* step's dose. */
+  /** Injections left at the *viewer's* current dose. */
   dosesLeft: number;
-  /** The dose one injection draws, in base units (phase-aware). */
+  /** The dose one injection draws for the viewer, in base units (phase-aware). */
   doseBase: number;
-  /** Base units still in the vial (mg or IU). */
+  /** Base units still in the vial (mg or IU) — one number, whatever the dose. */
   remainingBase: number;
   volumeLeftMl: number;
-  /** Percentage of the vial still there, 0..100. */
+  /**
+   * Percentage of the vial still there, 0..100.
+   *
+   * `remainingBase` / `volumeLeftMl` / `percentLeft` are the **bottle's** truth:
+   * one figure for everybody drawing from it. Only `dosesLeft` is a reading of
+   * it, and so it is the only one that differs between two people.
+   */
   percentLeft: number;
   /**
-   * `yyyy-mm-dd` on which the last dose comes out of this vial — null when the
-   * vial has no plan (so it cannot be projected) or the plan ends first.
+   * `yyyy-mm-dd` on which the last dose comes out of this vial — null when no
+   * one's plan can be projected, or when every plan ends first. This is the
+   * *combined* run-out: every person sharing the bottle shortens it.
    */
   runOutOn: string | null;
   /** Whole days from today until `runOutOn`; null when unknown. */
@@ -52,12 +62,26 @@ export interface VialSupply {
   /** Peptides only: the beyond-use date. Oils never expire on a 28-day rule. */
   expiresOn: string | null;
   daysUntilExpiry: number | null;
-  /** True when the plan still needs this vial on/after its use-by date. */
+  /** True when some plan still needs this vial on/after its use-by date. */
   expiresWithDosesLeft: boolean;
-  /** Roughly how many doses would still be in the vial at expiry. */
+  /** Roughly how many doses would still be in the vial at expiry, everyone's. */
   dosesAtRisk: number;
   /** Running low (<= `LOW_DOSES` doses left). */
   isLow: boolean;
+  /** Everyone else drawing from this bottle, with their own reading of it. */
+  shares: VialShareSupply[];
+}
+
+/** How much is left *in one sharer's terms* — their dose, their number of doses. */
+export interface VialShareSupply {
+  ownerId: string;
+  /** Day they joined the bottle. */
+  from: string;
+  /** The dose they draw, in their own unit. */
+  doseAmount: number;
+  doseUnit: DoseUnit;
+  /** Injections left for them at that dose. */
+  dosesLeft: number;
 }
 
 export interface SupplySummary {
@@ -73,13 +97,58 @@ export interface SupplySummary {
   vialsToReorder: number;
 }
 
+/** One person drawing from the vial: their plan, and the dose it draws. */
+interface Participant {
+  ownerId: string;
+  schedule: VialSchedule;
+  /** Base units (mg or IU) per injection, at *their* dose. */
+  doseBase: number;
+  doseUnit: DoseUnit;
+}
+
 /**
- * The dose drawn for one injection on `iso`: the titration step's dose when the
- * plan is stepping up, otherwise the vial's own dose. Always in base units.
+ * Everybody drawing from the vial, with each person's own plan resolved: the
+ * owner's from the vial itself, everyone else's from their share — their own
+ * dose and cadence where they set them, the owner's otherwise.
+ *
+ * A person whose units cannot be reconciled with the bottle (a dose in mg on a
+ * vial labelled in IU) is left out rather than counted wrongly, and so is anyone
+ * with no plan: there is nothing to project for them.
  */
-function doseOnDay(vial: SavedVial, iso: string, status: VialStatus): number {
-  const phased = vial.schedule ? phaseDoseOn(vial.schedule, iso) : null;
-  return phased === null ? status.doseBase : toBase(phased, vial.doseUnit);
+function participantPlans(vial: SavedVial): Participant[] {
+  const plans: Participant[] = [];
+
+  const add = (
+    ownerId: string,
+    schedule: VialSchedule | undefined,
+    doseAmount: number,
+    doseUnit: DoseUnit,
+  ) => {
+    if (!schedule || timesPerDay(schedule) === 0) return;
+    if (!unitsCompatible(vial.vialUnit, doseUnit)) return;
+    plans.push({ ownerId, schedule, doseBase: toBase(doseAmount, doseUnit), doseUnit });
+  };
+
+  add(vialOwnerId(vial), vial.schedule, vial.doseAmount, vial.doseUnit);
+  for (const entry of sharesOf(vial)) {
+    add(
+      entry.ownerId,
+      shareSchedule(vial, entry),
+      shareDose(vial, entry),
+      shareDoseUnit(vial, entry),
+    );
+  }
+
+  return plans;
+}
+
+/**
+ * The dose one person draws on `iso`: the titration step's dose where the plan
+ * steps up, otherwise their own. Always in base units.
+ */
+function doseOnDay(participant: Participant, iso: string): number {
+  const phased = phaseDoseOn(participant.schedule, iso);
+  return phased === null ? participant.doseBase : toBase(phased, participant.doseUnit);
 }
 
 /** Everything dissolved in the vial, in base units (mg or IU). */
@@ -88,38 +157,58 @@ function totalBaseOf(status: VialStatus): number {
 }
 
 /**
- * How much has already been drawn: every scheduled dose up to yesterday, plus
- * the times of today that have already passed.
+ * What one person has already drawn: every scheduled dose before today, plus the
+ * times of today that have already passed. Walking *their own* plan is what
+ * keeps a late share honest — nothing before the day they joined is counted.
  */
-function usedDose(vial: SavedVial, status: VialStatus, todayIso: string, nowTime: string): number {
-  const schedule = vial.schedule;
-  // Without a plan we can only trust the running count.
-  if (!schedule) return status.dosesTaken * status.doseBase;
-
+function usedBy(participant: Participant, todayIso: string, nowTime: string): number {
   let used = 0;
-  let cursor = schedule.startsOn;
+  let cursor = participant.schedule.startsOn;
   for (let day = 0; day < RUNOUT_HORIZON_DAYS && cursor < todayIso; day += 1) {
-    used += timesOnDay(schedule, cursor).length * doseOnDay(vial, cursor, status);
+    used += timesOnDay(participant.schedule, cursor).length * doseOnDay(participant, cursor);
     cursor = addDays(cursor, 1);
   }
-  for (const time of timesOnDay(schedule, todayIso)) {
-    if (time < nowTime) used += doseOnDay(vial, todayIso, status);
+  for (const time of timesOnDay(participant.schedule, todayIso)) {
+    if (time < nowTime) used += doseOnDay(participant, todayIso);
   }
   return used;
 }
 
+/**
+ * How much is gone from the bottle so far — **everyone's** draws added up. This
+ * is the number that was wrong while a vial could only be one person's: two
+ * people drawing from it empty it twice as fast, and until then the app had no
+ * way of knowing.
+ */
+function usedBase(vial: SavedVial, status: VialStatus, todayIso: string, nowTime: string): number {
+  const plans = participantPlans(vial);
+  // An owner with no plan at all can only be counted by hand.
+  const byHand = vial.schedule ? 0 : status.dosesTaken * status.doseBase;
+  return plans.reduce((sum, participant) => sum + usedBy(participant, todayIso, nowTime), 0) + byHand;
+}
+
 /** Base units still in the vial right now. */
 function remainingBase(vial: SavedVial, status: VialStatus, todayIso: string, nowTime: string): number {
-  const drawn = vial.schedule
-    ? usedDose(vial, status, todayIso, nowTime)
-    : status.dosesTaken * status.doseBase;
-  return totalBaseOf(status) - drawn;
+  return totalBaseOf(status) - usedBase(vial, status, todayIso, nowTime);
+}
+
+/** The last day any of the plans runs, or null while one of them is ongoing. */
+function lastPlanDay(plans: Participant[]): string | null {
+  let last: string | null = null;
+  for (const participant of plans) {
+    const end = planEndDate(participant.schedule);
+    if (end === null) return null;
+    if (last === null || end > last) last = end;
+  }
+  return last;
 }
 
 /**
- * The date the last dose leaves the vial, walking the schedule forward and
- * subtracting what each day *actually* draws. That is what makes a step-up plan
- * behave correctly: the same vial lasts longer while the dose is still low.
+ * The date the last dose leaves the vial, walking the plans forward and
+ * subtracting what each day *actually* draws — from **everybody** sharing the
+ * bottle. That is what makes a step-up plan behave correctly (the same vial
+ * lasts longer while the dose is still low) and what makes a shared one behave
+ * correctly too (it runs out sooner, because two people draw from it).
  */
 function runOutDate(
   vial: SavedVial,
@@ -127,23 +216,26 @@ function runOutDate(
   todayIso: string,
   nowTime: string,
 ): string | null {
-  const schedule = vial.schedule;
-  if (!schedule) return null;
+  const plans = participantPlans(vial);
+  if (plans.length === 0) return null;
 
   let remaining = remainingBase(vial, status, todayIso, nowTime);
   if (remaining <= 0) return todayIso;
 
-  const end = planEndDate(schedule);
+  const end = lastPlanDay(plans);
   let cursor = todayIso;
 
   for (let day = 0; day < RUNOUT_HORIZON_DAYS; day += 1) {
     if (end !== null && cursor > end) return null;
 
-    // Today only counts the times that are still ahead of us.
-    const times = timesOnDay(schedule, cursor).filter(
-      (time) => cursor !== todayIso || time >= nowTime,
-    );
-    const drawn = times.length * doseOnDay(vial, cursor, status);
+    let drawn = 0;
+    for (const participant of plans) {
+      // Today only counts the times that are still ahead of us.
+      const times = timesOnDay(participant.schedule, cursor).filter(
+        (time) => cursor !== todayIso || time >= nowTime,
+      );
+      drawn += times.length * doseOnDay(participant, cursor);
+    }
     if (drawn >= remaining) return cursor;
 
     remaining -= drawn;
@@ -154,19 +246,20 @@ function runOutDate(
 }
 
 /**
- * Extra full vials the rest of the plan needs after `runOutOn`. Counted in
+ * Extra full vials the rest of the plans need after `runOutOn`. Counted in
  * volume rather than doses, so a later, larger titration step is not
- * under-estimated.
+ * under-estimated — and summed over everybody, so a shared bottle is reordered
+ * at the rate it is actually being emptied.
  */
 function extraVialsFor(
   vial: SavedVial,
   status: VialStatus,
   runOutOn: string | null,
 ): number {
-  const schedule = vial.schedule;
-  if (!schedule || runOutOn === null) return 0;
+  const plans = participantPlans(vial);
+  if (plans.length === 0 || runOutOn === null) return 0;
 
-  const end = planEndDate(schedule);
+  const end = lastPlanDay(plans);
   if (end === null || runOutOn >= end) return 0;
 
   const vialVolumeMl = status.volumeTotalMl;
@@ -175,47 +268,83 @@ function extraVialsFor(
   let volumeMl = 0;
   let cursor = addDays(runOutOn, 1);
   for (let day = 0; day < RUNOUT_HORIZON_DAYS && cursor <= end; day += 1) {
-    const times = timesOnDay(schedule, cursor).length;
-    volumeMl += (times * doseOnDay(vial, cursor, status)) / status.concentrationPerMl;
+    for (const participant of plans) {
+      volumeMl +=
+        (timesOnDay(participant.schedule, cursor).length * doseOnDay(participant, cursor)) /
+        status.concentrationPerMl;
+    }
     cursor = addDays(cursor, 1);
   }
   return Math.max(0, Math.ceil(volumeMl / vialVolumeMl));
 }
 
-/** Everything the UI needs to talk about one vial's supply. */
-export function vialSupply(vial: SavedVial, todayIso: string, nowTime: string): VialSupply {
+/**
+ * Everything the UI needs to talk about one vial's supply.
+ *
+ * `viewerId` is the person the numbers are being read *for*. It only changes
+ * `dosesLeft` and `doseBase` — "how many injections is that for me?" — because
+ * what is left in the bottle (`remainingBase`, `volumeLeftMl`, `runOutOn`) is one
+ * figure regardless of who is asking. Defaults to the vial's owner.
+ */
+export function vialSupply(
+  vial: SavedVial,
+  todayIso: string,
+  nowTime: string,
+  viewerId?: string,
+): VialSupply {
   const status = vialStatus(vial, todayIso);
-  const schedule = vial.schedule;
+  const plans = participantPlans(vial);
 
   const left = Math.max(0, remainingBase(vial, status, todayIso, nowTime));
-  // `dosesLeft` is counted in *injections at the current step*, which is the
-  // number the user actually cares about — for a step-up plan the same vial
-  // holds more of them while the dose is still low.
-  const dosesLeft = status.doseBase > 0 ? left / status.doseBase : 0;
   const volumeLeftMl = status.concentrationPerMl > 0 ? left / status.concentrationPerMl : 0;
   const percentLeft =
     status.volumeTotalMl > 0 ? (volumeLeftMl / status.volumeTotalMl) * 100 : 0;
 
-  const runOutOn =
-    schedule && timesPerDay(schedule) > 0
-      ? runOutDate(vial, status, todayIso, nowTime)
-      : null;
+  // `dosesLeft` is counted in *injections at the viewer's own dose*, which is the
+  // number they actually care about: the same 3.5 mg is 7 doses at 0.5 mg and 14
+  // at 0.25 mg.
+  const viewerEntry = viewerId ? shareFor(vial, viewerId) : null;
+  const viewerDoseBase = viewerEntry
+    ? toBase(shareDose(vial, viewerEntry), shareDoseUnit(vial, viewerEntry))
+    : status.doseBase;
+  const dosesLeft = viewerDoseBase > 0 ? left / viewerDoseBase : 0;
+
+  const runOutOn = plans.length > 0 ? runOutDate(vial, status, todayIso, nowTime) : null;
 
   const daysOfSupply = runOutOn === null ? null : Math.max(0, daysBetween(todayIso, runOutOn));
 
-  const expiresWithDosesLeft =
-    runOutOn !== null && status.expiresOn !== null && runOutOn > status.expiresOn;
+  const useBy = status.expiresOn;
+  const expiresWithDosesLeft = runOutOn !== null && useBy !== null && runOutOn > useBy;
 
+  // Doses that would still be wanted after the use-by date — everyone's, so the
+  // warning is about the whole bottle and not just one person's share of it.
   const dosesAtRisk =
-    expiresWithDosesLeft && status.expiresOn !== null && schedule
-      ? countDoseDays(schedule, addDays(status.expiresOn, 1), runOutOn) *
-        timesPerDay(schedule)
+    expiresWithDosesLeft && useBy !== null && runOutOn !== null
+      ? plans.reduce(
+          (sum, participant) =>
+            sum +
+            countDoseDays(participant.schedule, addDays(useBy, 1), runOutOn) *
+              timesPerDay(participant.schedule),
+          0,
+        )
       : 0;
+
+  // Everyone else's own reading of what is left, for the "shared with" line.
+  const shares = sharesOf(vial).map((entry) => {
+    const doseBase = toBase(shareDose(vial, entry), shareDoseUnit(vial, entry));
+    return {
+      ownerId: entry.ownerId,
+      from: entry.from,
+      doseAmount: shareDose(vial, entry),
+      doseUnit: shareDoseUnit(vial, entry),
+      dosesLeft: doseBase > 0 ? left / doseBase : 0,
+    };
+  });
 
   return {
     vial,
     dosesLeft,
-    doseBase: status.doseBase,
+    doseBase: viewerDoseBase,
     remainingBase: left,
     volumeLeftMl,
     percentLeft,
@@ -226,16 +355,18 @@ export function vialSupply(vial: SavedVial, todayIso: string, nowTime: string): 
     expiresWithDosesLeft,
     dosesAtRisk,
     isLow: isLowStock(dosesLeft, LOW_DOSES),
+    shares,
   };
 }
 
-/** Projects the whole stack (pass an already owner-filtered list). */
+/** Projects the whole stack (pass an already person-scoped list). */
 export function buildSupply(
   vials: SavedVial[],
   todayIso: string,
   nowTime: string,
+  viewerId?: string,
 ): SupplySummary {
-  const rows = liveVials(vials).map((vial) => vialSupply(vial, todayIso, nowTime));
+  const rows = liveVials(vials).map((vial) => vialSupply(vial, todayIso, nowTime, viewerId));
 
   const runOuts = rows
     .map((row) => row.runOutOn)

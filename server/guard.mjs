@@ -118,10 +118,10 @@ export function redactKey(key) {
   return value.length <= 8 ? value : `${value.slice(0, 8)}…`;
 }
 
-/** The path for a log line, with a real sync key shortened. */
+/** The path for a log line, with a real sync or push key shortened. */
 export function logPath(rawPath) {
   return String(rawPath).replace(
-    /^(\/api\/sync\/)([a-f0-9]{64})$/,
+    /^(\/api\/(?:sync|push)\/)([a-f0-9]{64})$/,
     (_, prefix, key) => prefix + redactKey(key),
   );
 }

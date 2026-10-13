@@ -5,12 +5,14 @@ import {
   createOwnerId,
   defaultOwners,
   filterByOwner,
+  filterByParticipant,
   mergeOwners,
   normalizeOwners,
   ownerName,
   ownersFromVials,
   resolveOwnerId,
   vialOwnerId,
+  vialParticipantIds,
   type Owner,
 } from './owners';
 
@@ -115,4 +117,53 @@ describe('ownersFromVials', () => {
       new Set(['wife', DEFAULT_OWNER_ID]),
     );
   });
+
+  it('creates a person who only appears as somebody a vial is shared with', () => {
+    // A vial arriving from another device can name a person this one has never
+    // heard of. Without this the share would point at nobody.
+    const vials = [{ ownerId: 'me', shares: [{ ownerId: 'ana' }] }];
+    expect(new Set(ownersFromVials(vials))).toEqual(new Set(['me', 'ana']));
+  });
+
+  it('ignores share entries with no usable id', () => {
+    const vials = [{ ownerId: 'me', shares: [{ ownerId: '  ' }, {} as { ownerId: string }] }];
+    expect(ownersFromVials(vials)).toEqual(['me']);
+  });
 });
+
+describe('sharing a vial between people', () => {
+  const shared = { ownerId: 'me', shares: [{ ownerId: 'ana', from: '2026-05-03' }] };
+
+  it('names the owner first, then everybody else on the bottle', () => {
+    expect(vialParticipantIds(shared)).toEqual(['me', 'ana']);
+    expect(vialParticipantIds({})).toEqual([DEFAULT_OWNER_ID]);
+  });
+
+  it('does not name the same person twice', () => {
+    const doubled = { ownerId: 'me', shares: [{ ownerId: 'me' }, { ownerId: 'ana' }] };
+    expect(vialParticipantIds(doubled)).toEqual(['me', 'ana']);
+  });
+
+  it('shows a shared bottle in both stacks', () => {
+    const vials = [{ ownerId: 'me' }, shared, { ownerId: 'tom' }];
+
+    // `filterByOwner` stays strictly one person's own vials…
+    expect(filterByOwner(vials, 'ana')).toEqual([]);
+    // …while the views show a bottle to everybody drawing from it.
+    expect(filterByParticipant(vials, 'ana')).toEqual([shared]);
+    expect(filterByParticipant(vials, 'me')).toHaveLength(2);
+    expect(filterByParticipant(vials, 'tom')).toEqual([vials[2]]);
+    expect(filterByParticipant(vials, 'nobody')).toEqual([]);
+  });
+
+  it('counts a shared bottle against the person sharing it too', () => {
+    // Otherwise Settings would let you delete Ana and silently drop her claim.
+    const vials = [{ ownerId: 'me' }, shared];
+    expect(countVialsForOwner(vials, 'ana')).toBe(1);
+    expect(countVialsForOwner(vials, 'me')).toBe(2);
+
+    const deleted = { ...shared, deletedAt: '2026-06-01T00:00:00.000Z' };
+    expect(countVialsForOwner([deleted], 'ana')).toBe(0);
+  });
+});
+

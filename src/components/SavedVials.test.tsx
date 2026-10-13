@@ -2,6 +2,7 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { DICTIONARIES } from '../i18n';
 import { I18nProvider } from '../i18n/I18nContext';
+import type { Owner } from '../lib/owners';
 import type { VialSchedule } from '../lib/schedule';
 import type { SavedVial } from '../lib/vials';
 import { SavedVials } from './SavedVials';
@@ -60,12 +61,13 @@ function anabolicVial(overrides: Partial<SavedVial> = {}): SavedVial {
   };
 }
 
-function render(vials: SavedVial[], onOpenGlp1?: () => void): string {
+function render(vials: SavedVial[], onOpenGlp1?: () => void, owners: Owner[] = [{ id: 'me', name: '' }], viewerId = 'me'): string {
   return renderToString(
     <I18nProvider value={{ lang: 'en', setLang: () => {}, strings: DICTIONARIES.en }}>
       <SavedVials
         vials={vials}
-        owners={[{ id: 'me', name: '' }]}
+        owners={owners}
+        viewerId={viewerId}
         todayIso={MONDAY}
         nowTime="07:00"
         onUpdate={() => {}}
@@ -120,5 +122,38 @@ describe('SavedVials page (server render smoke test)', () => {
 
     // Not on a peptide card: the link is only useful where the class is used.
     expect(render([peptideVial()], () => {})).not.toContain(label);
+  });
+});
+
+describe('a shared vial', () => {
+  const people: Owner[] = [
+    { id: 'me', name: 'Kim' },
+    { id: 'ana', name: 'Ana' },
+  ];
+  const shared = peptideVial({
+    ownerId: 'me',
+    shares: [{ ownerId: 'ana', from: '2024-01-02', doseAmount: 500, doseUnit: 'mcg' }],
+  });
+
+  it('tells the bottle’s owner who else draws from it, and what is left for them', () => {
+    const html = render([shared], undefined, people, 'me');
+
+    expect(html).toContain('Shared with Ana');
+    // Her own reading of the bottle, since the owner has to know if she is short.
+    expect(html).toContain('left for them');
+  });
+
+  it('names the owner on the sharer’s own card, and says the bottle is not hers', () => {
+    const html = render([shared], undefined, people, 'ana');
+
+    expect(html).toContain('Shared with Kim');
+    expect(html).toContain(DICTIONARIES.en.shares.ownerEdit.replace('{name}', 'Kim'));
+  });
+
+  it('says nothing about sharing when the bottle is one person’s', () => {
+    const html = render([peptideVial()], undefined, people, 'me');
+
+    expect(html).not.toContain('Shared with');
+    expect(html).not.toContain(DICTIONARIES.en.shares.ownerEdit.replace('{name}', 'Kim'));
   });
 });

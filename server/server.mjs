@@ -7,6 +7,9 @@
  *   GET  /api/health          -> { ok: true }
  *   GET  /api/sync/:key       -> { payload, updatedAt } | 404
  *   PUT  /api/sync/:key       -> { updatedAt }        body: { payload: string }
+ *   GET  /api/push/pubkey     -> { publicKey }        (the VAPID public key)
+ *   PUT  /api/push/:key       -> { scheduled, updatedAt }  body: { subscription, queue }
+ *   DELETE /api/push/:key     -> { ok: true }
  *
  * Run:    npm run server           (listens on 8787 by default)
  * Config: PORT, DB_PATH, ALLOWED_ORIGIN, MAX_BODY_BYTES, RATE_LIMIT,
@@ -37,6 +40,8 @@ import {
   logPath,
   parseAllowedOrigins,
 } from './guard.mjs';
+import { createPushScheduler, isValidSubscription, normalizeQueue } from './push.mjs';
+import { createPushSender, isPushConfigured } from './webpush.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -56,12 +61,18 @@ export function readConfig(env = process.env) {
     /** Honour X-Forwarded-For — only when a real proxy sets it. */
     trustProxy: env.TRUST_PROXY === '1',
     logRequests: env.LOG_REQUESTS !== '0',
+    /** Web Push (VAPID). Sending stays off until both keys are set. */
+    vapidPublicKey: env.VAPID_PUBLIC_KEY ?? '',
+    vapidPrivateKey: env.VAPID_PRIVATE_KEY ?? '',
+    vapidSubject: env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
+    /** How often the scheduler checks for a due dose. */
+    pushIntervalMs: Number(env.PUSH_INTERVAL_MS ?? 30_000),
   };
 }
 
 function applyCors(res, origin) {
   res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Max-Age', '86400');
 }
@@ -109,6 +120,14 @@ export function createSyncServer(config = readConfig()) {
       payload    TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS push (
+      key          TEXT PRIMARY KEY,
+      subscription TEXT NOT NULL,
+      queue        TEXT NOT NULL,
+      failures     INTEGER NOT NULL DEFAULT 0,
+      created_at   TEXT NOT NULL,
+      updated_at   TEXT NOT NULL
+    );
   `);
 
   const selectStmt = db.prepare('SELECT payload, updated_at FROM sync WHERE key = ?');
@@ -117,10 +136,66 @@ export function createSyncServer(config = readConfig()) {
     ON CONFLICT(key) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at
   `);
 
+  const pushListStmt = db.prepare('SELECT key, subscription, queue, failures FROM push');
+  const pushUpsertStmt = db.prepare(`
+    INSERT INTO push (key, subscription, queue, failures, created_at, updated_at)
+    VALUES (?, ?, ?, 0, ?, ?)
+    ON CONFLICT(key) DO UPDATE SET
+      subscription = excluded.subscription,
+      queue        = excluded.queue,
+      updated_at   = excluded.updated_at
+  `);
+  const pushQueueStmt = db.prepare(
+    'UPDATE push SET queue = ?, failures = ?, updated_at = ? WHERE key = ?',
+  );
+  const pushDeleteStmt = db.prepare('DELETE FROM push WHERE key = ?');
+
+  /**
+   * The scheduler's view of the push table. It parses JSON lazily and skips a
+   * single corrupt row rather than letting one bad record break every push.
+   */
+  const pushStore = {
+    list() {
+      const rows = [];
+      for (const row of pushListStmt.all()) {
+        try {
+          rows.push({
+            key: row.key,
+            subscription: JSON.parse(row.subscription),
+            queue: JSON.parse(row.queue),
+            failures: row.failures,
+          });
+        } catch {
+          /* skip a corrupt row */
+        }
+      }
+      return rows;
+    },
+    save(key, { queue, failures }) {
+      pushQueueStmt.run(JSON.stringify(queue), failures, new Date().toISOString(), key);
+    },
+    remove(key) {
+      pushDeleteStmt.run(key);
+    },
+  };
+
   const limiter =
     config.rateLimit > 0
       ? createRateLimiter({ limit: config.rateLimit, windowMs: config.rateWindowMs })
       : null;
+
+  // The clock that turns a stored queue into a delivered notification. It is
+  // only started when the server is actually configured to send, so a test —
+  // or a server without VAPID keys — never spins a timer.
+  const scheduler = createPushScheduler({
+    store: pushStore,
+    send: createPushSender(config),
+    intervalMs: config.pushIntervalMs,
+    onError: (error) => {
+      if (config.logRequests) console.warn(`push send failed: ${error?.message ?? error}`);
+    },
+  });
+  if (isPushConfigured(config)) scheduler.start();
 
   const server = createServer(async (req, res) => {
     const started = Date.now();
@@ -145,6 +220,20 @@ export function createSyncServer(config = readConfig()) {
       res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(body));
       done(status);
+    };
+
+    // Charged per address, and only for the endpoints that touch the database.
+    // Returns false (and has already answered 429) when the caller is over budget.
+    const chargeRateLimit = () => {
+      if (!limiter) return true;
+      const verdict = limiter.check(who());
+      if (!verdict.allowed) {
+        res.setHeader('Retry-After', String(verdict.retryAfterSeconds));
+        send(429, { error: 'rate_limited', retryAfterSeconds: verdict.retryAfterSeconds });
+        return false;
+      }
+      res.setHeader('X-RateLimit-Remaining', String(verdict.remaining));
+      return true;
     };
 
     // A synced payload is private: no proxy, no browser and no disk cache keeps it.
@@ -176,22 +265,67 @@ export function createSyncServer(config = readConfig()) {
       return;
     }
 
+    if (rawPath === '/api/push/pubkey') {
+      // The app reads this to subscribe; it is public by design, and the only
+      // thing that proves who is asking is the sync key on the other routes.
+      send(200, { publicKey: config.vapidPublicKey || null });
+      return;
+    }
+
+    const pushMatch = rawPath.match(/^\/api\/push\/([^/]+)$/);
+    if (pushMatch) {
+      if (!chargeRateLimit()) return;
+
+      const pushKey = pushMatch[1].toLowerCase();
+      if (!KEY_PATTERN.test(pushKey)) {
+        send(400, { error: 'invalid_key' });
+        return;
+      }
+
+      if (req.method === 'PUT') {
+        try {
+          const parsed = JSON.parse(await readBody(req, config.maxBodyBytes));
+          if (!isValidSubscription(parsed?.subscription)) {
+            send(400, { error: 'invalid_subscription' });
+            return;
+          }
+          // The queue is the client's own future doses, already rendered; the
+          // server keeps only what is usable (see `normalizeQueue`).
+          const queue = normalizeQueue(parsed?.queue);
+          const updatedAt = new Date().toISOString();
+          pushUpsertStmt.run(
+            pushKey,
+            JSON.stringify(parsed.subscription),
+            JSON.stringify(queue),
+            updatedAt,
+            updatedAt,
+          );
+          send(200, { scheduled: queue.length, updatedAt });
+        } catch (error) {
+          const tooLarge = error instanceof Error && error.message === 'payload_too_large';
+          send(tooLarge ? 413 : 400, { error: tooLarge ? 'payload_too_large' : 'invalid_json' });
+        }
+        return;
+      }
+
+      if (req.method === 'DELETE') {
+        pushDeleteStmt.run(pushKey);
+        send(200, { ok: true });
+        return;
+      }
+
+      send(405, { error: 'method_not_allowed' });
+      return;
+    }
+
     const match = rawPath.match(/^\/api\/sync\/([^/]+)$/);
     if (!match) {
       send(404, { error: 'not_found' });
       return;
     }
 
-    // Charged per address, and only for the endpoint that touches the database.
-    if (limiter) {
-      const verdict = limiter.check(who());
-      if (!verdict.allowed) {
-        res.setHeader('Retry-After', String(verdict.retryAfterSeconds));
-        send(429, { error: 'rate_limited', retryAfterSeconds: verdict.retryAfterSeconds });
-        return;
-      }
-      res.setHeader('X-RateLimit-Remaining', String(verdict.remaining));
-    }
+    // Charged per address, and only for the endpoints that touch the database.
+    if (!chargeRateLimit()) return;
 
     const key = match[1].toLowerCase();
     if (!KEY_PATTERN.test(key)) {
@@ -237,7 +371,10 @@ export function createSyncServer(config = readConfig()) {
   // Closing the server closes the database: the prepared statements live as long
   // as this closure, and leaving them to garbage collection is how a late request
   // meets "statement has been finalized" instead of a clean shutdown.
-  server.on('close', () => db.close());
+  server.on('close', () => {
+    scheduler.stop();
+    db.close();
+  });
 
   return server;
 }
@@ -265,5 +402,10 @@ if (isMain) {
       console.warn('  ! ALLOWED_ORIGIN=* — any website can call this API from a browser.');
       console.warn('    Set ALLOWED_ORIGIN=https://your-app.example in production.');
     }
+    console.log(
+      isPushConfigured(config)
+        ? `  push:           on (every ${config.pushIntervalMs / 1000}s)`
+        : '  push:           off — set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (npm run vapid)',
+    );
   });
 }

@@ -171,6 +171,70 @@ describe('sync server — hardening', () => {
     }));
 });
 
+describe('sync server — push registration', () => {
+  const SUB = { endpoint: 'https://push.example/abc', keys: { p256dh: 'p', auth: 'a' } };
+  const putPush = (base, key, body) =>
+    fetch(`${base}/api/push/${key}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('publishes the VAPID key only when the server is configured for push', () =>
+    withServer({}, async (base) => {
+      const off = await fetch(`${base}/api/push/pubkey`);
+      await expect(off.json()).resolves.toEqual({ publicKey: null });
+    }));
+
+  it('hands out the VAPID public key when one is set', () =>
+    withServer({ vapidPublicKey: 'BExample', vapidPrivateKey: 'secret' }, async (base) => {
+      const res = await fetch(`${base}/api/push/pubkey`);
+      expect(res.status).toBe(200);
+      await expect(res.json()).resolves.toEqual({ publicKey: 'BExample' });
+    }));
+
+  it('stores a subscription and its queue, and reports how many it kept', () =>
+    withServer({}, async (base) => {
+      const at = new Date(Date.now() + 60_000).toISOString();
+      const res = await putPush(base, KEY, {
+        subscription: SUB,
+        queue: [{ at, title: 'Time for your dose', body: 'Vial · 08:00', tag: 'dose:1' }],
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.scheduled).toBe(1);
+      expect(typeof body.updatedAt).toBe('string');
+    }));
+
+  it('refuses a malformed subscription or key', () =>
+    withServer({}, async (base) => {
+      expect((await putPush(base, KEY, { subscription: { endpoint: 'nope' } })).status).toBe(400);
+      expect((await putPush(base, 'not-a-key', { subscription: SUB })).status).toBe(400);
+    }));
+
+  it('forgets a subscription on DELETE and rejects other methods', () =>
+    withServer({}, async (base) => {
+      await putPush(base, KEY, { subscription: SUB, queue: [] });
+
+      expect((await fetch(`${base}/api/push/${KEY}`)).status).toBe(405);
+
+      const removed = await fetch(`${base}/api/push/${KEY}`, { method: 'DELETE' });
+      expect(removed.status).toBe(200);
+      await expect(removed.json()).resolves.toEqual({ ok: true });
+    }));
+
+  it('answers a preflight that now lists DELETE', () =>
+    withServer({ allowed: [APP] }, async (base) => {
+      const res = await fetch(`${base}/api/push/${KEY}`, {
+        method: 'OPTIONS',
+        headers: { Origin: APP },
+      });
+      expect(res.status).toBe(204);
+      expect(res.headers.get('access-control-allow-methods')).toContain('DELETE');
+    }));
+});
+
 describe('sync server — configuration', () => {
   it('reads the port, the origin list and the flags from the environment', async () => {
     const { readConfig } = await import('./server.mjs');
