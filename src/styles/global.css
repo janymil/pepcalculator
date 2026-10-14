@@ -1839,6 +1839,170 @@ body {
   color: var(--text-faint);
 }
 
+.reminders__divider {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- the WhatsApp steps ---------- */
+/*
+ * Three numbered steps, joined by a line, with exactly one of them active at a
+ * time. Everything a new user has to work out — make a sync code, send a code to
+ * a number, wait to be confirmed — was previously four lines of prose and three
+ * controls in an order that matched nothing.
+ */
+.wa-steps {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wa-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+/* The connector, so the three read as one sequence rather than three cards. */
+.wa-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 34px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.wa-step__num {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+/* Done and active look the same: both mean "this one is settled or is now". */
+.wa-step.is-active .wa-step__num,
+.wa-step.is-done .wa-step__num {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.wa-step__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wa-step__title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.wa-step.is-todo .wa-step__title {
+  color: var(--text-faint);
+}
+
+.wa-step__lead {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* The vials a reminder will cover, as a plain list. */
+.wa-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wa-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wa-plan__who {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.wa-plan__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wa-plan__when {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.wa-step__hint {
+  margin: 0;
+  max-width: 74ch;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.wa-step__actions {
+  margin: 0;
+}
+
+.wa-step__code {
+  margin: 0;
+}
+
+/* `user-select: all` so a long press on a phone takes the whole code at once. */
+.wa-step__code code {
+  display: inline-block;
+  padding: 6px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  user-select: all;
+}
+
+.wa-step__state {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.wa-step__state.is-ok {
+  color: var(--accent-strong);
+}
+
 
 
 /* ---------- page switcher (Calculator / Calendar) ---------- */

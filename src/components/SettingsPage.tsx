@@ -1,6 +1,7 @@
 import { interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import type { PushStatus } from '../hooks/usePushReminders';
+import type { WhatsAppPlan, WhatsAppStatus } from '../hooks/useWhatsAppReminders';
 import type { NotificationPermissionState } from '../lib/pwa';
 import type { Owner } from '../lib/owners';
 import type { UpcomingDose } from '../lib/reminders';
@@ -36,6 +37,16 @@ interface SettingsPageProps {
   installed: boolean;
   onToggleReminders: (enabled: boolean) => void;
   onRequestPermission: () => void;
+  // --- WhatsApp reminders (the optional second channel) ---
+  whatsappStatus: WhatsAppStatus;
+  whatsappLink: string | null;
+  whatsappCode: string;
+  whatsappNumber: string;
+  /** Every vial with a schedule, so step one can name them all. */
+  whatsappPlans: WhatsAppPlan[];
+  whatsappBusy: boolean;
+  onConnectWhatsApp: () => void;
+  onDisconnectWhatsApp: () => void;
   // --- danger zone ---
   hasVials: boolean;
   onClearAll: () => void;
@@ -72,6 +83,14 @@ export function SettingsPage({
   installed,
   onToggleReminders,
   onRequestPermission,
+  whatsappStatus,
+  whatsappLink,
+  whatsappCode,
+  whatsappNumber,
+  whatsappPlans,
+  whatsappBusy,
+  onConnectWhatsApp,
+  onDisconnectWhatsApp,
   hasVials,
   onClearAll,
   owners,
@@ -141,6 +160,14 @@ export function SettingsPage({
         installed={installed}
         onToggle={onToggleReminders}
         onRequestPermission={onRequestPermission}
+        whatsappStatus={whatsappStatus}
+        whatsappLink={whatsappLink}
+        whatsappCode={whatsappCode}
+        whatsappNumber={whatsappNumber}
+        whatsappPlans={whatsappPlans}
+        whatsappBusy={whatsappBusy}
+        onConnectWhatsApp={onConnectWhatsApp}
+        onDisconnectWhatsApp={onDisconnectWhatsApp}
       />
 
       <PeoplePanel

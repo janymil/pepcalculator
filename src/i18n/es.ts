@@ -398,6 +398,28 @@ export const es: Strings = {
     pushInactive: 'Permite las notificaciones para recibir recordatorios con la app cerrada.',
     pushError:
       'Los recordatorios en segundo plano aún no están configurados: revisa el servidor de sincronización de arriba.',
+    whatsappTitle: 'Recordatorios por WhatsApp',
+    whatsappIntro:
+      'Opcional. Necesita un código de sincronización arriba. Envía la hora de tu dosis a WhatsApp, es decir, donde ya mirás.',
+    whatsappStepPlan: 'Tu plan',
+    whatsappPlanDaily: 'Cada día a las {times}',
+    whatsappPlanWeekdays: '{days} a las {times}',
+    whatsappPlanInterval: 'Cada {days} días a las {times}',
+    whatsappStepChat: 'Envía el primer mensaje',
+    whatsappStepChatBody:
+      'WhatsApp se abre con el mensaje listo. No se envía nada hasta que pulses enviar, y ese mensaje es lo que vincula este dispositivo.',
+    whatsappOpen: 'Abrir WhatsApp',
+    whatsappFallbackTo: 'O envía esto al {number} tú mismo:',
+    whatsappStepConfirm: 'Confirmación',
+    whatsappWaiting: 'Esperando tu mensaje…',
+    whatsappLinked: 'Conectado. Tus recordatorios llegan por WhatsApp.',
+    whatsappConnect: 'Activar los recordatorios por WhatsApp',
+    whatsappDisconnect: 'Desactivar los recordatorios por WhatsApp',
+    whatsappNotConfigured: 'Los recordatorios por WhatsApp no están activados en este servidor.',
+    whatsappNeedsCode: 'Primero crea un código de sincronización arriba: así se identifica este dispositivo.',
+    whatsappNoPlan: 'Primero guarda un vial con un plan. Todavía no hay nada que recordar.',
+    whatsappError: 'No se pudo contactar con el servidor. Inténtalo de nuevo en un momento.',
+    whatsappBusy: 'Procesando…',
   },
   pair: {
     title: 'Emparejar un teléfono',

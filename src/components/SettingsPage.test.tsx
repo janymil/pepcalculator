@@ -27,6 +27,14 @@ const html = renderToString(
       installed={false}
       onToggleReminders={() => {}}
       onRequestPermission={() => {}}
+      whatsappStatus="needs-code"
+      whatsappLink={null}
+      whatsappCode=""
+      whatsappNumber=""
+      whatsappPlans={[]}
+      whatsappBusy={false}
+      onConnectWhatsApp={() => {}}
+      onDisconnectWhatsApp={() => {}}
       hasVials={false}
       onClearAll={() => {}}
       owners={[{ id: 'me', name: '' }]}

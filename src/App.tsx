@@ -32,6 +32,7 @@ import { DEFAULT_MODE, modeMeta, resolveCapacity } from './config/modes';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useDoseReminders } from './hooks/useDoseReminders';
 import { usePushReminders } from './hooks/usePushReminders';
+import { useWhatsAppReminders } from './hooks/useWhatsAppReminders';
 import { DICTIONARIES, detectLang, interpolate } from './i18n';
 import { I18nProvider } from './i18n/I18nContext';
 import type { Lang } from './i18n/types';
@@ -41,6 +42,7 @@ import { parseNumber } from './lib/format';
 import { createMeasurementId, liveMeasurements, mergeMeasurements, type Measurement } from './lib/measure';
 import { toIsoDate } from './lib/dates';
 import type { VialSchedule } from './lib/schedule';
+import { whatsappPlansFrom } from './lib/whatsappPlan';
 import { isIos, isStandalone } from './lib/pwa';
 import type { VialShare } from './lib/shares';
 import { syncWithServer, pushVials, type SyncFailure } from './lib/sync';
@@ -58,6 +60,7 @@ import {
   mergeOwners,
   ownerName,
   resolveOwnerId,
+  vialOwnerId,
   vialParticipantIds,
   type Owner,
 } from './lib/owners';
@@ -279,6 +282,40 @@ export default function App() {
     title: strings.reminders.notifyTitle,
     body: (name, time) =>
       interpolate(strings.reminders.notifyBody, { name: name || strings.vials.untitled, time }),
+  });
+
+  /*
+   * The optional second channel. Unlike push above, this uploads the **rule and
+   * the dose timeline** — "every day at 08:00, 50 mg, draw to 20 units" — not a
+   * queue of finished notifications, so it is uploaded once and then keeps going
+   * with the app closed, for as long as the plan lasts. See
+   * `PROPOSAL-whatsapp-reminders.md`.
+   *
+   * One plan per vial, all of them, and one opt-in covers the lot: the server
+   * attaches every unclaimed vial to the number that sends a single code. And
+   * each plan carries the person it is for, so a message to a shared device can
+   * be divided by person instead of mixing two people's doses together.
+   */
+  const whatsappPlans = useMemo(
+    () =>
+      whatsappPlansFrom(liveVialList, {
+        todayIso,
+        strings,
+        /*
+         * The person's saved name, and **not** `ownerName`, which falls back to
+         * the raw id — that would send "me" and come back as "For me". An
+         * unnamed owner sends '', and the server has the local word for "you".
+         */
+        personNameOf: (vial) => owners.find((owner) => owner.id === vialOwnerId(vial))?.name ?? '',
+      }),
+    [liveVialList, owners, strings, todayIso],
+  );
+
+  const whatsapp = useWhatsAppReminders({
+    plans: whatsappPlans,
+    syncCode,
+    serverUrl: effectiveSyncServer,
+    lang,
   });
 
   // Keep the <html> element in sync so CSS variables and a11y match the UI.
@@ -860,6 +897,14 @@ export default function App() {
               installed={installed}
               onToggleReminders={setRemindersEnabled}
               onRequestPermission={reminders.requestPermission}
+              whatsappStatus={whatsapp.status}
+              whatsappLink={whatsapp.link}
+              whatsappCode={whatsapp.code}
+              whatsappNumber={whatsapp.number}
+              whatsappPlans={whatsappPlans}
+              whatsappBusy={whatsapp.busy}
+              onConnectWhatsApp={whatsapp.connect}
+              onDisconnectWhatsApp={whatsapp.disconnect}
               hasVials={liveVialList.length > 0}
               onClearAll={handleClearAll}
               owners={owners}

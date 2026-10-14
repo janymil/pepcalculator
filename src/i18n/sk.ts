@@ -396,6 +396,29 @@ export const sk: Strings = {
     pushInactive: 'Povoľte upozornenia, aby pripomienky chodili aj pri zatvorenej aplikácii.',
     pushError:
       'Pripomienky na pozadí sa zatiaľ nepodarilo nastaviť — skontrolujte server synchronizácie vyššie.',
+    whatsappTitle: 'Pripomienky na WhatsApp',
+    whatsappIntro:
+      'Voliteľné. Potrebuje synchronizačný kód vyššie. Pošle čas dávky na WhatsApp, teda tam, kam aj tak chodíte.',
+    whatsappStepPlan: 'Váš plán',
+    whatsappPlanDaily: 'Každý deň o {times}',
+    whatsappPlanWeekdays: '{days} o {times}',
+    whatsappPlanInterval: 'Každých {days} dní o {times}',
+    whatsappStepChat: 'Pošlite prvú správu',
+    whatsappStepChatBody:
+      'WhatsApp sa otvorí s pripravenou správou. Nič sa neodošle, kým ju sami nepošlete — a práve tá správa prepojí toto zariadenie.',
+    whatsappOpen: 'Otvoriť WhatsApp',
+    whatsappFallbackTo: 'Alebo pošlite toto na {number} sami:',
+    whatsappStepConfirm: 'Potvrdenie',
+    whatsappWaiting: 'Čaká sa na vašu správu…',
+    whatsappLinked: 'Prepojené. Pripomienky chodia na WhatsApp.',
+    whatsappConnect: 'Zapnúť pripomienky na WhatsApp',
+    whatsappDisconnect: 'Vypnúť pripomienky na WhatsApp',
+    whatsappNotConfigured: 'Pripomienky na WhatsApp nie sú na tomto serveri zapnuté.',
+    whatsappNeedsCode:
+      'Najprv si vytvorte synchronizačný kód vyššie. Podľa neho sa rozpozná toto zariadenie.',
+    whatsappNoPlan: 'Najprv si uložte fľaštičku s plánom. Zatiaľ nie je na čo pripomínať.',
+    whatsappError: 'Nepodarilo sa spojiť so serverom. Skúste to o chvíľu znova.',
+    whatsappBusy: 'Pracuje sa…',
   },
   pair: {
     title: 'Prepojiť telefón',

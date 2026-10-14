@@ -458,6 +458,42 @@ export interface Strings {
     pushBlocked: string;
     pushInactive: string;
     pushError: string;
+    /**
+     * WhatsApp reminders — the optional second channel.
+     *
+     * Shown as three numbered steps. A paragraph plus a button asked a new user
+     * to infer that they had to create a sync code, then send a code to a
+     * number, and that nothing would arrive until they did — none of which is
+     * obvious from the outside.
+     */
+    whatsappTitle: string;
+    whatsappIntro: string;
+    /** Step 1 — the plan the reminder will be about. */
+    whatsappStepPlan: string;
+    /** e.g. "Every day at {times}". */
+    whatsappPlanDaily: string;
+    /** e.g. "{days} at {times}" — day names are formatted for the locale. */
+    whatsappPlanWeekdays: string;
+    /** e.g. "Every {days} days at {times}". */
+    whatsappPlanInterval: string;
+    /** Step 2 — the message the user sends. */
+    whatsappStepChat: string;
+    whatsappStepChatBody: string;
+    /** The tap-to-start link's label. */
+    whatsappOpen: string;
+    /** "Or send this to {number}:" — the fallback when the link will not open. */
+    whatsappFallbackTo: string;
+    /** Step 3 — waiting for the message, then connected. */
+    whatsappStepConfirm: string;
+    whatsappWaiting: string;
+    whatsappLinked: string;
+    whatsappConnect: string;
+    whatsappDisconnect: string;
+    whatsappNotConfigured: string;
+    whatsappNeedsCode: string;
+    whatsappNoPlan: string;
+    whatsappError: string;
+    whatsappBusy: string;
   };
   pair: {
     title: string;

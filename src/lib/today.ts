@@ -69,22 +69,40 @@ function slotIsTaken(
   return date < nowIso || (date === nowIso && time < nowTime);
 }
 
-/** A single dose, with everything the card needs to render it. */
-function toDose(
-  vial: SavedVial,
-  date: string,
-  time: string,
-  nowIso: string,
-  nowTime: string,
-): TodayDose {
+/** What one vial's dose looks like on one date. */
+export interface VialDraw {
+  kind: VialKind;
+  /** How the draw is read off the device. */
+  measure: MeasureSystem;
+  /** The dose for this date, in the vial's own unit. */
+  doseAmount: number;
+  /** mL drawn for one dose. */
+  volumeMl: number;
+  /** The number the user reads off the device: units, mL, or pen clicks. */
+  drawValue: number;
+}
+
+/**
+ * The dose for one vial on one date — the amount, the volume, and the number the
+ * user actually reads off the device.
+ *
+ * Split out of `toDose` so the WhatsApp reminder can ask *exactly* the same
+ * question the Today card and the calculator ask. A second copy of this
+ * arithmetic is how a reminder ends up quoting a number the calculator never
+ * showed, and a dose line is the one place that must not happen.
+ *
+ * The dose is looked up **per date**, because a step-up plan changes it as it
+ * goes — asking the vial's single stored amount would quote the starting dose in
+ * month two.
+ */
+export function drawOn(vial: SavedVial, date: string, nowIso: string): VialDraw {
   const status = vialStatus(vial, nowIso);
   const kind = vialKind(vial);
   const measure = kindMeasure(kind, vial.device);
 
-  // The dose for *this* date: a step-up plan changes it as it goes, so the
-  // schedule is asked rather than the vial's single stored dose.
   const phased = vial.schedule ? phaseDoseOn(vial.schedule, date) : null;
-  const doseBase = toBase(phased ?? vial.doseAmount, vial.doseUnit);
+  const doseAmount = phased ?? vial.doseAmount;
+  const doseBase = toBase(doseAmount, vial.doseUnit);
   const volumeMl = status.concentrationPerMl > 0 ? doseBase / status.concentrationPerMl : 0;
 
   // A pen dials; a peptide is read in graduations; everything else in mL — for a
@@ -96,15 +114,28 @@ function toDose(
         ? volumeMl * (vial.clicksPerMl ?? 0)
         : volumeMl * unitsPerMlOf(vial.syringeType);
 
+  return { kind, measure, doseAmount, volumeMl, drawValue };
+}
+
+/** A single dose, with everything the card needs to render it. */
+function toDose(
+  vial: SavedVial,
+  date: string,
+  time: string,
+  nowIso: string,
+  nowTime: string,
+): TodayDose {
+  const draw = drawOn(vial, date, nowIso);
+
   return {
     vialId: vial.id,
     name: vial.name,
-    kind,
-    measure,
+    kind: draw.kind,
+    measure: draw.measure,
     date,
     time,
-    volumeMl,
-    drawValue,
+    volumeMl: draw.volumeMl,
+    drawValue: draw.drawValue,
     taken: slotIsTaken(vial, date, time, nowIso, nowTime),
     vial,
   };
