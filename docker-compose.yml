@@ -15,7 +15,7 @@ services:
       # Bound to loopback: the reverse proxy publishes it, not the whole internet.
       - '127.0.0.1:8787:8787'
     environment:
-      ALLOWED_ORIGIN: https://your-app.example
+      ALLOWED_ORIGIN: https://pepstool.com, https://pepcalculator.casacam.net
       RATE_LIMIT: '240'
       RATE_WINDOW_MS: '60000'
       # Only behind a proxy you control, which overwrites X-Forwarded-For.

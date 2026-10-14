@@ -1,9 +1,28 @@
 <!doctype html>
-<html lang="en">
+<!--
+  `no-js` is swapped for `js` by the inline script below, before the first
+  paint. Everything inside `#root` marked `seo-` is a real, readable fallback
+  for crawlers that do not run JavaScript (React replaces it the moment it
+  mounts); the `js` class hides it for every browser that does run JS, so there
+  is no flash and no layout shift. See "SEO" in README.md.
+-->
+<html class="no-js" lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0d9488" />
+    <meta name="color-scheme" content="light dark" />
+
+    <title>PepCalculator · Dose &amp; Reconstitution Calculator</title>
+    <meta
+      name="description"
+      content="Free, offline-first calculator that turns a desired dose (mg/mcg) into the volume (mL) and insulin units to draw on a syringe — for reconstituted peptides, anabolic oils, HGH/HCG and GLP-1 pens. English, Slovak and Spanish."
+    />
+
+    <link rel="canonical" href="https://pepstool.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="author" content="PepCalculator" />
+
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -11,14 +30,204 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PepCalculator" />
+
+    <!-- Open Graph: what Facebook, WhatsApp, Telegram, Slack and LinkedIn read
+         to build the preview card. These URLs must be absolute and public. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PepCalculator" />
+    <meta property="og:title" content="PepCalculator — dose to units, in one screen" />
     <meta
-      name="description"
-      content="PepCalculator — turn a desired dose (mg/mcg) into the volume and insulin units to draw on a syringe. For reconstituted peptides and ready-to-use anabolic oils."
+      property="og:description"
+      content="Turn a dose in mg/mcg into the mL and insulin units to draw — for reconstituted peptides, anabolic oils, HGH/HCG and GLP-1 pens. Works offline. Free, no account."
     />
-    <title>PepCalculator · Dose &amp; Reconstitution Calculator</title>
+    <meta property="og:url" content="https://pepstool.com/" />
+    <meta property="og:image" content="https://pepstool.com/og-image.png?v=2" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="PepCalculator — turn a dose into the units to draw, for peptides, anabolic oils, HGH/HCG and GLP-1 pens."
+    />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="sk_SK" />
+    <meta property="og:locale:alternate" content="es_ES" />
+
+    <!-- X / Twitter card. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PepCalculator — dose to units, in one screen" />
+    <meta
+      name="twitter:description"
+      content="Turn a dose in mg/mcg into the mL and insulin units to draw. Peptides, anabolic oils, HGH/HCG and GLP-1 pens. Works offline, free, no account."
+    />
+    <meta name="twitter:image" content="https://pepstool.com/og-image.png?v=2" />
+    <meta name="twitter:image:alt" content="PepCalculator — turn a dose into the units to draw." />
+
+    <script>
+      // Swap `no-js` for `js` before the first paint, so the crawlable fallback
+      // inside #root never flashes for a browser that runs scripts.
+      document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
+    </script>
+    <style>
+      /* Styles for the no-JS fallback only — the app brings its own styles. */
+      .no-js #root { margin: 0; background: #f4f6fb; color: #0f172a; }
+      .no-js .seo {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+        font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      .no-js .seo h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 1rem; }
+      .no-js .seo h2 { font-size: 1.25rem; margin: 2rem 0 .5rem; }
+      .no-js .seo h3 { font-size: 1.05rem; margin: 1.25rem 0 .35rem; }
+      .no-js .seo ul { padding-left: 1.25rem; }
+      .no-js .seo li { margin: .35rem 0; }
+      .no-js .seo p { margin: .5rem 0; }
+      .no-js .seo__brand { font-weight: 700; color: #0f766e; letter-spacing: -.01em; }
+      .no-js .seo a { color: #0f766e; }
+      .no-js .seo__note { margin-top: 2rem; font-size: .9rem; color: #475569; }
+    </style>
+    <!-- Structured data. A crawler that runs no JavaScript still learns what
+         this page is from here, straight from the markup. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://pepstool.com/#app",
+            "name": "PepCalculator",
+            "alternateName": "PepCalculator — Dose & Reconstitution Calculator",
+            "url": "https://pepstool.com/",
+            "description": "Free, offline-first calculator that turns a desired dose (mg/mcg) into the volume (mL) and insulin units to draw on a syringe — for reconstituted peptides, anabolic oils, HGH/HCG and GLP-1 pens.",
+            "applicationCategory": "HealthApplication",
+            "operatingSystem": "Any — a web browser; installable to a phone home screen",
+            "browserRequirements": "Requires JavaScript. Works offline after the first load.",
+            "isAccessibleForFree": true,
+            "inLanguage": ["en", "sk", "es"],
+            "image": "https://pepstool.com/og-image.png",
+            "screenshot": "https://pepstool.com/og-image.png",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "EUR"
+            },
+            "featureList": [
+              "Reconstituted peptides: 1 mg vial + 2 mL water → the volume and insulin units to draw",
+              "Anabolic oils: answer straight in mL from the label concentration",
+              "HGH/HCG: dosed in IU, answered in mL with the syringe graduations beside it",
+              "GLP-1 pens: the dose in dial clicks",
+              "Picks the syringe (U-100/U-40/U-50, 0.3–3 mL) and warns when a dose won't fit",
+              "Prints the arithmetic behind every answer, with your own numbers",
+              "Checks each reconstituted answer a second, independent way",
+              "Works offline and installs to the home screen (PWA)",
+              "English, Slovak and Spanish"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://pepstool.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "How do I turn mg of peptide into insulin units to draw?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Divide the mg in the vial by the mL of water added to get the concentration (e.g. 1 mg + 2 mL = 500 mcg/mL), then divide your dose by that concentration to get the volume (250 mcg ÷ 500 mcg/mL = 0.5 mL), and multiply the volume by the syringe's units per mL (0.5 mL on a U-100 syringe = 50 units). PepCalculator does all three steps live and prints the arithmetic."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is PepCalculator free, and does it need an account?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It is free and needs no account. Everything you type stays in your own browser; nothing is uploaded unless you deliberately turn on sync."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does it work without an internet connection?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. It is an installable offline-first web app (PWA): after the first load it runs with no network and can be added to a phone's home screen."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which languages does it support?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "English, Slovak and Spanish. The app picks its starting language from the browser and remembers your choice."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is this medical advice?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. PepCalculator only does the arithmetic; it does not replace a doctor or a pharmacist. Always check the number against the label before you draw."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!--
+        Crawlable fallback. A crawler that runs no JavaScript reads this; React
+        replaces the whole node the moment it mounts, and the `js` class hides
+        it for every browser that does run scripts (no flash, no layout shift).
+      -->
+      <main class="seo">
+        <p class="seo__brand">PepCalculator</p>
+        <h1>PepCalculator — turn a dose into the units to draw</h1>
+        <p>
+          PepCalculator is a free, offline-first dose calculator. Type what is on
+          the vial and it answers, live, with the volume in <strong>mL</strong> and
+          the <strong>insulin units</strong> to draw on a syringe — and it prints
+          the arithmetic behind every number, so you can check it before you draw.
+        </p>
+
+        <h2>What it calculates</h2>
+        <ul>
+          <li><strong>Reconstituted peptides</strong> — 1 mg of powder in 2 mL of water is 500 mcg/mL, so a 250 mcg dose is 0.5 mL, which is 50 units on a U-100 syringe.</li>
+          <li><strong>Anabolic oils</strong> — already mixed, so the answer comes straight from the label concentration, in mL.</li>
+          <li><strong>HGH / HCG</strong> — dosed in IU, answered in mL with the syringe graduations beside it, because an activity unit is not a mass.</li>
+          <li><strong>GLP-1 pens</strong> — the dose converted into dial clicks for the pen you actually have.</li>
+        </ul>
+
+        <h2>Why the number can be trusted</h2>
+        <ul>
+          <li>Every answer prints the arithmetic with your own numbers, not a black box.</li>
+          <li>A reconstituted answer is computed two independent ways, and the app refuses to show a number it cannot stand behind.</li>
+          <li>It picks the syringe (U-100, U-40 or U-50, 0.3–3 mL) and warns when a dose will not fit.</li>
+          <li>Runs in your browser, works with no network, and installs to the home screen.</li>
+        </ul>
+
+        <h2>Languages and privacy</h2>
+        <p>
+          English, Slovak and Spanish — the app picks its starting language from
+          your browser. Your numbers stay in your own browser.
+        </p>
+
+        <h2>Common questions</h2>
+        <h3>How do I turn mg of peptide into units?</h3>
+        <p>Divide the mg in the vial by the mL of water added (the concentration), divide your dose by that concentration (the volume), then multiply by the syringe's units per mL.</p>
+        <h3>Is it free, and do I need an account?</h3>
+        <p>Free, no account, and nothing is uploaded unless you turn on sync yourself.</p>
+        <h3>Does it work offline?</h3>
+        <p>Yes — after the first load it runs with no connection.</p>
+
+        <p class="seo__note">
+          Not medical advice. PepCalculator only does the maths; it does not
+          replace a doctor or a pharmacist.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

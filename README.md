@@ -142,6 +142,7 @@ npm run preview    # serve the production build (http://localhost:8138)
 npm test           # run the unit tests
 npm run typecheck  # TypeScript only
 npm run icons      # regenerate the PWA icons in public/icons/ (only if you change the design)
+npm run og         # regenerate the social card public/og-image.png (needs Chrome/Edge; only if you change the design)
 ```
 
 > The service worker is only installed in the **production** build, so `npm run dev` behaves
@@ -152,6 +153,31 @@ npm run icons      # regenerate the PWA icons in public/icons/ (only if you chan
 1. **Server:** host `server/server.mjs` on anything running Node 22+ (Render, Railway, Fly, a VPS) — or use the included **`Dockerfile` / `docker-compose.yml`** (`node:22-alpine`; the only runtime dependency is `web-push`, loaded solely to deliver reminders and never touched unless VAPID keys are set). Set `PORT`, `DB_PATH` **on a persistent volume**, and `ALLOWED_ORIGIN` to your app's URL (a comma-separated list works). For closed-app reminders, run `npm run vapid` and set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (plus `VAPID_SUBJECT`). `server/README.md` documents the rest: `RATE_LIMIT`, `RATE_WINDOW_MS`, `TRUST_PROXY`, `LOG_REQUESTS`, `PUSH_INTERVAL_MS`.
 2. **App:** host `dist/` on any HTTPS host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). HTTPS is required for sync, because `crypto.subtle` only exists in a secure context.
 3. **Point the app at the server:** copy `.env.example` to `.env`, set `VITE_SYNC_SERVER=https://your-sync-host`, then `npm run build`. The URL is baked into the bundle so new devices pick it up with no typing.
+
+### SEO & link previews
+
+The app is client-rendered, so a crawler that runs no JavaScript would otherwise see an empty page.
+Three things in the app shell fix that:
+
+- **`index.html`** carries the Open Graph / Twitter tags, a canonical URL, and JSON-LD
+  (`WebApplication` + `FAQPage`). Facebook, WhatsApp, Telegram, Slack and LinkedIn read these
+  **without running any script** — that is what turns a pasted link into a card.
+- **`public/og-image.png`** (1200×630) is the card image. Regenerate it with `npm run og` after a
+  design change (it needs Chrome or Edge, or `CHROME_PATH` pointing at one). `npm run build` never
+  calls it, so a build on a machine with no browser still works.
+- **`public/robots.txt`** and **`public/sitemap.xml`** invite crawlers in.
+
+A no-JavaScript crawler also gets **real text**: the markup inside `#root` is a written summary of the
+app — what it calculates, why the number can be trusted, the languages, and a short FAQ. React replaces
+that node the moment it mounts, and an inline `no-js` → `js` swap hides it *before the first paint* for
+anyone whose browser runs scripts. So real visitors never see it, and there is no flash or layout shift.
+
+> **If the app moves to another domain,** update the absolute URLs in `index.html` (`canonical`,
+> `og:url`, `og:image`, `twitter:image`), the `SITE` constant in `scripts/generate-og.mjs`, and both
+> files in `public/` (`robots.txt`, `sitemap.xml`). Social networks cache their cards, so after
+> deploying paste the URL into the [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
+> to force a re-scrape.
+
 
 ---
 

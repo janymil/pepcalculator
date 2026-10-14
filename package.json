@@ -10,6 +10,7 @@
     "server": "node --disable-warning=ExperimentalWarning server/server.mjs",
     "server:watch": "node --watch --disable-warning=ExperimentalWarning server/server.mjs",
     "icons": "node scripts/generate-icons.mjs",
+    "og": "node scripts/generate-og.mjs",
     "vapid": "node scripts/generate-vapid.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
