@@ -6,6 +6,8 @@
 # host, no trailing slash) — that list is the whole point of the CORS guard. Put
 # it behind a reverse proxy that terminates TLS: the browser only exposes
 # `crypto.subtle` in a secure context, and a sync code must never travel in clear.
+# An old domain belongs here only while its devices are still migrating off it;
+# drop it once they have, so a retired origin stops being accepted.
 services:
   sync:
     build: .

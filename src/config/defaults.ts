@@ -1,3 +1,4 @@
+import { defaultSyncServer } from '../lib/syncServer';
 import type { AnabolicForm, Glp1Form, HormoneForm, PenSettings, PeptideForm, SyringeSettings } from '../types';
 
 /** Sensible starting values so the app is usable the moment it opens. */
@@ -52,12 +53,16 @@ export const DEFAULT_PEN: PenSettings = { clicksPerMl: 100 };
  * Where the recovery-code sync server lives. Overridable in the UI — see
  * `server/README.md` for how to run it.
  *
- * `VITE_SYNC_SERVER` is baked in at build time, so a freshly installed phone
- * points at your deployed server instead of `localhost`. Copy `.env.example`
- * to `.env` (or set it in your host's dashboard) before `npm run build`.
+ * The API is served from the same domain as the app (the reverse proxy sends
+ * `/api/*` to it), so by default a production build uses **the address the page
+ * was loaded from** and follows the app to a new domain on its own. Set
+ * `VITE_SYNC_SERVER` before `npm run build` only to point at a different server.
  */
-export const DEFAULT_SYNC_SERVER: string =
-  import.meta.env.VITE_SYNC_SERVER ?? 'http://localhost:8787';
+export const DEFAULT_SYNC_SERVER: string = defaultSyncServer({
+  configured: import.meta.env.VITE_SYNC_SERVER,
+  origin: typeof window !== 'undefined' ? window.location.origin : '',
+  production: import.meta.env.PROD,
+});
 
 /** localStorage keys — versioned so a future schema change can migrate cleanly. */
 export const STORAGE_KEYS = {

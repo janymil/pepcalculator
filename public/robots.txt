@@ -1,7 +1,7 @@
-# PepCalculator — https://pepcalculator.casacam.net/
+# PepCalculator - https://pepstool.com/
 # The app is a single public page; everything here is meant to be indexed.
 
 User-agent: *
 Allow: /
 
-Sitemap: https://pepcalculator.casacam.net/sitemap.xml
+Sitemap: https://pepstool.com/sitemap.xml

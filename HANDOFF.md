@@ -404,8 +404,15 @@ with `{payload: string}` → `{updatedAt}`. `:key` must match `^[a-f0-9]{64}$`.
 - **`VialCardLegacy`** exists only for vials saved *without* a schedule. Don't remove it without
   checking old data.
 - **Never edit `dist/`** — it is a build artifact.
-- **`VITE_SYNC_SERVER`** is inlined at build time (`config/defaults.ts`). Set it in `.env` before
-  `npm run build` so a fresh device gets your server URL instead of `localhost`.
+- **The sync server defaults to the page's own origin** — `src/lib/syncServer.ts`, wired up in
+  `config/defaults.ts`. Moving the app to a new domain needs no rebuild. `VITE_SYNC_SERVER`
+  overrides it at build time, but a value that is a retired domain (`LEGACY_SYNC_SERVERS`) is
+  ignored while the app is served from somewhere else — that is what a host with a stale build
+  setting produces, and it is the bug people actually hit. Never bake `http://localhost:8787` into
+  a production build.
+- **A device is moved off a retired domain automatically:** `migratedSyncServer()` (in
+  `src/lib/syncServer.ts`, applied to the effective address in `App.tsx`) rewrites
+  `pepcalc.v1.syncServer` on load. An address the user typed themselves is never touched.
 
 ## Open items / roadmap (priority order)
 

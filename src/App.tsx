@@ -44,6 +44,7 @@ import type { VialSchedule } from './lib/schedule';
 import { isIos, isStandalone } from './lib/pwa';
 import type { VialShare } from './lib/shares';
 import { syncWithServer, pushVials, type SyncFailure } from './lib/sync';
+import { migratedSyncServer } from './lib/syncServer';
 import { parsePairHash } from './lib/pair';
 import { hashForView, viewFromHash, type ViewId } from './lib/views';
 import { PairNotice } from './components/PairNotice';
@@ -130,6 +131,18 @@ export default function App() {
     STORAGE_KEYS.syncServer,
     DEFAULT_SYNC_SERVER,
   );
+  /*
+   * The address actually in use — never the raw saved one.
+   *
+   * A device that saved the old default (the test domain) is corrected *before*
+   * anything reads it, so no screen and no request ever shows the domain we left.
+   * An address the user typed themselves is never touched; the effect only writes
+   * the correction back to storage.
+   */
+  const effectiveSyncServer = migratedSyncServer(syncServer, DEFAULT_SYNC_SERVER);
+  useEffect(() => {
+    if (effectiveSyncServer !== syncServer) setSyncServer(effectiveSyncServer);
+  }, [effectiveSyncServer, syncServer, setSyncServer]);
   const [syncLast, setSyncLast] = useLocalStorage<string>(STORAGE_KEYS.syncLast, '');
   const [remindersEnabled, setRemindersEnabled] = useLocalStorage<boolean>(
     STORAGE_KEYS.reminders,
@@ -261,7 +274,7 @@ export default function App() {
     enabled: remindersEnabled,
     permission: reminders.permission,
     syncCode,
-    serverUrl: syncServer,
+    serverUrl: effectiveSyncServer,
     lang,
     title: strings.reminders.notifyTitle,
     body: (name, time) =>
@@ -354,12 +367,12 @@ export default function App() {
    * while you are actually using the calculator.
    */
   useEffect(() => {
-    if (!syncCode || !syncServer) return;
+    if (!syncCode || !effectiveSyncServer) return;
     let cancelled = false;
 
     setSyncing(true);
     setSyncError(null);
-    void syncWithServer(syncServer, syncCode, savedVials, { measurements }).then((outcome) => {
+    void syncWithServer(effectiveSyncServer, syncCode, savedVials, { measurements }).then((outcome) => {
       if (cancelled) return;
       setSyncing(false);
       if (outcome.ok) {
@@ -711,7 +724,7 @@ export default function App() {
     if (!syncCode) return;
     setSyncing(true);
     setSyncError(null);
-    const outcome = await syncWithServer(syncServer, syncCode, savedVials, { owners });
+    const outcome = await syncWithServer(effectiveSyncServer, syncCode, savedVials, { owners });
     setSyncing(false);
     if (outcome.ok) {
       // Same as the on-open sync: prune, then let the background push re-upload.
@@ -736,7 +749,7 @@ export default function App() {
    * `savedVials` — so a repeat run always sees "nothing new to send".
    */
   useEffect(() => {
-    if (!syncCode || !syncServer) return;
+    if (!syncCode || !effectiveSyncServer) return;
 
     const snapshot = syncSnapshot(savedVials, measurements);
     if (snapshot === lastPushedRef.current) return;
@@ -746,7 +759,7 @@ export default function App() {
       inFlightRef.current = true;
       setSyncing(true);
       setSyncError(null);
-      void pushVials(syncServer, syncCode, savedVials, { owners, measurements }).then((outcome) => {
+      void pushVials(effectiveSyncServer, syncCode, savedVials, { owners, measurements }).then((outcome) => {
         inFlightRef.current = false;
         setSyncing(false);
         if (outcome.ok) {
@@ -761,7 +774,7 @@ export default function App() {
     return () => window.clearTimeout(timer);
     // Keyed on the data only; the refs above stop it from repeating itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedVials, measurements, owners, syncCode, syncServer]);
+  }, [savedVials, measurements, owners, syncCode, effectiveSyncServer]);
 
   // The first-run card is only ever a welcome: it disappears once the user
   // loads an example, dismisses it, or saves their first vial.
@@ -828,7 +841,7 @@ export default function App() {
           ) : view === 'settings' ? (
             <SettingsPage
               code={syncCode}
-              serverUrl={syncServer}
+              serverUrl={effectiveSyncServer}
               isSyncing={syncing}
               lastSyncedAt={syncLast}
               error={syncError}

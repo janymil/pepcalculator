@@ -152,7 +152,7 @@ npm run og         # regenerate the social card public/og-image.png (needs Chrom
 
 1. **Server:** host `server/server.mjs` on anything running Node 22+ (Render, Railway, Fly, a VPS) — or use the included **`Dockerfile` / `docker-compose.yml`** (`node:22-alpine`; the only runtime dependency is `web-push`, loaded solely to deliver reminders and never touched unless VAPID keys are set). Set `PORT`, `DB_PATH` **on a persistent volume**, and `ALLOWED_ORIGIN` to your app's URL (a comma-separated list works). For closed-app reminders, run `npm run vapid` and set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (plus `VAPID_SUBJECT`). `server/README.md` documents the rest: `RATE_LIMIT`, `RATE_WINDOW_MS`, `TRUST_PROXY`, `LOG_REQUESTS`, `PUSH_INTERVAL_MS`.
 2. **App:** host `dist/` on any HTTPS host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). HTTPS is required for sync, because `crypto.subtle` only exists in a secure context.
-3. **Point the app at the server:** copy `.env.example` to `.env`, set `VITE_SYNC_SERVER=https://your-sync-host`, then `npm run build`. The URL is baked into the bundle so new devices pick it up with no typing.
+3. **Sync server address:** nothing to do. The API is served from the same domain as the app (the reverse proxy sends `/api/*` to it), so the app points at **the address it was loaded from** and follows you if you change domain. Set `VITE_SYNC_SERVER` in `.env` before `npm run build` only to point at a *different* server — and note that a value which is one of the app's own retired domains is ignored unless the app really is served from it (`src/lib/syncServer.ts`).
 
 ### SEO & link previews
 
@@ -174,7 +174,8 @@ anyone whose browser runs scripts. So real visitors never see it, and there is n
 
 > **If the app moves to another domain,** update the absolute URLs in `index.html` (`canonical`,
 > `og:url`, `og:image`, `twitter:image`), the `SITE` constant in `scripts/generate-og.mjs`, and both
-> files in `public/` (`robots.txt`, `sitemap.xml`). Social networks cache their cards, so after
+> files in `public/` (`robots.txt`, `sitemap.xml`). The **sync server needs no change** — it
+> defaults to the page's own origin. Social networks cache their cards, so after
 > deploying paste the URL into the [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
 > to force a re-scrape.
 
