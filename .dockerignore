@@ -1,10 +1,11 @@
-# Everything the sync image must not carry. The service copies only two files, but
-# this keeps a stray `docker build .` from packaging a database or a `.env`.
+# Everything the sync image must not carry. The service copies `server/*.mjs`,
+# and this keeps a stray `docker build .` from packaging a database or a `.env`.
 node_modules
 dist
 .git
 .gitignore
 server/data
+server/*.test.mjs
 .env
 *.log
 HANDOFF.md

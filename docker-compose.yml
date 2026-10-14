@@ -8,11 +8,26 @@
 # `crypto.subtle` in a secure context, and a sync code must never travel in clear.
 # An old domain belongs here only while its devices are still migrating off it;
 # drop it once they have, so a retired origin stops being accepted.
+#
+# The WhatsApp reminders are configured in `.env` (see `.env.whatsapp.example`),
+# which is shared with `docker-compose.whatsapp.yml` — write the key and the
+# webhook secret down once and both stacks get them.
+#
+# ## Never use `--remove-orphans` with this file
+#
+# Both compose files share the project name `pepcalculator`, so each sees the
+# other's containers as orphans. `docker compose up -d` alone is fine — it warns
+# and leaves them alone. `docker compose up -d --remove-orphans` would **delete
+# the Evolution stack**, or the sync server, depending on which file you ran.
 services:
   sync:
     build: .
     image: pepcalculator-sync
     restart: unless-stopped
+    # Joins the Evolution stack's network, so the sync server can reach Evolution
+    # by name (`http://evolution:8080`) and Evolution can reach the webhook by
+    # name (`http://sync:8787/...`) without either touching the public internet.
+    networks: [whatsapp]
     ports:
       # Bound to loopback: the reverse proxy publishes it, not the whole internet.
       - '127.0.0.1:8787:8787'
@@ -29,8 +44,28 @@ services:
       VAPID_PRIVATE_KEY: ''
       VAPID_SUBJECT: mailto:you@example.com
       PUSH_INTERVAL_MS: '30000'
+      # --- the sync server's side ---
+      #
+      # Read from the same `.env` the Evolution stack uses, so the API key and
+      # the webhook secret only have to be written down once. `:-` keeps an
+      # unset value meaning "WhatsApp off" rather than a compose error.
+      WHATSAPP_URL: 'http://evolution:8080'
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-}
+      WHATSAPP_INSTANCE: ${WHATSAPP_INSTANCE:-pepstool}
+      WHATSAPP_WEBHOOK_SECRET: ${WHATSAPP_WEBHOOK_SECRET:-}
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
+      WHATSAPP_INTERVAL_MS: '30000'
+      WHATSAPP_WEBHOOK_RATE_LIMIT: '60'
+      MANAGE_URL: ${MANAGE_URL:-https://pepstool.com}
+      # Where a dropped WhatsApp link is announced. Empty means "log it loudly
+      # and carry on" — see the note in `server/.env.example`.
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
     volumes:
       - sync-data:/data
 
 volumes:
   sync-data:
+
+networks:
+  whatsapp:
+    name: pepstool-whatsapp

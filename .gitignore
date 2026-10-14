@@ -9,4 +9,4 @@ coverage
 server/data
 .env
 .env.*
-!.env.example
+!*.example

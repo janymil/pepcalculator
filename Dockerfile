@@ -13,10 +13,16 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# `guard.mjs` holds the origin rule and the rate limiter, `push.mjs` the scheduler
-# and its pure helpers, `webpush.mjs` the lazy `web-push` call, `server.mjs` the
-# wiring. Nothing else is needed at runtime.
-COPY server/guard.mjs server/push.mjs server/webpush.mjs server/server.mjs ./
+# `server/*.mjs`, not a fixed list.
+#
+# This used to name each module — `guard.mjs`, `push.mjs`, `webpush.mjs`,
+# `server.mjs`. Adding `recurrence.mjs` and `whatsapp.mjs` (and `evolution.mjs`
+# and `messages.mjs`) then broke the image with `ERR_MODULE_NOT_FOUND` at start,
+# because nothing had told the Dockerfile about them. A glob cannot be forgotten.
+#
+# The tests are excluded by `.dockerignore`, so the image still carries only what
+# it runs.
+COPY server/*.mjs ./
 
 RUN npm install --no-save --omit=dev web-push
 
