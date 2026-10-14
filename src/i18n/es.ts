@@ -301,6 +301,11 @@ export const es: Strings = {
     errorWrongPassphrase: 'Esa contraseña no abre esta copia.',
     errorNoCrypto: 'El cifrado necesita una conexión segura (https).',
     scope: 'La copia de seguridad contiene todas las personas de este dispositivo y todo el registro de medidas.',
+    baseline: 'Tus datos solo viven en este dispositivo.',
+    finish: 'He terminado mi protocolo — guardar una copia',
+    finishedDone: 'Copia guardada. Conserva el archivo en un lugar seguro.',
+    changedNudge: 'Has cambiado cosas desde tu última copia.',
+    notNow: 'Ahora no',
   },
   plot: {
     title: 'Tu protocolo',

@@ -1587,6 +1587,50 @@ body {
   color: var(--text-muted);
 }
 
+/* The quiet strip above the vial list: baseline line, finish button, rare nudge. */
+.backup-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.backup-bar__text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.backup-bar__text svg {
+  flex: none;
+}
+
+.backup-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Only when something changed and the quiet week is over: a warmer, still calm, tint. */
+.backup-bar--nudge {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.backup-bar--nudge .backup-bar__text {
+  color: var(--warn);
+}
+
 /* ---------- recovery-code sync ---------- */
 .sync {
   display: flex;

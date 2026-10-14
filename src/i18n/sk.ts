@@ -301,6 +301,11 @@ export const sk: Strings = {
     errorWrongPassphrase: 'Toto heslo zálohu neotvorí.',
     errorNoCrypto: 'Šifrovanie vyžaduje zabezpečené spojenie (https).',
     scope: 'Záloha obsahuje všetky osoby v tomto zariadení a celý záznam meraní.',
+    baseline: 'Vaše údaje sú uložené iba v tomto zariadení.',
+    finish: 'Dokončil/a som protokol — uložiť kópiu',
+    finishedDone: 'Kópia je uložená. Súbor si odložte na bezpečné miesto.',
+    changedNudge: 'Od poslednej kópie ste niečo zmenili.',
+    notNow: 'Teraz nie',
   },
   plot: {
     title: 'Váš protokol',

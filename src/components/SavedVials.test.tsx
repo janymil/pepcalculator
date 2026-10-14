@@ -112,6 +112,30 @@ describe('SavedVials page (server render smoke test)', () => {
     expect(render([peptideVial()])).toContain(DICTIONARIES.en.backup.scope);
   });
 
+  it('keeps one quiet line and a finish button above the list once there is a protocol', () => {
+    const html = render([peptideVial(), anabolicVial()]);
+
+    expect(html).toContain('backup-bar');
+    expect(html).toContain(DICTIONARIES.en.backup.baseline);
+    // Once, however many vials the protocol has - it is the protocol's button, not a vial's.
+    expect(html.split(DICTIONARIES.en.backup.finish).length - 1).toBe(1);
+  });
+
+  it('stays quiet by default: no reminder, no confirmation, until something calls for it', () => {
+    const html = render([peptideVial()]);
+
+    expect(html).not.toContain(DICTIONARIES.en.backup.changedNudge);
+    expect(html).not.toContain(DICTIONARIES.en.backup.notNow);
+    expect(html).not.toContain(DICTIONARIES.en.backup.finishedDone);
+  });
+
+  it('shows no backup strip on an empty device', () => {
+    const html = render([]);
+
+    expect(html).not.toContain('backup-bar');
+    expect(html).not.toContain(DICTIONARIES.en.backup.finish);
+  });
+
   it('offers the GLP-1 care page from a GLP-1 vial', () => {
     const label = DICTIONARIES.en.glp1.openPage;
     const glp1 = peptideVial({ id: 'g1', name: 'Tirzepatide', kind: 'glp1' });

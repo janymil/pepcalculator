@@ -85,4 +85,10 @@ export const STORAGE_KEYS = {
   measurements: 'pepcalc.v1.measurements',
   /** When the user last downloaded a JSON backup — drives the backup reminder. */
   lastBackup: 'pepcalc.v1.lastBackup',
+  /** Fingerprint of the data at the last backup, so "changed since" is exact. */
+  backupFingerprint: 'pepcalc.v1.backupFingerprint',
+  /** The day the backup reminder was last dismissed (it then stays away a week). */
+  backupNudged: 'pepcalc.v1.backupNudged',
+  /** The day this device first held data — a new user is not nagged straight away. */
+  backupSeen: 'pepcalc.v1.backupSeen',
 } as const;

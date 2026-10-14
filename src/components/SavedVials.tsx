@@ -1,9 +1,10 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { LOCALES, interpolate } from '../i18n';
 import { useI18n } from '../i18n/I18nContext';
 import { STORAGE_KEYS } from '../config/defaults';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { backupFileName, decryptBackup, encryptBackup, isEncryptedBackup, parseBackup, serializeBackup } from '../lib/backup';
+import { dataFingerprint, shouldNudgeBackup } from '../lib/backupReminder';
 import { daysBetween } from '../lib/dates';
 import { fmt, formatDate } from '../lib/format';
 import type { Measurement } from '../lib/measure';
@@ -260,6 +261,12 @@ export function SavedVials({
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<VialSort>('newest');
   const [lastBackup, setLastBackup] = useLocalStorage<string>(STORAGE_KEYS.lastBackup, '');
+  const [backupFingerprint, setBackupFingerprint] = useLocalStorage<string>(
+    STORAGE_KEYS.backupFingerprint,
+    '',
+  );
+  const [nudgedOn, setNudgedOn] = useLocalStorage<string>(STORAGE_KEYS.backupNudged, '');
+  const [seenOn, setSeenOn] = useLocalStorage<string>(STORAGE_KEYS.backupSeen, '');
   const [passphrase, setPassphrase] = useState('');
 
   const visible = sortVials(searchVials(filterVialsByKind(vials, filter), query), sort, todayIso);
@@ -309,6 +316,32 @@ export function SavedVials({
   /** Whole days since the last backup, or null when there has never been one. */
   const backupAge = lastBackup ? daysBetween(lastBackup.slice(0, 10), todayIso) : null;
 
+  // What a backup would contain right now, and whether the saved copy is stale.
+  // Same inputs as `handleBackup`, so "changed" means "the file on disk is out of date".
+  const everyVial = allVials ?? vials;
+  const everyMeasurement = allMeasurements ?? measurements;
+  const hasData = everyVial.length > 0 || everyMeasurement.length > 0;
+  const fingerprint = useMemo(
+    () => dataFingerprint(everyVial, owners, everyMeasurement),
+    [everyVial, owners, everyMeasurement],
+  );
+  const changedSinceCopy = hasData && fingerprint !== backupFingerprint;
+  const copyIsCurrent = lastBackup !== '' && !changedSinceCopy;
+  const showNudge = shouldNudgeBackup({
+    hasData,
+    changed: changedSinceCopy,
+    lastBackup,
+    nudgedOn,
+    seenOn,
+    todayIso,
+  });
+
+  // The first day this device holds anything starts the reminder's clock, so
+  // someone who has only just built a protocol is not nagged straight away.
+  useEffect(() => {
+    if (hasData && seenOn === '') setSeenOn(todayIso);
+  }, [hasData, seenOn, setSeenOn, todayIso]);
+
   /**
    * There is nothing to print until at least one vial has a plan — the sheet
    * would come out saying so. Better to disable the button than to send the user
@@ -351,6 +384,9 @@ export function SavedVials({
     link.click();
     URL.revokeObjectURL(url);
     setLastBackup(todayIso);
+    // The copy now matches the data, so nothing is "unsaved" until something changes.
+    setBackupFingerprint(fingerprint);
+    setNudgedOn('');
     setNotice(strings.backup.done);
   };
 
@@ -451,6 +487,48 @@ export function SavedVials({
           </select>
         </label>
       </div>
+
+      {/*
+       * One quiet strip, three states, never two at once:
+       *  - a nudge, only when something changed since the last copy and the
+       *    week's quiet period is over;
+       *  - a calm confirmation right after a copy is saved;
+       *  - otherwise the baseline line.
+       * The button is the user saying "my protocol is complete" - a protocol can
+       * be one vial or ten, so the app never guesses when to ask.
+       */}
+      {hasData ? (
+        <div
+          className={`backup-bar${showNudge ? ' backup-bar--nudge' : ''}`}
+          role={showNudge ? 'status' : undefined}
+        >
+          <p className="backup-bar__text">
+            <Icon name={showNudge ? 'info' : copyIsCurrent ? 'check' : 'shield'} size={16} />
+            <span>
+              {showNudge
+                ? strings.backup.changedNudge
+                : copyIsCurrent
+                  ? strings.backup.finishedDone
+                  : strings.backup.baseline}
+            </span>
+          </p>
+          <div className="backup-bar__actions">
+            <button
+              type="button"
+              className={`btn btn--sm${showNudge ? ' btn--accent' : ''}`}
+              onClick={() => void handleBackup()}
+            >
+              <Icon name="download" size={16} />
+              {strings.backup.finish}
+            </button>
+            {showNudge ? (
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setNudgedOn(todayIso)}>
+                {strings.backup.notNow}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {visible.length === 0 ? (
         <div className="empty">

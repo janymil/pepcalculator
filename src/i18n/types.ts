@@ -345,6 +345,16 @@ export interface Strings {
      * one on screen. Said next to the button rather than discovered on restore.
      */
     scope: string;
+    /** The quiet line that is always there: the data has no copy but this device. */
+    baseline: string;
+    /** The button that says "my protocol is complete" and saves a copy. */
+    finish: string;
+    /** Shown after a copy is saved, until something changes again. */
+    finishedDone: string;
+    /** The gentle reminder, shown only when something changed since the last copy. */
+    changedNudge: string;
+    /** Dismisses the reminder; it then stays away for a week. */
+    notNow: string;
   };
   /** Plots the user's own plan against a cited half-life. */
   plot: {

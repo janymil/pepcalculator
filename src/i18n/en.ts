@@ -301,6 +301,11 @@ export const en: Strings = {
     errorWrongPassphrase: 'That passphrase does not open this backup.',
     errorNoCrypto: 'Encryption needs a secure (https) connection.',
     scope: 'A backup contains every person on this device, and the whole measurement log.',
+    baseline: 'Your data lives only on this device.',
+    finish: 'I finished my protocol — save a copy',
+    finishedDone: 'Copy saved. Keep the file somewhere safe.',
+    changedNudge: 'You have changed things since your last copy.',
+    notNow: 'Not now',
   },
   plot: {
     title: 'Your protocol',
