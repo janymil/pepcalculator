@@ -69,6 +69,9 @@
       document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
     </script>
     <style>
+      /* Immediately hide SEO fallback text for browsers running JavaScript */
+      .js .seo { display: none !important; }
+
       /* Styles for the no-JS fallback only — the app brings its own styles. */
       .no-js #root { margin: 0; background: #f4f6fb; color: #0f172a; }
       .no-js .seo {
