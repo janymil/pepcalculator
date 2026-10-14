@@ -591,6 +591,25 @@ Guide page:**
     / `PairNotice`. The phone's camera scans a URL, so no in-app scanner is needed.
 13. Optional only if real accounts are ever wanted: swap the sync layer for Supabase + RLS.
     Recovery-code sync was chosen **deliberately** instead of email/password.
+14. ~~**WhatsApp reminders**~~ — **shipped as an optional second channel**:
+    `PROPOSAL-whatsapp-reminders.md`. The **rule** travels, not a queue of rendered
+    notifications, so there is no horizon to run out and an *ongoing* plan really does go on
+    for ever (`server/recurrence.mjs`). The user writes first — a `wa.me` link with a
+    6-character code pre-filled — and `STOP` stops it, with an opt-out that outranks any
+    stored row. **Web Push stays the default**: Evolution runs an unofficial WhatsApp client,
+    so the number can be banned with no appeal, and that must not take the reminders with it.
+    Follow-ups that were open and are now closed: the server speaks `en`/`sk`/`es`
+    (`server/messages.mjs`), a number may hold up to five plans with numbered commands, and
+    `connection.update` is read — into an `instance_state` table, `/api/health` and a loud log
+    line, because a dropped link is the one failure that stops everything *silently*.
+    Writing that last one found a real bug: five failures used to park a reminder whatever the
+    reason, so a ten-minute gateway outage would have switched off every reminder for every
+    user permanently. A 4xx parks now; anything else retries.
+    And the user found one more, the worst of them: the app uploaded a plan **once** and then
+    only read back, so changing a time or dose left the server firing the old schedule for
+    ever. `GET /api/wa/:key` now returns the stored rule and the app pushes when
+    `reminderIsStale` — on a real change only, or it would undo a time the user set over
+    WhatsApp.
 
 ## Still open
 
