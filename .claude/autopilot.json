@@ -1,0 +1,4 @@
+{
+  "testCommand": "npm run typecheck && npm test",
+  "testTimeoutSec": 300
+}
